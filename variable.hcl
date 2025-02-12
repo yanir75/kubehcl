@@ -10,9 +10,11 @@ variable "bla" {
     description = "test"
 }
 
-# resource "asdf" "test" {
-#     test = var.bla
-# }
+resource "asdf" "test" {
+    test = local.g
+}
 
 locals {
+    g = [for key,value in var.bla :value]
 }
+

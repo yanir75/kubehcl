@@ -1,6 +1,8 @@
 package main
 
 import (
+	"maps"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty/function"
 )
@@ -12,9 +14,11 @@ const (
 
 
 
-func createContext(vars VariableList) *hcl.EvalContext{
-	vals := vars.getMapValues()
+func createContext() *hcl.EvalContext{
+	vals := variables.getMapValues()
 	functions := getFunctions()
+	locals := locals.getMapValues()
+	maps.Copy(locals,vals)
 	// fmt.Printf("%s",vals["var"].AsValueMap())
 	return &hcl.EvalContext{
 		Variables: vals,
