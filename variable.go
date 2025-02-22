@@ -50,6 +50,7 @@ func decodeVariableBlocks(blocks hcl.Blocks) (hcl.Diagnostics){
 	for _,block:=range blocks {
 		variable,varDiags :=decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
+		if variable != nil {
 		variables = append(variables, variable)
 		if _,exists := names[variable.Name]; exists{
 			diags = append(diags, &hcl.Diagnostic{
@@ -62,6 +63,7 @@ func decodeVariableBlocks(blocks hcl.Blocks) (hcl.Diagnostics){
 
 		}
 		names[variable.Name] = true
+		}
 	}
 	return diags
 }
@@ -78,15 +80,15 @@ func decodeVariableBlock(block *hcl.Block) (*Variable,hcl.Diagnostics){
 		return nil, diags
 	}
 	
-	if len(content.Blocks) > 0 {
-		diags = append(diags,&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary: "Too many blocks in variable it doesn't suppose to have blocks",
-			Detail: fmt.Sprintf("Too many blocks in %s",block.Labels),
-			Subject: &block.DefRange,
-		})
-		return nil, diags
-	}
+	// if len(content.Blocks) > 0 {
+	// 	diags = append(diags,&hcl.Diagnostic{
+	// 		Severity: hcl.DiagError,
+	// 		Summary: "Too many blocks in variable it doesn't suppose to have blocks",
+	// 		Detail: fmt.Sprintf("Too many blocks in %s",block.Labels),
+	// 		Subject: &block.DefRange,
+	// 	})
+	// 	return nil, diags
+	// }
 
 		if attr,exists :=content.Attributes["type"];exists {
 			t,_,valDiags := typeexpr.TypeConstraintWithDefaults(attr.Expr)
