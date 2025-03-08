@@ -63,4 +63,6 @@ resource "b" {
 }
 
 
-
+module "test" {
+    source = "./test"
+}

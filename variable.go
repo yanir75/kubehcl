@@ -11,15 +11,15 @@ import (
 	"kubehcl.sh/kubehcl/internal/addrs"
 )
 
-var variables VariableList
+// var variables VariableList
 
 type Variable struct {
 	Name        string
 	Description string
-	Default     cty.Value
+	Default     hcl.Expression
 	Type        cty.Type
 	DeclRange   hcl.Range
-	HasValue    bool // for checking if needed request from the user
+	HasDefault    bool // for checking if needed request from the user
 }
 
 type VariableList []*Variable
@@ -38,20 +38,37 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func (varList VariableList) getMapValues() map[string]cty.Value {
+func (varList VariableList) getMapValues() (map[string]cty.Value,hcl.Diagnostics) {
 	vals := make(map[string]cty.Value)
 	vars := make(map[string]cty.Value)
-
+	var diags hcl.Diagnostics
 	for _, variable := range varList {
-		vals[variable.Name] = variable.Default
+		val, valDiags := variable.Default.Value(nil)
+		diags = append(diags, valDiags...)
+
+		if variable.Type != cty.NilType {
+			var err error
+			val, err = convert.Convert(val, variable.Type)
+			if err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Invalid default value for variable",
+					Detail:   fmt.Sprintf("This default value is not compatible with the variable's type constraint: %s.", err),
+					Subject:  variable.Default.Range().Ptr(),
+				})
+				val = cty.DynamicVal
+			}
+	}
+		vals[variable.Name] = val
 	}
 	vars["var"] = cty.ObjectVal(vals)
-	return vars
+	return vars,diags
 }
 
-func decodeVariableBlocks(blocks hcl.Blocks) hcl.Diagnostics {
+func decodeVariableBlocks(blocks hcl.Blocks) (VariableList,hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
+	var variables VariableList 
 	for _, block := range blocks {
 		variable, varDiags := decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
@@ -69,14 +86,14 @@ func decodeVariableBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 			}
 		}
 	}
-	return diags
+	return variables,diags
 }
 
 func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	var variable *Variable = &Variable{
 		Name:      block.Labels[0],
 		DeclRange: block.DefRange,
-		HasValue:  false,
+		HasDefault:  false,
 	}
 
 	content, diags := block.Body.Content(inputVariableBlockSchema)
@@ -106,25 +123,8 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	}
 
 	if attr, exists := content.Attributes["default"]; exists {
-		val, valDiags := attr.Expr.Value(nil)
-		diags = append(diags, valDiags...)
-
-		if variable.Type != cty.NilType {
-			var err error
-			val, err = convert.Convert(val, variable.Type)
-			if err != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Invalid default value for variable",
-					Detail:   fmt.Sprintf("This default value is not compatible with the variable's type constraint: %s.", err),
-					Subject:  attr.Expr.Range().Ptr(),
-				})
-				val = cty.DynamicVal
-			}
-		}
-
-		variable.Default = val
-		variable.HasValue = true
+		variable.Default = attr.Expr
+		variable.HasDefault = true
 	}
 
 	return variable, diags
