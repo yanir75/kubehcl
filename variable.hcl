@@ -7,7 +7,7 @@ variable "test" {
 variable "bla" {
 
     type = any
-    default = {"ra" = "gra"}
+    default = {"ra" = {"test"="test"}}
     description = "test"
 }
 
@@ -22,9 +22,22 @@ locals {
 
 default_annotations {
 
-    test = local.a
 }
+
 
 resource "nane" {
-
+    count = 1
+    depends_on = [resource.t]
 }
+
+
+resource "t" {
+    count = 1
+    depends_on = [resource.a]
+}
+
+resource "a" {
+    count = 1
+}
+
+

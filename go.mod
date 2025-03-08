@@ -6,7 +6,9 @@ require github.com/hashicorp/hcl/v2 v2.23.0
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 )
 
 require (
@@ -15,6 +17,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect

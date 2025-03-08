@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	"github.com/zclconf/go-cty/cty"
@@ -17,7 +16,6 @@ func makeBaseFunctionTable(baseDir string) map[string]function.Function {
 	// in the "funcs" directory and potentially graduate to cty stdlib
 	// later if the functionality seems to be something domain-agnostic
 	// that would be useful to all applications using cty functions.
-
 
 	ret := map[string]function.Function{
 		"abs":              stdlib.AbsoluteFunc,

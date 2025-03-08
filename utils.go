@@ -5,26 +5,23 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 )
+
 const (
-	ERROR = hcl.DiagError
+	ERROR   = hcl.DiagError
 	WARNING = hcl.DiagWarning
 	INVALID = hcl.DiagInvalid
 )
 
-
-
-func createContext() *hcl.EvalContext{
+func createContext() *hcl.EvalContext {
 	vals := variables.getMapValues()
 	locals := locals.getMapValues()
-	maps.Copy(vals,locals)
+	maps.Copy(vals, locals)
 	// fmt.Printf("%s",vals["var"].AsValueMap())
 	return &hcl.EvalContext{
 		Variables: vals,
-		// Functions: makeBaseFunctionTable("./"),
+		Functions: makeBaseFunctionTable("./"),
 	}
 }
-
-
 
 // func checkForBlocks (block *hcl.Block) *hcl.Diagnostic {
 // 	content,_,_ :=block.Body.PartialContent(&hcl.BodySchema{})
