@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
+	"kubehcl.sh/kubehcl/internal/addrs"
 )
 
 type Local struct {
@@ -17,6 +18,11 @@ type Locals []*Local
 
 var locals Locals
 
+func (l *Local) addr() addrs.Local{
+	return addrs.Local{
+		Name: l.Name,
+	}
+}
 // var inputLocalsBlockSchema = &hcl.BodySchema{
 
 // }
@@ -61,13 +67,12 @@ func decodeLocalsBlock(block *hcl.Block) hcl.Diagnostics {
 
 func decodeLocalsBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	names := make(map[string]bool)
 	for _, block := range blocks {
 		varDiags := decodeLocalsBlock(block)
 		diags = append(diags, varDiags...)
 	}
 	for _, local := range locals {
-		if exists := names[local.Name]; exists {
+		if addrMap.add(local.addr().String(),local) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Variables must have different names",
@@ -75,7 +80,6 @@ func decodeLocalsBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 				// Context: names[variable.Name],
 			})
 		}
-		names[local.Name] = true
 	}
 	return diags
 }

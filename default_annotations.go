@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
+	"kubehcl.sh/kubehcl/internal/addrs"
 )
 
 type Annotation struct {
@@ -17,6 +18,12 @@ type Annotation struct {
 type Annotations []*Annotation
 
 var annotaions Annotations
+
+func (d *Annotation) addr() addrs.DefaultAnnotation{
+	return addrs.DefaultAnnotation{
+		Name: d.Name,
+	}
+}
 
 func decodeAnnotationsBlock(block *hcl.Block) hcl.Diagnostics {
 	attrs, diags := block.Body.JustAttributes()
@@ -56,13 +63,12 @@ func decodeAnnotationsBlock(block *hcl.Block) hcl.Diagnostics {
 
 func decodeAnnotationsBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	names := make(map[string]bool)
 	for _, block := range blocks {
 		varDiags := decodeAnnotationsBlock(block)
 		diags = append(diags, varDiags...)
 	}
 	for _, annotation := range annotaions {
-		if exists := names[annotation.Name]; exists {
+		if addrMap.add(annotation.addr().String(),annotation) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Annotations must have different names",
@@ -70,7 +76,6 @@ func decodeAnnotationsBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 				// Context: names[variable.Name],
 			})
 		}
-		names[annotation.Name] = true
 	}
 	return diags
 }

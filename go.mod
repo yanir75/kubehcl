@@ -25,6 +25,6 @@ require (
 	github.com/zclconf/go-cty-yaml v1.1.0
 	golang.org/x/crypto v0.34.0
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/text v0.22.0
 	golang.org/x/tools v0.29.0 // indirect
 )

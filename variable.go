@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
+	"kubehcl.sh/kubehcl/internal/addrs"
 )
 
 var variables VariableList
@@ -22,6 +23,12 @@ type Variable struct {
 }
 
 type VariableList []*Variable
+
+func (v *Variable) addr() addrs.Variable{
+	return addrs.Variable{
+		Name: v.Name,
+	}
+}
 
 var inputVariableBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
@@ -45,13 +52,12 @@ func (varList VariableList) getMapValues() map[string]cty.Value {
 func decodeVariableBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 
 	var diags hcl.Diagnostics
-	names := make(map[string]bool)
 	for _, block := range blocks {
 		variable, varDiags := decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
 		if variable != nil {
 			variables = append(variables, variable)
-			if _, exists := names[variable.Name]; exists {
+			if addrMap.add(variable.addr().String(),variable) {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Variables must have different names",
@@ -61,7 +67,6 @@ func decodeVariableBlocks(blocks hcl.Blocks) hcl.Diagnostics {
 				})
 
 			}
-			names[variable.Name] = true
 		}
 	}
 	return diags

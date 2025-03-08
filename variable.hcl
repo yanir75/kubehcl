@@ -1,13 +1,17 @@
-variable "test" {
-    type = any
-    default =  {"blasd" = "asdf"}
-    description = "test"
-}
+# variable "test" {
+#     type = any
+#     default =  {"blasd" = "asdf"}
+#     description = "test"
+# }
 
 variable "bla" {
 
     type = any
-    default = {"ra" = {"test"="test"}}
+    default = {
+                ra = {"asdf"="asdgasdfa"},
+
+                werwer = "grewrw"
+            }
     description = "test"
 }
 
@@ -21,23 +25,42 @@ locals {
 }
 
 default_annotations {
-
+t = "test"
 }
 
 
-resource "nane" {
-    count = 1
-    depends_on = [resource.t]
-}
+# resource "nane" {
+#     count = 1
+#     depends_on = [resource.t]
+# }
 
 
 resource "t" {
-    count = 1
-    depends_on = [resource.a]
+    for_each = var.bla
+    po = each.key
+    bla = each.value
+    # depends_on = [resource.a]
 }
 
 resource "a" {
-    count = 1
+    count = 2
+    # spec {
+    #     t = "testing"
+    #     i = "bla"
+    # }
+    test = count.index
 }
+
+resource "b" {
+    spec {
+        t = "testing"
+        i = "kjh"
+        agsda {
+            fgfhghgf = "tzdsssgest"
+        }
+    }
+    test = "bla"
+}
+
 
 

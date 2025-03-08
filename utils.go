@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 )
 
 const (
@@ -11,6 +12,22 @@ const (
 	WARNING = hcl.DiagWarning
 	INVALID = hcl.DiagInvalid
 )
+
+type AddressMap map[string]interface{}
+
+var addrMap AddressMap = AddressMap{}
+
+var deployMap map[string]cty.Value = make(map[string]cty.Value)
+
+
+func (m AddressMap) add(key string,value interface{}) bool{
+	if _,exists :=m[key]; exists {
+		return true
+	}
+	m[key] = value
+	return false
+}
+
 
 func createContext() *hcl.EvalContext {
 	vals := variables.getMapValues()
