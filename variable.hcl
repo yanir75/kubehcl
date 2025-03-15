@@ -36,12 +36,12 @@ t = "test"
 
 resource "g" {
 
-    dynamic "b" {
-        for_each = ["ta","test"]
-        content {
-            test = "tesafdsaf"
-        }
-    }
+    # dynamic "b" {
+    #     for_each = ["ta","test"]
+    #     content {
+    #         test = "tesafdsaf"
+    #     }
+    # }
     
 }
 # resource "t" {
