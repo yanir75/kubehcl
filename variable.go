@@ -38,34 +38,48 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func (varList VariableList) getMapValues() (map[string]cty.Value,hcl.Diagnostics) {
-	vals := make(map[string]cty.Value)
-	vars := make(map[string]cty.Value)
+func (v *Variable) decode() (*DecodedVariable,hcl.Diagnostics){
 	var diags hcl.Diagnostics
-	for _, variable := range varList {
-		val, valDiags := variable.Default.Value(nil)
-		diags = append(diags, valDiags...)
+	dV := &DecodedVariable {
+		Name: v.Name,
+		Description: v.Description,
+		Type: v.Type,
+		DeclRange: v.DeclRange,
+	}
+	val, valDiags := v.Default.Value(nil)
+	diags = append(diags, valDiags...)
+	
+	if v.Type != cty.NilType {
+		var err error
+		val, err = convert.Convert(val, v.Type)
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid default value for variable",
+				Detail:   fmt.Sprintf("This default value is not compatible with the variable's type constraint: %s.", err),
+				Subject:  v.Default.Range().Ptr(),
+			})
+			val = cty.DynamicVal
+		}
+	}
+	dV.Default = val
 
-		if variable.Type != cty.NilType {
-			var err error
-			val, err = convert.Convert(val, variable.Type)
-			if err != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Invalid default value for variable",
-					Detail:   fmt.Sprintf("This default value is not compatible with the variable's type constraint: %s.", err),
-					Subject:  variable.Default.Range().Ptr(),
-				})
-				val = cty.DynamicVal
-			}
-	}
-		vals[variable.Name] = val
-	}
-	vars["var"] = cty.ObjectVal(vals)
-	return vars,diags
+	return dV,diags
 }
 
-func decodeVariableBlocks(blocks hcl.Blocks) (VariableList,hcl.Diagnostics) {
+func (v VariableList) decode() (DecodedVariableList,hcl.Diagnostics){
+	var dVars DecodedVariableList
+	var diags hcl.Diagnostics
+	for _,variable := range v{
+		dV,varDiags := variable.decode()
+		diags = append(diags, varDiags...)
+		dVars = append(dVars, dV)
+	}
+
+	return dVars,diags
+}
+
+func decodeVariableBlocks(blocks hcl.Blocks,addrMap AddressMap) (VariableList,hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
 	var variables VariableList 

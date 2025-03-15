@@ -17,9 +17,6 @@ const (
 
 type AddressMap map[string]interface{}
 
-var addrMap AddressMap = AddressMap{}
-
-var deployMap map[string]cty.Value = make(map[string]cty.Value)
 
 
 func (m AddressMap) add(key string,value interface{}) bool{
@@ -31,12 +28,9 @@ func (m AddressMap) add(key string,value interface{}) bool{
 }
 
 
-func createContext(variables VariableList,locals Locals) (*hcl.EvalContext,hcl.Diagnostics) {
+func createContext(variables DecodedVariableList,locals DecodedLocals) (*hcl.EvalContext,hcl.Diagnostics) {
 	variableMap,diags := variables.getMapValues()
-	localMap := locals.getMapValues(&hcl.EvalContext{
-		Variables: variableMap,
-		Functions: makeBaseFunctionTable("./"),
-	})
+	localMap := locals.getMapValues()
 	maps.Copy(variableMap, localMap)
 	// fmt.Printf("%s",vals["var"].AsValueMap())
 	return &hcl.EvalContext{

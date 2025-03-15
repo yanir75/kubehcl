@@ -4,9 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/convert"
 	"kubehcl.sh/kubehcl/internal/addrs"
 
 	// "kubehcl.sh/kubehcl/internal/dag"
@@ -27,17 +24,29 @@ func decodeDependsOn(attr *hcl.Attribute) ([]hcl.Traversal, hcl.Diagnostics) {
 	return ret, diags
 }
 type Resource struct {
-	Name      string
-	ForEach   hcl.Expression
-	Count     hcl.Expression
-	DependsOn []hcl.Traversal
-	DeclRange hcl.Range
-	Config      hcl.Body
+	deployable
 }
 
 type ResourceList []*Resource
 
+func (r ResourceList) decode(ctx *hcl.EvalContext) (DecodedResourceList,hcl.Diagnostics){
+	var dR DecodedResourceList
+	var diags hcl.Diagnostics
+	for _,variable := range r{
+		dV,varDiags := variable.decode(ctx)
+		diags = append(diags, varDiags...)
+		dR = append(dR, dV)
+	}
 
+	return dR,diags
+}
+
+func (r *Resource) decode(ctx *hcl.EvalContext) (*DecodedResource,hcl.Diagnostics){
+	deployable,diags :=r.deployable.decode(ctx)
+	res := &DecodedResource{DecodedDeployable: *deployable,}
+
+	return res,diags
+}
 
 var inputResourceBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
@@ -56,10 +65,13 @@ var inputResourceBlockSchema = &hcl.BodySchema{
 
 func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 	var resource *Resource = &Resource{
-		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
+		// Name:      block.Labels[0],
+		// DeclRange: block.DefRange,
 	}
-
+	
+	resource.Name =  block.Labels[0]
+	resource.DeclRange = block.DefRange
+	resource.Type = addrs.RType
 	content, remain, diags := block.Body.PartialContent(inputResourceBlockSchema)
 	resource.Config = remain
 	if attr, exists := content.Attributes["count"]; exists {
@@ -86,6 +98,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 				Subject:  &attr.NameRange,
 				Context:  &content.Attributes["count"].NameRange,
 			})
+		}
 		resource.ForEach = attr.Expr
 		// val, varDiags := attr.Expr.Value(ctx)
 		// diags = append(diags, varDiags...)
@@ -105,7 +118,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 		// 	})
 		// }
 		// resource.ForEach = val
-		}
+		
 	}
 
 	if attr, exists := content.Attributes["depends_on"]; exists {
@@ -118,7 +131,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 
 }
 
-func decodeResourceBlocks(blocks hcl.Blocks) (ResourceList,hcl.Diagnostics) {
+func decodeResourceBlocks(blocks hcl.Blocks,addrMap AddressMap) (ResourceList,hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resourceList ResourceList
 	for _, block := range blocks {
@@ -147,77 +160,6 @@ func (r Resource) addr() addrs.Resource{
 	}
 }
 
-func decodeUnknownBody(ctx *hcl.EvalContext,body *hclsyntax.Body) (cty.Value,hcl.Diagnostics){
-	var diags hcl.Diagnostics
-	attrMap := make(map[string]cty.Value)
-	if len(body.Blocks) > 0{
-		for _,block := range body.Blocks {
-			m,blockDiags :=decodeUnknownBody(ctx,block.Body)
-			diags = append(diags, blockDiags...)
-			attrMap[block.Type] = m
-		}
-	}
-	for _,attr := range body.Attributes {
-		val,attrDiags :=attr.Expr.Value(ctx)
-		diags = append(diags, attrDiags...)
-
-		attrMap[attr.Name] = val
-	}
-	return cty.ObjectVal(attrMap),diags
-}
-
-
-
-func (r *Resource) decodeResource(ctx *hcl.EvalContext) hcl.Diagnostics{
-	var diags hcl.Diagnostics
-	body, ok := r.Config.(*hclsyntax.Body)
-
-	if !ok {
-		panic("should always be ok")
-	}
-	for _,attrS:= range inputResourceBlockSchema.Attributes{
-			delete(body.Attributes,attrS.Name)
-	}
-	if r.Count != nil{
-		count,countDiags := decodeCountExpr(ctx,r.Count)
-		diags = append(diags, countDiags...)
-		for i :=cty.NumberIntVal(1); i.LessThanOrEqualTo(count) == cty.True; i=i.Add(cty.NumberIntVal(1)) {
-			ctx.Variables["count"] = cty.ObjectVal(map[string]cty.Value{ "index" : i})
-			Attributes,countDiags := decodeUnknownBody(ctx,body)
-			diags = append(diags, countDiags...)
-			val, err := convert.Convert(i,cty.String)
-			if err != nil {
-				panic("Always can convert int")
-			}
-			deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),val.AsString())] = Attributes
-
-		}
-	} else if r.ForEach != nil{
-		forEach,forEachDiags := decodeCountExpr(ctx,r.Count)
-		diags = append(diags, forEachDiags...)
-		ty:= forEach.Type()
-		if ty.IsMapType() || ty.IsObjectType(){
-			for key,val := range forEach.AsValueMap(){
-				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{ "key" : cty.StringVal(key),"value": val})
-				Attributes,forEachDiags := decodeUnknownBody(ctx,body)
-				diags = append(diags, forEachDiags...)
-				deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),key)] = Attributes
-			}
-		} else{
-			for _,val := range forEach.AsValueSet().Values(){
-				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{ "key" : val,"value": val})
-				Attributes,forEachDiags := decodeUnknownBody(ctx,body)
-				diags = append(diags, forEachDiags...)
-				deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),val.AsString())] = Attributes
-			}
-		}
-	} else {
-		Attributes,regDiags := decodeUnknownBody(ctx,body)
-		diags = append(diags, regDiags...)
-		deployMap[r.addr().String()] = Attributes
-	}
-	return diags
-}
 	// // for _,block := range body.Blocks {
 	// // 	block.
 	// // }

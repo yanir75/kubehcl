@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
 )
 
@@ -26,19 +25,42 @@ func (l *Local) addr() addrs.Local{
 
 // }
 
-func (locals Locals) getMapValues(ctx *hcl.EvalContext) map[string]cty.Value {
-	vals := make(map[string]cty.Value)
-	vars := make(map[string]cty.Value)
-	var diags hcl.Diagnostics
-
-	for _, local := range locals {
-		value, valDiag := local.Value.Value(ctx)
-		diags = append(diags, valDiag...)
-		vals[local.Name] = value
+func (l *Local) decode(ctx *hcl.EvalContext) (*DecodedLocal,hcl.Diagnostics){
+	dL := &DecodedLocal{
+		Name: l.Name,
+		DeclRange: l.DeclRange,
 	}
-	vars["local"] = cty.ObjectVal(vals)
-	return vars
+	value, diags := l.Value.Value(ctx)
+
+	dL.Value = value
+	return dL,diags
 }
+
+func (v Locals) decode(ctx *hcl.EvalContext) (DecodedLocals,hcl.Diagnostics){
+	var dVars DecodedLocals
+	var diags hcl.Diagnostics
+	for _,variable := range v{
+		dV,varDiags := variable.decode(ctx)
+		diags = append(diags, varDiags...)
+		dVars = append(dVars, dV)
+	}
+
+	return dVars,diags
+}
+
+// func (locals Locals) getMapValues(ctx *hcl.EvalContext) map[string]cty.Value {
+// 	vals := make(map[string]cty.Value)
+// 	vars := make(map[string]cty.Value)
+// 	var diags hcl.Diagnostics
+
+// 	for _, local := range locals {
+// 		value, valDiag := local.Value.Value(ctx)
+// 		diags = append(diags, valDiag...)
+// 		vals[local.Name] = value
+// 	}
+// 	vars["local"] = cty.ObjectVal(vals)
+// 	return vars
+// }
 
 func decodeLocalsBlock(block *hcl.Block) (Locals,hcl.Diagnostics) {
 	var locals Locals
@@ -55,7 +77,7 @@ func decodeLocalsBlock(block *hcl.Block) (Locals,hcl.Diagnostics) {
 	return locals,diags
 }
 
-func decodeLocalsBlocks(ctx *hcl.EvalContext,blocks hcl.Blocks) (Locals,hcl.Diagnostics) {
+func decodeLocalsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Locals,hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var locals Locals
 

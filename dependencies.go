@@ -1,51 +1,94 @@
 package main
 
-// import (
-// 	"fmt"
+import (
+	// "fmt"
 
-// 	"github.com/hashicorp/hcl/v2"
-// 	"kubehcl.sh/kubehcl/internal/addrs"
-// 	"kubehcl.sh/kubehcl/internal/dag"
-// )
+	// "github.com/hashicorp/hcl/v2"
+	// "kubehcl.sh/kubehcl/internal/addrs"
+	"fmt"
 
-// type Graph struct {
-// 	dag.AcyclicGraph
-// 	Resources ResourceList
-// }
+	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/dag"
+)
 
-// type rangeName struct {
-// 	Name string
-// 	Range hcl.Range
-// }
-// const rootNodeName = "root"
-// var rootNode graphNodeRoot
-// type graphNodeRoot struct{}
+type Graph struct {
+	dag.AcyclicGraph
+	decodedModule *DecodedModule
+}
 
-// func (n graphNodeRoot) Name() string {
-// 	return rootNodeName
-// }
-// func addRootNodeToGraph(g *Graph) {
-// 	// We always add the root node. This is a singleton so if it's already
-// 	// in the graph this will do nothing and just retain the existing root node.
-// 	//
-// 	// Note that rootNode is intentionally added by value and not by pointer
-// 	// so that all root nodes will be equal to one another and therefore
-// 	// coalesce when two valid graphs get merged together into a single graph.
-// 	g.Add(rootNode)
 
-// 	// Everything that doesn't already depend on at least one other node will
-// 	// depend on the root node, except the root node itself.
-// 	for _, v := range g.Vertices() {
-// 		if v == dag.Vertex(rootNode) {
-// 			continue
-// 		}
+const rootNodeName = "root"
+var rootNode graphNodeRoot
+type graphNodeRoot struct{}
 
-// 		if g.UpEdges(v).Len() == 0 {
-// 			g.Connect(dag.BasicEdge(rootNode, v))
-// 		}
-// 	}
-// }
+func (n graphNodeRoot) Name() string {
+	return rootNodeName
+}
+func addRootNodeToGraph(g *Graph) {
+	// We always add the root node. This is a singleton so if it's already
+	// in the graph this will do nothing and just retain the existing root node.
+	//
+	// Note that rootNode is intentionally added by value and not by pointer
+	// so that all root nodes will be equal to one another and therefore
+	// coalesce when two valid graphs get merged together into a single graph.
+	g.Add(rootNode)
 
+	// Everything that doesn't already depend on at least one other node will
+	// depend on the root node, except the root node itself.
+	for _, v := range g.Vertices() {
+		if v == dag.Vertex(rootNode) {
+			continue
+		}
+
+		if g.UpEdges(v).Len() == 0 {
+			g.Connect(dag.BasicEdge(rootNode, v))
+		}
+	}
+}
+
+func getResourceNames(m *DecodedModule) DecodedResourceList {
+	return getResourceName(m,DecodedResourceList{},"")
+}
+
+func getResourceName(m *DecodedModule,rList DecodedResourceList,currentName string) DecodedResourceList {
+	for _,r := range m.Resources {
+		r.Name = currentName + r.addr().String()
+		rList = append(rList,r)
+	}
+	
+	for _,mod := range m.Modules {
+		rList = append(rList,getResourceName(mod,DecodedResourceList{},currentName+"module."+mod.Name+".")...)
+	}
+	return rList
+}
+
+func (g *Graph) Init() hcl.Diagnostics{
+	var diags hcl.Diagnostics
+	rList :=getResourceNames(g.decodedModule)
+	// for _,r := range rList {
+	// 	// fmt.Printf("%s\n",r.Name)
+	// }
+	for _,r := range rList {
+		if g.HasVertex(r) {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Resources must have different names",
+				Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
+				Subject:  &r.DeclRange,
+				// Context: names[variable.Name],
+			})
+		}
+		g.Add(
+				r,
+			)
+	}
+
+	
+
+
+
+	return diags
+}
 // func (g *Graph) Init() hcl.Diagnostics {
 // 	var diags hcl.Diagnostics
 // 	for _, r := range resourceList {
@@ -53,15 +96,15 @@ package main
 // 		// 	Name:         r.Name,
 // 		// 	ResourceMode: addrs.RMode,
 // 		// }
-// 		if g.HasVertex(r) {
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "Resources must have different names",
-// 				Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
-// 				Subject:  &r.DeclRange,
-// 				// Context: names[variable.Name],
-// 			})
-// 		}
+		// if g.HasVertex(r) {
+		// 	diags = append(diags, &hcl.Diagnostic{
+		// 		Severity: hcl.DiagError,
+		// 		Summary:  "Resources must have different names",
+		// 		Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
+		// 		Subject:  &r.DeclRange,
+		// 		// Context: names[variable.Name],
+		// 	})
+		// }
 
 // 		g.Add(
 // 			r,

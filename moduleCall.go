@@ -4,24 +4,59 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
-
 	// "kubehcl.sh/kubehcl/internal/dag"
 )
 
 type ModuleCall struct {
-	Name      string
+	deployable
 	Source hcl.Expression
-	ForEach   hcl.Expression
-	Count    hcl.Expression
-	DependsOn []hcl.Traversal
-	DeclRange hcl.Range
-	Config      hcl.Body
 }
 
 type ModuleCallList []*ModuleCall
 
+func (m *ModuleCall) decodeSource (ctx *hcl.EvalContext) (string,hcl.Diagnostics){
+	var diags hcl.Diagnostics
+	val,valDdiags := m.Source.Value(ctx)
+	diags = append(diags, valDdiags...)
+	if val.Type() != cty.String {
+		diags = append(diags,&hcl.Diagnostic{
+			Severity:    hcl.DiagError,
+			Summary:     "Source must be string",
+			Detail:      fmt.Sprintf("Required string and you entered type %s",val.Type().FriendlyName()),
+			Subject:     m.Source.Range().Ptr(),
+			Expression:  m.Source,
+			EvalContext: ctx,
+		})
+	} 
+	return val.AsString(),diags
+}
 
+func (r ModuleCallList) decode(ctx *hcl.EvalContext) (DecodedModuleCallList,hcl.Diagnostics){
+	var dR DecodedModuleCallList
+	var diags hcl.Diagnostics
+	for _,variable := range r{
+		dV,varDiags := variable.decode(ctx)
+		diags = append(diags, varDiags...)
+		dR = append(dR, dV)
+	}
+
+	return dR,diags
+}
+
+func (r *ModuleCall) decode(ctx *hcl.EvalContext) (*DecodedModuleCall,hcl.Diagnostics){
+	deployable,diags := r.deployable.decode(ctx)
+	source,sourceDiags := r.decodeSource(ctx)
+	diags = append(diags, sourceDiags...)
+	dM := &DecodedModuleCall{
+		Source: source,
+		DecodedDeployable: *deployable,
+	
+	}
+
+	return dM,diags
+}
 
 var inputModuleBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
@@ -45,9 +80,12 @@ var inputModuleBlockSchema = &hcl.BodySchema{
 
 func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 	var Module *ModuleCall = &ModuleCall{
-		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
+		// Name:      block.Labels[0],
+		// DeclRange: block.DefRange,
 	}
+	Module.Name = block.Labels[0]
+	Module.DeclRange = block.DefRange
+	Module.Type = addrs.MType
 
 	content, remain, diags := block.Body.PartialContent(inputModuleBlockSchema)
 	Module.Config = remain
@@ -111,7 +149,7 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 }
 
-func decodeModuleBlocks(blocks hcl.Blocks) (ModuleCallList,hcl.Diagnostics) {
+func decodeModuleBlocks(blocks hcl.Blocks,addrMap AddressMap) (ModuleCallList,hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var moduleList ModuleCallList
 	for _, block := range blocks {

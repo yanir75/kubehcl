@@ -34,33 +34,42 @@ t = "test"
 #     depends_on = [resource.t]
 # }
 
+resource "g" {
 
-resource "t" {
-    for_each = var.bla
-    po = each.key
-    bla = each.value
-    # depends_on = [resource.a]
-}
-
-resource "a" {
-    count = 2
-    # spec {
-    #     t = "testing"
-    #     i = "bla"
-    # }
-    test = count.index
-}
-
-resource "b" {
-    spec {
-        t = "testing"
-        i = "kjh"
-        agsda {
-            fgfhghgf = "tzdsssgest"
+    dynamic "b" {
+        for_each = ["ta","test"]
+        content {
+            test = "tesafdsaf"
         }
     }
-    test = "bla"
+    
 }
+# resource "t" {
+#     for_each = var.bla
+#     po = each.key
+#     bla = each.value
+#     # depends_on = [resource.a]
+# }
+
+# resource "a" {
+#     count = 2
+#     # spec {
+#     #     t = "testing"
+#     #     i = "bla"
+#     # }
+#     test = count.index
+# }
+
+# resource "b" {
+#     spec {
+#         t = "testing"
+#         i = "kjh"
+#         agsda {
+#             fgfhghgf = "tzdsssgest"
+#         }
+#     }
+#     test = "bla"
+# }
 
 
 module "test" {

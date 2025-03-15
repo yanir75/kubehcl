@@ -23,6 +23,30 @@ func (d *Annotation) addr() addrs.DefaultAnnotation{
 	}
 }
 
+func (l *Annotation) decode(ctx *hcl.EvalContext) (*DecodedAnnotation,hcl.Diagnostics){
+	dA := &DecodedAnnotation{
+		Name: l.Name,
+		DeclRange: l.DeclRange,
+	}
+	value, diags := l.Value.Value(ctx)
+
+	dA.Value = value
+	return dA,diags
+}
+
+func (v Annotations) decode(ctx *hcl.EvalContext) (DecodedAnnotations,hcl.Diagnostics){
+	var dVars DecodedAnnotations
+	var diags hcl.Diagnostics
+	for _,variable := range v{
+		dV,varDiags := variable.decode(ctx)
+		diags = append(diags, varDiags...)
+		dVars = append(dVars, dV)
+	}
+
+	return dVars,diags
+}
+
+
 func decodeAnnotationsBlock(block *hcl.Block) (Annotations,hcl.Diagnostics) {
 	attrs, diags := block.Body.JustAttributes()
 	// names := make(map[string]bool)
@@ -61,7 +85,7 @@ func decodeAnnotationsBlock(block *hcl.Block) (Annotations,hcl.Diagnostics) {
 	return annotaions,diags
 }
 
-func decodeAnnotationsBlocks(blocks hcl.Blocks) (Annotations,hcl.Diagnostics) {
+func decodeAnnotationsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Annotations,hcl.Diagnostics) {
 	var annotations Annotations
 	var diags hcl.Diagnostics
 	for _, block := range blocks {
