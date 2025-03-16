@@ -49,7 +49,7 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 	}
 	val, valDiags := v.Default.Value(nil)
 	diags = append(diags, valDiags...)
-
+	
 	if v.Type != cty.NilType {
 		var err error
 		val, err = convert.Convert(val, v.Type)
@@ -112,9 +112,6 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	}
 
 	content, diags := block.Body.Content(inputVariableBlockSchema)
-	if diags.HasErrors() {
-		return nil, diags
-	}
 
 	// if len(content.Blocks) > 0 {
 	// 	diags = append(diags,&hcl.Diagnostic{

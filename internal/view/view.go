@@ -175,7 +175,7 @@ func (v *View) HelpPrompt(command string) {
 
 const helpPrompt = `
 For more help on using this command, run:
-  tofu %s -help
+  kubehcl %s -help
 `
 
 // outputColumns returns the number of text character cells any non-error

@@ -35,7 +35,7 @@ t = "test"
 # }
 
 resource "g" {
-    # testing = var.asdf
+    # for_each = ["test","asdf"]
     dynamic "b" {
         for_each = ["ta","test"]
         content {
