@@ -7,7 +7,7 @@ package addrs
 
 type Resource struct {
 	referenceable
-	Name string
+	Name         string
 	ResourceMode string
 }
 
@@ -22,7 +22,7 @@ func (r Resource) String() string {
 		return "module.resource." + r.Name
 	case RMode:
 		return "resource." + r.Name
-	
+
 	default:
 		panic("Can't reach here")
 	}
@@ -32,11 +32,11 @@ func (r Resource) UniqueKey() UniqueKey {
 	return r
 }
 
-func (r Resource) Equals(o Resource) bool{
+func (r Resource) Equals(o Resource) bool {
 	return r.String() == o.String()
 }
 
 const (
 	InModule = "I"
-	RMode = "R"
+	RMode    = "R"
 )

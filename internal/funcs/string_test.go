@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"testing"
 
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 func TestReplace(t *testing.T) {

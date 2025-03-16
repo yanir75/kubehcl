@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 func TestRenderTemplate(t *testing.T) {

@@ -1,4 +1,4 @@
-package main
+package decode
 
 import (
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
@@ -8,6 +8,12 @@ import (
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 	"kubehcl.sh/kubehcl/internal/funcs"
 )
+
+var impureFunctions = []string{
+	"bcrypt",
+	"timestamp",
+	"uuid",
+}
 
 func makeBaseFunctionTable(baseDir string) map[string]function.Function {
 	// Some of our functions are just directly the cty stdlib functions.

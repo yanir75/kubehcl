@@ -21,7 +21,7 @@ func (d Deployable) String() string {
 	case RType:
 		return "resource." + d.Name
 	case MType:
-		return "module." +d.Name
+		return "module." + d.Name
 	default:
 		panic("shouldn't get here")
 	}

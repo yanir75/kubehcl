@@ -17,18 +17,18 @@ func (m ModuleCall) uniqueKeySigil() {
 }
 
 func (m ModuleCall) String() string {
-	return "module."+m.Name
+	return "module." + m.Name
 }
 
 func (m ModuleCall) UniqueKey() UniqueKey {
 	return m
 }
 
-func (m ModuleCall) Equals(o ModuleCall) bool{
+func (m ModuleCall) Equals(o ModuleCall) bool {
 	return m.String() == o.String()
 }
+
 const (
-	mLocal = "l"
+	mLocal  = "l"
 	mRemote = "r"
 )
-

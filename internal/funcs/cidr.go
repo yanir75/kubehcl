@@ -10,10 +10,10 @@ import (
 	"math/big"
 
 	"github.com/apparentlymart/go-cidr/cidr"
-	"kubehcl.sh/kubehcl/internal/ipaddr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/gocty"
+	"kubehcl.sh/kubehcl/internal/ipaddr"
 )
 
 // CidrHostFunc constructs a function that calculates a full host IP address

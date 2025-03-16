@@ -36,6 +36,9 @@ t = "test"
 
 resource "g" {
 
+    test {
+        key = "bla"
+    }
     # dynamic "b" {
     #     for_each = ["ta","test"]
     #     content {
@@ -72,6 +75,6 @@ resource "g" {
 # }
 
 
-module "test" {
-    source = "./test"
-}
+# module "test" {
+#     source = "./test"
+# }

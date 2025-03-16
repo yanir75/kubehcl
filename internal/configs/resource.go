@@ -1,11 +1,11 @@
-package main
+package configs
 
 import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
 	"kubehcl.sh/kubehcl/internal/addrs"
-
+	"kubehcl.sh/kubehcl/internal/decode"
 	// "kubehcl.sh/kubehcl/internal/dag"
 )
 
@@ -23,41 +23,42 @@ func decodeDependsOn(attr *hcl.Attribute) ([]hcl.Traversal, hcl.Diagnostics) {
 
 	return ret, diags
 }
+
 type Resource struct {
-	deployable
+	decode.Deployable
 }
 
 type ResourceList []*Resource
 
-func (r ResourceList) decode(ctx *hcl.EvalContext) (DecodedResourceList,hcl.Diagnostics){
-	var dR DecodedResourceList
+func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceList, hcl.Diagnostics) {
+	var dR decode.DecodedResourceList
 	var diags hcl.Diagnostics
-	for _,variable := range r{
-		dV,varDiags := variable.decode(ctx)
+	for _, variable := range r {
+		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
 		dR = append(dR, dV)
 	}
 
-	return dR,diags
+	return dR, diags
 }
 
-func (r *Resource) decode(ctx *hcl.EvalContext) (*DecodedResource,hcl.Diagnostics){
-	deployable,diags :=r.deployable.decode(ctx)
-	res := &DecodedResource{DecodedDeployable: *deployable,}
+func (r *Resource) decode(ctx *hcl.EvalContext) (*decode.DecodedResource, hcl.Diagnostics) {
+	deployable, diags := r.Deployable.Decode(ctx)
+	res := &decode.DecodedResource{DecodedDeployable: *deployable}
 
-	return res,diags
+	return res, diags
 }
 
 var inputResourceBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
-			Name: "for_each", 
+			Name: "for_each",
 		},
 		{
-			Name: "count", 
+			Name: "count",
 		},
 		{
-			Name: "depends_on", 
+			Name: "depends_on",
 		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{},
@@ -67,9 +68,10 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 	var resource *Resource = &Resource{
 		// Name:      block.Labels[0],
 		// DeclRange: block.DefRange,
-	}
 	
-	resource.Name =  block.Labels[0]
+	}
+
+	resource.Name = block.Labels[0]
 	resource.DeclRange = block.DefRange
 	resource.Type = addrs.RType
 	content, remain, diags := block.Body.PartialContent(inputResourceBlockSchema)
@@ -78,19 +80,19 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 		// val, varDiags := attr.Expr.Value(ctx)
 		// diags = append(diags, varDiags...)
 		// if count, err := convert.Convert(val, cty.Number); err != nil {
-			// diags = append(diags, &hcl.Diagnostic{
-				// Severity: hcl.DiagError,
-				// Summary:  `Cannot convert value to int`,
-				// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
-				// Subject:  &attr.NameRange,
-			// })
+		// diags = append(diags, &hcl.Diagnostic{
+		// Severity: hcl.DiagError,
+		// Summary:  `Cannot convert value to int`,
+		// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
+		// Subject:  &attr.NameRange,
+		// })
 		// } else {
-			// resource.Count = count
+		// resource.Count = count
 		// }
 		resource.Count = attr.Expr
 	}
 	if attr, exists := content.Attributes["for_each"]; exists {
-		if _, countExists :=  content.Attributes["count"]; countExists {
+		if _, countExists := content.Attributes["count"]; countExists {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  `Invalid combination of "count" and "for_each"`,
@@ -118,7 +120,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 		// 	})
 		// }
 		// resource.ForEach = val
-		
+
 	}
 
 	if attr, exists := content.Attributes["depends_on"]; exists {
@@ -131,14 +133,14 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 
 }
 
-func decodeResourceBlocks(blocks hcl.Blocks,addrMap AddressMap) (ResourceList,hcl.Diagnostics) {
+func DecodeResourceBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resourceList ResourceList
 	for _, block := range blocks {
 		resource, rDiags := decodeResourceBlock(block)
 		diags = append(diags, rDiags...)
 		resourceList = append(resourceList, resource)
-		if addrMap.add(resource.addr().String(),resource) {
+		if addrMap.Add(resource.addr().String(), resource) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Resources must have different names",
@@ -149,17 +151,16 @@ func decodeResourceBlocks(blocks hcl.Blocks,addrMap AddressMap) (ResourceList,hc
 		}
 	}
 
-	return resourceList,diags
+	return resourceList, diags
 }
 
-
-func (r Resource) addr() addrs.Resource{
+func (r Resource) addr() addrs.Resource {
 	return addrs.Resource{
-		Name: r.Name,
+		Name:         r.Name,
 		ResourceMode: addrs.RMode,
 	}
 }
 
-	// // for _,block := range body.Blocks {
-	// // 	block.
-	// // }
+// // for _,block := range body.Blocks {
+// // 	block.
+// // }

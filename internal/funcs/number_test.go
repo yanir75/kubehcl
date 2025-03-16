@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"testing"
 
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 func TestLog(t *testing.T) {

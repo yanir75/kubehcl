@@ -1,19 +1,20 @@
-package main
+package decode
 
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
 )
+
 type DecodedDeployable struct {
-	Name  string
-	Config      map[string]cty.Value
-	Type string
+	Name      string
+	Config    map[string]cty.Value
+	Type      string
 	DependsOn []hcl.Traversal
 	DeclRange hcl.Range
 }
 
-func (d *DecodedDeployable) addr() addrs.Deployable{
+func (d *DecodedDeployable) Addr() addrs.Deployable {
 	return addrs.Deployable{
 		Type: d.Type,
 		Name: d.Name,
@@ -57,19 +58,30 @@ type DecodedModuleCall struct {
 	Source string
 }
 
+type DecodedModule struct {
+	Name        string
+	Inputs      DecodedVariableList
+	Locals      DecodedLocals
+	Annotations DecodedAnnotations
+	Resources   DecodedResourceList
+	ModuleCalls DecodedModuleCallList
+	Modules     DecodedModuleList
+	Depth       int
+}
+
+type DecodedModuleList []*DecodedModule
 
 type DecodedModuleCallList []*DecodedModuleCall
 
-
-func (varList DecodedVariableList) getMapValues() (map[string]cty.Value,hcl.Diagnostics) {
+func (varList DecodedVariableList) getMapValues() (map[string]cty.Value, hcl.Diagnostics) {
 	vals := make(map[string]cty.Value)
 	vars := make(map[string]cty.Value)
 	var diags hcl.Diagnostics
-	for _,variable := range varList {
+	for _, variable := range varList {
 		vals[variable.Name] = variable.Default
 	}
 	vars["var"] = cty.ObjectVal(vals)
-	return vars,diags
+	return vars, diags
 }
 
 func (locals DecodedLocals) getMapValues() map[string]cty.Value {

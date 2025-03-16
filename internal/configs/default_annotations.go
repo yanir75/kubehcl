@@ -1,10 +1,11 @@
-package main
+package configs
 
 import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
 	"kubehcl.sh/kubehcl/internal/addrs"
+	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 type Annotation struct {
@@ -17,51 +18,50 @@ type Annotations []*Annotation
 
 // var annotaions Annotations
 
-func (d *Annotation) addr() addrs.DefaultAnnotation{
+func (d *Annotation) addr() addrs.DefaultAnnotation {
 	return addrs.DefaultAnnotation{
 		Name: d.Name,
 	}
 }
 
-func (l *Annotation) decode(ctx *hcl.EvalContext) (*DecodedAnnotation,hcl.Diagnostics){
-	dA := &DecodedAnnotation{
-		Name: l.Name,
+func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hcl.Diagnostics) {
+	dA := &decode.DecodedAnnotation{
+		Name:      l.Name,
 		DeclRange: l.DeclRange,
 	}
 	value, diags := l.Value.Value(ctx)
 
 	dA.Value = value
-	return dA,diags
+	return dA, diags
 }
 
-func (v Annotations) decode(ctx *hcl.EvalContext) (DecodedAnnotations,hcl.Diagnostics){
-	var dVars DecodedAnnotations
+func (v Annotations) Decode(ctx *hcl.EvalContext) (decode.DecodedAnnotations, hcl.Diagnostics) {
+	var dVars decode.DecodedAnnotations
 	var diags hcl.Diagnostics
-	for _,variable := range v{
-		dV,varDiags := variable.decode(ctx)
+	for _, variable := range v {
+		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
 		dVars = append(dVars, dV)
 	}
 
-	return dVars,diags
+	return dVars, diags
 }
 
-
-func decodeAnnotationsBlock(block *hcl.Block) (Annotations,hcl.Diagnostics) {
+func decodeAnnotationsBlock(block *hcl.Block) (Annotations, hcl.Diagnostics) {
 	attrs, diags := block.Body.JustAttributes()
 	// names := make(map[string]bool)
 	var annotaions Annotations
 
 	for _, attr := range attrs {
-		
+
 		// value, valDiag := attr.Expr.Value(ctx)
 		// diags = append(diags, valDiag...)
 		// if val, err := convert.Convert(value, cty.String); err == nil {
-			annotaions = append(annotaions, &Annotation{
-				Name:      attr.Name,
-				Value:     attr.Expr,
-				DeclRange: attr.NameRange,
-			})
+		annotaions = append(annotaions, &Annotation{
+			Name:      attr.Name,
+			Value:     attr.Expr,
+			DeclRange: attr.NameRange,
+		})
 		// } else {
 		// 	diags = append(diags, &hcl.Diagnostic{
 		// 		Severity: hcl.DiagError,
@@ -82,19 +82,19 @@ func decodeAnnotationsBlock(block *hcl.Block) (Annotations,hcl.Diagnostics) {
 
 	}
 
-	return annotaions,diags
+	return annotaions, diags
 }
 
-func decodeAnnotationsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Annotations,hcl.Diagnostics) {
+func DecodeAnnotationsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Annotations, hcl.Diagnostics) {
 	var annotations Annotations
 	var diags hcl.Diagnostics
 	for _, block := range blocks {
-		annotaionsF,annotationsDiags := decodeAnnotationsBlock(block)
+		annotaionsF, annotationsDiags := decodeAnnotationsBlock(block)
 		diags = append(diags, annotationsDiags...)
 		annotations = append(annotations, annotaionsF...)
 	}
 	for _, annotation := range annotations {
-		if addrMap.add(annotation.addr().String(),annotation) {
+		if addrMap.Add(annotation.addr().String(), annotation) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Annotations must have different names",
@@ -103,5 +103,5 @@ func decodeAnnotationsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Annotations,
 			})
 		}
 	}
-	return annotations,diags
+	return annotations, diags
 }

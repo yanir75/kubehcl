@@ -1,4 +1,4 @@
-package main
+package configs
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	"kubehcl.sh/kubehcl/internal/addrs"
+	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 // var variables VariableList
@@ -19,12 +20,12 @@ type Variable struct {
 	Default     hcl.Expression
 	Type        cty.Type
 	DeclRange   hcl.Range
-	HasDefault    bool // for checking if needed request from the user
+	HasDefault  bool // for checking if needed request from the user
 }
 
 type VariableList []*Variable
 
-func (v *Variable) addr() addrs.Variable{
+func (v *Variable) addr() addrs.Variable {
 	return addrs.Variable{
 		Name: v.Name,
 	}
@@ -38,17 +39,17 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func (v *Variable) decode() (*DecodedVariable,hcl.Diagnostics){
+func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	dV := &DecodedVariable {
-		Name: v.Name,
+	dV := &decode.DecodedVariable{
+		Name:        v.Name,
 		Description: v.Description,
-		Type: v.Type,
-		DeclRange: v.DeclRange,
+		Type:        v.Type,
+		DeclRange:   v.DeclRange,
 	}
 	val, valDiags := v.Default.Value(nil)
 	diags = append(diags, valDiags...)
-	
+
 	if v.Type != cty.NilType {
 		var err error
 		val, err = convert.Convert(val, v.Type)
@@ -64,31 +65,31 @@ func (v *Variable) decode() (*DecodedVariable,hcl.Diagnostics){
 	}
 	dV.Default = val
 
-	return dV,diags
+	return dV, diags
 }
 
-func (v VariableList) decode() (DecodedVariableList,hcl.Diagnostics){
-	var dVars DecodedVariableList
+func (v VariableList) Decode() (decode.DecodedVariableList, hcl.Diagnostics) {
+	var dVars decode.DecodedVariableList
 	var diags hcl.Diagnostics
-	for _,variable := range v{
-		dV,varDiags := variable.decode()
+	for _, variable := range v {
+		dV, varDiags := variable.decode()
 		diags = append(diags, varDiags...)
 		dVars = append(dVars, dV)
 	}
 
-	return dVars,diags
+	return dVars, diags
 }
 
-func decodeVariableBlocks(blocks hcl.Blocks,addrMap AddressMap) (VariableList,hcl.Diagnostics) {
+func DecodeVariableBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (VariableList, hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
-	var variables VariableList 
+	var variables VariableList
 	for _, block := range blocks {
 		variable, varDiags := decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
 		if variable != nil {
 			variables = append(variables, variable)
-			if addrMap.add(variable.addr().String(),variable) {
+			if addrMap.Add(variable.addr().String(), variable) {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Variables must have different names",
@@ -100,14 +101,14 @@ func decodeVariableBlocks(blocks hcl.Blocks,addrMap AddressMap) (VariableList,hc
 			}
 		}
 	}
-	return variables,diags
+	return variables, diags
 }
 
 func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	var variable *Variable = &Variable{
-		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
-		HasDefault:  false,
+		Name:       block.Labels[0],
+		DeclRange:  block.DefRange,
+		HasDefault: false,
 	}
 
 	content, diags := block.Body.Content(inputVariableBlockSchema)

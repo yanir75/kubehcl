@@ -8,11 +8,11 @@ package funcs
 import (
 	"strconv"
 
-	"kubehcl.sh/kubehcl/internal/lang/marks"
-	"kubehcl.sh/kubehcl/internal/lang/types"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	"github.com/zclconf/go-cty/cty/function"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
+	"kubehcl.sh/kubehcl/internal/lang/types"
 )
 
 // MakeToFunc constructs a "to..." function, like "tostring", which converts

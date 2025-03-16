@@ -10,8 +10,8 @@ import (
 	"math"
 	"testing"
 
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 func TestLength(t *testing.T) {

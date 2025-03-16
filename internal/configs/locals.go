@@ -1,10 +1,11 @@
-package main
+package configs
 
 import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
 	"kubehcl.sh/kubehcl/internal/addrs"
+	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 type Local struct {
@@ -15,37 +16,37 @@ type Local struct {
 
 type Locals []*Local
 
-
-func (l *Local) addr() addrs.Local{
+func (l *Local) addr() addrs.Local {
 	return addrs.Local{
 		Name: l.Name,
 	}
 }
+
 // var inputLocalsBlockSchema = &hcl.BodySchema{
 
 // }
 
-func (l *Local) decode(ctx *hcl.EvalContext) (*DecodedLocal,hcl.Diagnostics){
-	dL := &DecodedLocal{
-		Name: l.Name,
+func (l *Local) decode(ctx *hcl.EvalContext) (*decode.DecodedLocal, hcl.Diagnostics) {
+	dL := &decode.DecodedLocal{
+		Name:      l.Name,
 		DeclRange: l.DeclRange,
 	}
 	value, diags := l.Value.Value(ctx)
 
 	dL.Value = value
-	return dL,diags
+	return dL, diags
 }
 
-func (v Locals) decode(ctx *hcl.EvalContext) (DecodedLocals,hcl.Diagnostics){
-	var dVars DecodedLocals
+func (v Locals) Decode(ctx *hcl.EvalContext) (decode.DecodedLocals, hcl.Diagnostics) {
+	var dVars decode.DecodedLocals
 	var diags hcl.Diagnostics
-	for _,variable := range v{
-		dV,varDiags := variable.decode(ctx)
+	for _, variable := range v {
+		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
 		dVars = append(dVars, dV)
 	}
 
-	return dVars,diags
+	return dVars, diags
 }
 
 // func (locals Locals) getMapValues(ctx *hcl.EvalContext) map[string]cty.Value {
@@ -62,7 +63,7 @@ func (v Locals) decode(ctx *hcl.EvalContext) (DecodedLocals,hcl.Diagnostics){
 // 	return vars
 // }
 
-func decodeLocalsBlock(block *hcl.Block) (Locals,hcl.Diagnostics) {
+func decodeLocalsBlock(block *hcl.Block) (Locals, hcl.Diagnostics) {
 	var locals Locals
 	attrs, diags := block.Body.JustAttributes()
 	for _, attr := range attrs {
@@ -74,20 +75,20 @@ func decodeLocalsBlock(block *hcl.Block) (Locals,hcl.Diagnostics) {
 		locals = append(locals, local)
 	}
 
-	return locals,diags
+	return locals, diags
 }
 
-func decodeLocalsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Locals,hcl.Diagnostics) {
+func DecodeLocalsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Locals, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var locals Locals
 
 	for _, block := range blocks {
-		localsD,localDiags := decodeLocalsBlock(block)
+		localsD, localDiags := decodeLocalsBlock(block)
 		diags = append(diags, localDiags...)
 		locals = append(locals, localsD...)
 	}
 	for _, local := range locals {
-		if addrMap.add(local.addr().String(),local) {
+		if addrMap.Add(local.addr().String(), local) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Locals must have different names",
@@ -96,5 +97,5 @@ func decodeLocalsBlocks(blocks hcl.Blocks,addrMap AddressMap) (Locals,hcl.Diagno
 			})
 		}
 	}
-	return locals,diags
+	return locals, diags
 }

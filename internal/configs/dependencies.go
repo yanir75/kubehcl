@@ -1,4 +1,4 @@
-package main
+package configs
 
 import (
 	// "fmt"
@@ -9,16 +9,18 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"kubehcl.sh/kubehcl/internal/dag"
+	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 type Graph struct {
 	dag.AcyclicGraph
-	decodedModule *DecodedModule
+	DecodedModule *decode.DecodedModule
 }
 
-
 const rootNodeName = "root"
+
 var rootNode graphNodeRoot
+
 type graphNodeRoot struct{}
 
 func (n graphNodeRoot) Name() string {
@@ -46,29 +48,29 @@ func addRootNodeToGraph(g *Graph) {
 	}
 }
 
-func getResourceNames(m *DecodedModule) DecodedResourceList {
-	return getResourceName(m,DecodedResourceList{},"")
+func getResourceNames(m *decode.DecodedModule) decode.DecodedResourceList {
+	return getResourceName(m, decode.DecodedResourceList{}, "")
 }
 
-func getResourceName(m *DecodedModule,rList DecodedResourceList,currentName string) DecodedResourceList {
-	for _,r := range m.Resources {
-		r.Name = currentName + r.addr().String()
-		rList = append(rList,r)
+func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, currentName string) decode.DecodedResourceList {
+	for _, r := range m.Resources {
+		r.Name = currentName + r.Addr().String()
+		rList = append(rList, r)
 	}
-	
-	for _,mod := range m.Modules {
-		rList = append(rList,getResourceName(mod,DecodedResourceList{},currentName+"module."+mod.Name+".")...)
+
+	for _, mod := range m.Modules {
+		rList = append(rList, getResourceName(mod, decode.DecodedResourceList{}, currentName+"module."+mod.Name+".")...)
 	}
 	return rList
 }
 
-func (g *Graph) Init() hcl.Diagnostics{
+func (g *Graph) Init() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	rList :=getResourceNames(g.decodedModule)
+	rList := getResourceNames(g.DecodedModule)
 	// for _,r := range rList {
 	// 	// fmt.Printf("%s\n",r.Name)
 	// }
-	for _,r := range rList {
+	for _, r := range rList {
 		if g.HasVertex(r) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -79,16 +81,13 @@ func (g *Graph) Init() hcl.Diagnostics{
 			})
 		}
 		g.Add(
-				r,
-			)
+			r,
+		)
 	}
-
-	
-
-
 
 	return diags
 }
+
 // func (g *Graph) Init() hcl.Diagnostics {
 // 	var diags hcl.Diagnostics
 // 	for _, r := range resourceList {
@@ -96,15 +95,15 @@ func (g *Graph) Init() hcl.Diagnostics{
 // 		// 	Name:         r.Name,
 // 		// 	ResourceMode: addrs.RMode,
 // 		// }
-		// if g.HasVertex(r) {
-		// 	diags = append(diags, &hcl.Diagnostic{
-		// 		Severity: hcl.DiagError,
-		// 		Summary:  "Resources must have different names",
-		// 		Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
-		// 		Subject:  &r.DeclRange,
-		// 		// Context: names[variable.Name],
-		// 	})
-		// }
+// if g.HasVertex(r) {
+// 	diags = append(diags, &hcl.Diagnostic{
+// 		Severity: hcl.DiagError,
+// 		Summary:  "Resources must have different names",
+// 		Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
+// 		Subject:  &r.DeclRange,
+// 		// Context: names[variable.Name],
+// 	})
+// }
 
 // 		g.Add(
 // 			r,
@@ -119,13 +118,13 @@ func (g *Graph) Init() hcl.Diagnostics{
 // 			if diags.HasErrors(){
 // 				return diags
 // 			}
-			
+
 // 			for _, edge := range edges {
 // 				resource := addrs.Resource{
 // 					Name:         edge.Name,
 // 					ResourceMode: addrs.RMode,
 // 				}
-				
+
 // 				if val,exists :=addrMap[resource.String()]; !exists {
 // 					diags = append(diags, &hcl.Diagnostic{
 // 						Severity: hcl.DiagError,

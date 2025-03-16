@@ -1,4 +1,4 @@
-package main
+package configs
 
 import (
 	"fmt"
@@ -6,77 +6,76 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
+	"kubehcl.sh/kubehcl/internal/decode"
 	// "kubehcl.sh/kubehcl/internal/dag"
 )
 
 type ModuleCall struct {
-	deployable
+	decode.Deployable
 	Source hcl.Expression
 }
 
 type ModuleCallList []*ModuleCall
 
-func (m *ModuleCall) decodeSource (ctx *hcl.EvalContext) (string,hcl.Diagnostics){
+func (m *ModuleCall) decodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	val,valDdiags := m.Source.Value(ctx)
+	val, valDdiags := m.Source.Value(ctx)
 	diags = append(diags, valDdiags...)
 	if val.Type() != cty.String {
-		diags = append(diags,&hcl.Diagnostic{
+		diags = append(diags, &hcl.Diagnostic{
 			Severity:    hcl.DiagError,
 			Summary:     "Source must be string",
-			Detail:      fmt.Sprintf("Required string and you entered type %s",val.Type().FriendlyName()),
+			Detail:      fmt.Sprintf("Required string and you entered type %s", val.Type().FriendlyName()),
 			Subject:     m.Source.Range().Ptr(),
 			Expression:  m.Source,
 			EvalContext: ctx,
 		})
-	} 
-	return val.AsString(),diags
+	}
+	return val.AsString(), diags
 }
 
-func (r ModuleCallList) decode(ctx *hcl.EvalContext) (DecodedModuleCallList,hcl.Diagnostics){
-	var dR DecodedModuleCallList
+func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallList, hcl.Diagnostics) {
+	var dR decode.DecodedModuleCallList
 	var diags hcl.Diagnostics
-	for _,variable := range r{
-		dV,varDiags := variable.decode(ctx)
+	for _, variable := range r {
+		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
 		dR = append(dR, dV)
 	}
 
-	return dR,diags
+	return dR, diags
 }
 
-func (r *ModuleCall) decode(ctx *hcl.EvalContext) (*DecodedModuleCall,hcl.Diagnostics){
-	deployable,diags := r.deployable.decode(ctx)
-	source,sourceDiags := r.decodeSource(ctx)
+func (r *ModuleCall) decode(ctx *hcl.EvalContext) (*decode.DecodedModuleCall, hcl.Diagnostics) {
+	deployable, diags := r.Deployable.Decode(ctx)
+	source, sourceDiags := r.decodeSource(ctx)
 	diags = append(diags, sourceDiags...)
-	dM := &DecodedModuleCall{
-		Source: source,
+	dM := &decode.DecodedModuleCall{
+		Source:            source,
 		DecodedDeployable: *deployable,
-	
 	}
 
-	return dM,diags
+	return dM, diags
 }
 
 var inputModuleBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{
-			Name: "for_each", 
+			Name: "for_each",
 		},
 		{
-			Name: "count", 
+			Name: "count",
 		},
 		{
-			Name: "depends_on", 
+			Name: "depends_on",
 		},
 		{
-			Name: "source",
+			Name:     "source",
 			Required: true,
 		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{},
 }
-
 
 func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 	var Module *ModuleCall = &ModuleCall{
@@ -93,19 +92,19 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 		// val, varDiags := attr.Expr.Value(ctx)
 		// diags = append(diags, varDiags...)
 		// if count, err := convert.Convert(val, cty.Number); err != nil {
-			// diags = append(diags, &hcl.Diagnostic{
-				// Severity: hcl.DiagError,
-				// Summary:  `Cannot convert value to int`,
-				// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
-				// Subject:  &attr.NameRange,
-			// })
+		// diags = append(diags, &hcl.Diagnostic{
+		// Severity: hcl.DiagError,
+		// Summary:  `Cannot convert value to int`,
+		// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
+		// Subject:  &attr.NameRange,
+		// })
 		// } else {
-			// resource.Count = count
+		// resource.Count = count
 		// }
 		Module.Count = attr.Expr
 	}
 	if attr, exists := content.Attributes["for_each"]; exists {
-		if _, countExists :=  content.Attributes["count"]; countExists {
+		if _, countExists := content.Attributes["count"]; countExists {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  `Invalid combination of "count" and "for_each"`,
@@ -113,25 +112,25 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 				Subject:  &attr.NameRange,
 				Context:  &content.Attributes["count"].NameRange,
 			})
-		Module.ForEach = attr.Expr
-		// val, varDiags := attr.Expr.Value(ctx)
-		// diags = append(diags, varDiags...)
-		// ty :=val.Type()
-		// var isAllowedType bool
-		// allowedTypesMessage := "map, or set of strings"
+			Module.ForEach = attr.Expr
+			// val, varDiags := attr.Expr.Value(ctx)
+			// diags = append(diags, varDiags...)
+			// ty :=val.Type()
+			// var isAllowedType bool
+			// allowedTypesMessage := "map, or set of strings"
 
-		// isAllowedType = ty.IsMapType() || ty.IsSetType() || ty.IsObjectType()
-		// if val.IsKnown() && !isAllowedType {
-		// 	diags = diags.Append(&hcl.Diagnostic{
-		// 		Severity:    hcl.DiagError,
-		// 		Summary:     "Invalid for_each argument",
-		// 		Detail:      fmt.Sprintf(`The given "for_each" argument value is unsuitable: the "for_each" argument must be a %s, and you have provided a value of type %s.`, allowedTypesMessage, ty.FriendlyName()),
-		// 		Subject:     attr.Expr.Range().Ptr(),
-		// 		Expression:  attr.Expr,
-		// 		EvalContext: ctx,
-		// 	})
-		// }
-		// resource.ForEach = val
+			// isAllowedType = ty.IsMapType() || ty.IsSetType() || ty.IsObjectType()
+			// if val.IsKnown() && !isAllowedType {
+			// 	diags = diags.Append(&hcl.Diagnostic{
+			// 		Severity:    hcl.DiagError,
+			// 		Summary:     "Invalid for_each argument",
+			// 		Detail:      fmt.Sprintf(`The given "for_each" argument value is unsuitable: the "for_each" argument must be a %s, and you have provided a value of type %s.`, allowedTypesMessage, ty.FriendlyName()),
+			// 		Subject:     attr.Expr.Range().Ptr(),
+			// 		Expression:  attr.Expr,
+			// 		EvalContext: ctx,
+			// 	})
+			// }
+			// resource.ForEach = val
 		}
 	}
 
@@ -149,14 +148,14 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 }
 
-func decodeModuleBlocks(blocks hcl.Blocks,addrMap AddressMap) (ModuleCallList,hcl.Diagnostics) {
+func DecodeModuleBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ModuleCallList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var moduleList ModuleCallList
 	for _, block := range blocks {
 		Module, rDiags := decodeModuleBlock(block)
 		diags = append(diags, rDiags...)
 		moduleList = append(moduleList, Module)
-		if addrMap.add(Module.addr().String(),Module) {
+		if addrMap.Add(Module.addr().String(), Module) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Modules must have different names",
@@ -167,11 +166,10 @@ func decodeModuleBlocks(blocks hcl.Blocks,addrMap AddressMap) (ModuleCallList,hc
 		}
 	}
 
-	return moduleList,diags
+	return moduleList, diags
 }
 
-
-func (r ModuleCall) addr() addrs.ModuleCall{
+func (r ModuleCall) addr() addrs.ModuleCall {
 	return addrs.ModuleCall{
 		Name: r.Name,
 	}
@@ -248,6 +246,6 @@ func (r ModuleCall) addr() addrs.ModuleCall{
 // 	}
 // 	return diags
 // }
-	// // for _,block := range body.Blocks {
-	// // 	block.
-	// // }
+// // for _,block := range body.Blocks {
+// // 	block.
+// // }

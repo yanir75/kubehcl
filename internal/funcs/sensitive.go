@@ -6,9 +6,9 @@
 package funcs
 
 import (
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 // SensitiveFunc returns a value identical to its argument except that

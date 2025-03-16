@@ -8,8 +8,8 @@ package funcs
 import (
 	"fmt"
 
-	"kubehcl.sh/kubehcl/internal/lang/marks"
 	"github.com/zclconf/go-cty/cty"
+	"kubehcl.sh/kubehcl/internal/lang/marks"
 )
 
 func redactIfSensitive(value interface{}, valueMarks ...cty.ValueMarks) string {

@@ -1,4 +1,4 @@
-package main
+package decode
 
 import (
 	"fmt"
@@ -15,46 +15,40 @@ const (
 	INVALID = hcl.DiagInvalid
 )
 
-type AddressMap map[string]interface{}
-
-
-
-func (m AddressMap) add(key string,value interface{}) bool{
-	if _,exists :=m[key]; exists {
-		return true
-	}
-	m[key] = value
-	return false
-}
-
-
-func createContext(variables DecodedVariableList,locals DecodedLocals) (*hcl.EvalContext,hcl.Diagnostics) {
-	variableMap,diags := variables.getMapValues()
+func CreateContext(variables DecodedVariableList, locals DecodedLocals) (*hcl.EvalContext, hcl.Diagnostics) {
+	variableMap, diags := variables.getMapValues()
 	localMap := locals.getMapValues()
 	maps.Copy(variableMap, localMap)
 	// fmt.Printf("%s",vals["var"].AsValueMap())
 	return &hcl.EvalContext{
 		Variables: variableMap,
 		Functions: makeBaseFunctionTable("./"),
-	},diags
+	}, diags
 }
 
-func decodeCountExpr(ctx *hcl.EvalContext,expr hcl.Expression) (cty.Value,hcl.Diagnostics){
+func decodeCountExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Diagnostics) {
 	val, diags := expr.Value(ctx)
-	if _, err := convert.Convert(val, cty.Number); err != nil {
+	if countVal, err := convert.Convert(val, cty.Number); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  `Cannot convert value to int`,
 			Detail:   fmt.Sprintf("Cannot convert this value to int : %s", expr),
 			Subject:  expr.Range().Ptr(),
 		})
+	} else if countVal.LessThan(cty.NumberIntVal(0)) == cty.True {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  `Count is lower than 0`,
+			Detail:   fmt.Sprintf("Expression results in a result lower than 0 : %s", expr),
+			Subject:  expr.Range().Ptr(),
+		})
 	}
-	return val,diags
+	return val, diags
 }
 
-func decodeForExpr(ctx *hcl.EvalContext,expr hcl.Expression) (cty.Value,hcl.Diagnostics){
+func decodeForExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Diagnostics) {
 	val, diags := expr.Value(ctx)
-	ty :=val.Type()
+	ty := val.Type()
 	var isAllowedType bool
 	allowedTypesMessage := "map, or set of strings"
 
@@ -69,8 +63,9 @@ func decodeForExpr(ctx *hcl.EvalContext,expr hcl.Expression) (cty.Value,hcl.Diag
 			EvalContext: ctx,
 		})
 	}
-return val,diags
+	return val, diags
 }
+
 // func checkForBlocks (block *hcl.Block) *hcl.Diagnostic {
 // 	content,_,_ :=block.Body.PartialContent(&hcl.BodySchema{})
 // 	if len(content.Blocks) > 0 {

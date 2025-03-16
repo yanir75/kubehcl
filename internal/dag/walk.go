@@ -128,7 +128,7 @@ func (w *Walker) Wait() hcl.Diagnostics {
 			// the downstream diagnostics are likely to be redundant.
 			continue
 		}
-		diags = append(diags,vDiags...)
+		diags = append(diags, vDiags...)
 	}
 	w.diagsLock.Unlock()
 
@@ -415,7 +415,6 @@ const debugWaitDepsInterval = 5 * time.Second
 
 func debugTimer(dur time.Duration) <-chan time.Time {
 	// This is expensive to do at scale, so we only do it when debugging.
-
 
 	// Receiving on a nil channel just blocks, which is fine because
 	// waitDeps also selects on depCh and cancelCh.

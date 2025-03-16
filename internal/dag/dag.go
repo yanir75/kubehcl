@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/hcl/v2"
 )

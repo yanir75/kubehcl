@@ -8,7 +8,6 @@ package addrs
 type DefaultAnnotation struct {
 	referenceable
 	Name string
-	TagMode string
 }
 
 // uniqueKeySigil implements UniqueKey.
@@ -23,4 +22,3 @@ func (d DefaultAnnotation) String() string {
 func (d DefaultAnnotation) UniqueKey() UniqueKey {
 	return d
 }
-

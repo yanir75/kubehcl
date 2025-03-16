@@ -1,4 +1,4 @@
-package main
+package configs
 
 // import (
 // 	"fmt"
@@ -20,7 +20,6 @@ package main
 // }
 
 // type ModuleMap map[string]Module
-
 
 // func (m *Module) decodeModuleFolder(ctx *hcl.EvalContext) hcl.Diagnostics{
 // 	var diags hcl.Diagnostics
@@ -58,4 +57,3 @@ package main
 // 	}
 // 	return diags
 // }
-
