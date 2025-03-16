@@ -2,6 +2,7 @@ package decode
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	// "github.com/hashicorp/hcl/v2/ext/dynblock"
@@ -54,8 +55,8 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, h
 					Severity: hcl.DiagError,
 					Subject: &block.TypeRange,
 					Summary: "Block shouldn't have labels",
-					Detail: fmt.Sprintf("Block has labels: %s",block.Labels),
-					
+					Detail: fmt.Sprintf("Block has labels: %s and type: \"%s\"",strings.Join(block.Labels,", "),block.Type),
+					Context: &block.LabelRanges[0],
 				})
 			}
 			m, blockDiags := decodeUnknownBody(ctx, block.Body)

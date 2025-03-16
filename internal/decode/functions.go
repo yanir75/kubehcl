@@ -9,12 +9,6 @@ import (
 	"kubehcl.sh/kubehcl/internal/funcs"
 )
 
-var impureFunctions = []string{
-	"bcrypt",
-	"timestamp",
-	"uuid",
-}
-
 func makeBaseFunctionTable(baseDir string) map[string]function.Function {
 	// Some of our functions are just directly the cty stdlib functions.
 	// Others are implemented in the subdirectory "funcs" here in this
