@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	viewsjson "kubehcl.sh/kubehcl/internal/view/json"
 	"kubehcl.sh/kubehcl/internal/tfdiags"
+	viewsjson "kubehcl.sh/kubehcl/internal/view/json"
 
 	"github.com/mitchellh/colorstring"
 	wordwrap "github.com/mitchellh/go-wordwrap"

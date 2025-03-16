@@ -53,10 +53,10 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, h
 			if len(block.Labels) > 0 {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Subject: &block.TypeRange,
-					Summary: "Block shouldn't have labels",
-					Detail: fmt.Sprintf("Block has labels: %s and type: \"%s\"",strings.Join(block.Labels,", "),block.Type),
-					Context: &block.LabelRanges[0],
+					Subject:  &block.TypeRange,
+					Summary:  "Block shouldn't have labels",
+					Detail:   fmt.Sprintf("Block has labels: %s and type: \"%s\"", strings.Join(block.Labels, ", "), block.Type),
+					Context:  &block.LabelRanges[0],
 				})
 			}
 			m, blockDiags := decodeUnknownBody(ctx, block.Body)

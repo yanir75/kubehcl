@@ -8,10 +8,9 @@ package view
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
+	"kubehcl.sh/kubehcl/internal/format"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/tfdiags"
-	"kubehcl.sh/kubehcl/internal/format"
-
 	// "github.com/opentofu/opentofu/internal/command/arguments"
 	// "github.com/opentofu/opentofu/internal/command/format"
 	// "github.com/opentofu/opentofu/internal/terminal"
@@ -35,6 +34,7 @@ type ViewArgs struct {
 
 	// ShowSensitive is used to display the value of variables marked as sensitive.
 }
+
 // View is the base layer for command views, encapsulating a set of I/O
 // streams, a colorize implementation, and implementing a human friendly view
 // for diagnostics.

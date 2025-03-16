@@ -68,7 +68,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 	var resource *Resource = &Resource{
 		// Name:      block.Labels[0],
 		// DeclRange: block.DefRange,
-	
+
 	}
 
 	resource.Name = block.Labels[0]
