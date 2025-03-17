@@ -15,6 +15,6 @@ cmd/helm/testdata/testcharts/issue-7233/charts/*
 .pre-commit-config.yaml
 main.go
 
-decoder.go
+# decoder.go
 test*
 *.hcl
