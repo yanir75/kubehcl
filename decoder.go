@@ -6,7 +6,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"sync"
+	// "sync"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -20,9 +20,9 @@ var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
 
-type Task struct {
-	function func()
-}
+// type Task struct {
+// 	function func()
+// }
 
 
 var inputConfig = &hcl.BodySchema{
@@ -170,8 +170,8 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 }
 
 func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
-	wg := sync.WaitGroup{}
-	wg.Add(5)
+	// wg := sync.WaitGroup{}
+	// wg.Add(5)
 	input, err := os.Open(fileName)
 	if err != nil {
 		fmt.Printf("%s", err)
@@ -198,7 +198,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		// l.Lock()
 		// defer l.Unlock()
 		diags = append(diags, varDiags...)
-		wg.Done()
+		// wg.Done()
 
 	// }}
 
@@ -212,7 +212,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		// l.Lock()
 		// defer l.Unlock()
 		diags = append(diags, localDiags...)
-		wg.Done()
+		// wg.Done()
 
 	// }}
 	
@@ -224,7 +224,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		// l.Lock()
 		// defer l.Unlock()
 		diags = append(diags, annotationsDiags...)
-		wg.Done()
+		// wg.Done()
 
 	// }}
 
@@ -236,7 +236,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		// l.Lock()
 		// defer l.Unlock()
 		diags = append(diags, resourceDiags...)
-		wg.Done()
+		// wg.Done()
 
 	// }}
 
@@ -248,10 +248,10 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		// l.Lock()
 		// defer l.Unlock()
 		diags = append(diags, moduleDiags...)
-		wg.Done()
+		// wg.Done()
 	// }}
 	
-	wg.Wait()
+	// wg.Wait()
 
 	return Module{
 		Inputs:      vars,
@@ -275,21 +275,21 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 		})
 	}
 	var moduleList []*Module
-	wg := sync.WaitGroup{}
+	// wg := sync.WaitGroup{}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ext {
-			wg.Add(1)
+			// wg.Add(1)
 			// tasks <- Task{func(){
 				dep, decodeDiags := decodeFile(folderName+"/"+f.Name(), addrMap)
 				// l.Lock()
 				// defer l.Unlock()
 				moduleList = append(moduleList, &dep)
 				diags = append(diags, decodeDiags...)
-				wg.Done()
+				// wg.Done()
 			// }}
 		}
 	}
-	wg.Wait()
+	// wg.Wait()
 	for _,module := range moduleList {
 		deployable.merge(module)
 	}
