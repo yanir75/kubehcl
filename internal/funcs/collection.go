@@ -626,12 +626,7 @@ var ListFunc = function.New(&function.Spec{
 		AllowDynamicType: true,
 		AllowNull:        true,
 	},
-	Type: func(args []cty.Value) (ret cty.Type, err error) {
-		return cty.DynamicPseudoType, fmt.Errorf("the \"list\" function was deprecated in Terraform v0.12 and is not available in OpenTofu; use tolist([ ... ]) syntax to write a literal list")
-	},
-	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
-		return cty.DynamicVal, fmt.Errorf("the \"list\" function was deprecated in Terraform v0.12 and is not available in OpenTofu; use tolist([ ... ]) syntax to write a literal list")
-	},
+
 })
 
 // MapFunc constructs a function that takes an even number of arguments and
@@ -646,12 +641,6 @@ var MapFunc = function.New(&function.Spec{
 		AllowUnknown:     true,
 		AllowDynamicType: true,
 		AllowNull:        true,
-	},
-	Type: func(args []cty.Value) (ret cty.Type, err error) {
-		return cty.DynamicPseudoType, fmt.Errorf("the \"map\" function was deprecated in Terraform v0.12 and is not available in OpenTofu; use tomap({ ... }) syntax to write a literal map")
-	},
-	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
-		return cty.DynamicVal, fmt.Errorf("the \"map\" function was deprecated in Terraform v0.12 and is not available in OpenTofu; use tomap({ ... }) syntax to write a literal map")
 	},
 })
 

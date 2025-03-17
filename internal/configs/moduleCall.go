@@ -17,7 +17,7 @@ type ModuleCall struct {
 
 type ModuleCallList []*ModuleCall
 
-func (m *ModuleCall) decodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
+func (m *ModuleCall) DecodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	val, valDdiags := m.Source.Value(ctx)
 	diags = append(diags, valDdiags...)
@@ -48,7 +48,7 @@ func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallLi
 
 func (r *ModuleCall) decode(ctx *hcl.EvalContext) (*decode.DecodedModuleCall, hcl.Diagnostics) {
 	deployable, diags := r.Deployable.Decode(ctx)
-	source, sourceDiags := r.decodeSource(ctx)
+	source, sourceDiags := r.DecodeSource(ctx)
 	diags = append(diags, sourceDiags...)
 	dM := &decode.DecodedModuleCall{
 		Source:            source,

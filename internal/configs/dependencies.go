@@ -6,8 +6,10 @@ import (
 	// "github.com/hashicorp/hcl/v2"
 	// "kubehcl.sh/kubehcl/internal/addrs"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
@@ -55,6 +57,7 @@ func getResourceNames(m *decode.DecodedModule) decode.DecodedResourceList {
 func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, currentName string) decode.DecodedResourceList {
 	for _, r := range m.Resources {
 		r.Name = currentName + r.Addr().String()
+		r.Depth = m.Depth
 		rList = append(rList, r)
 	}
 
@@ -64,12 +67,14 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 	return rList
 }
 
+
 func (g *Graph) Init() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	rList := getResourceNames(g.DecodedModule)
 	// for _,r := range rList {
 	// 	// fmt.Printf("%s\n",r.Name)
 	// }
+	resourceMap := make(map[string]*decode.DecodedResource)
 	for _, r := range rList {
 		if g.HasVertex(r) {
 			diags = append(diags, &hcl.Diagnostic{
@@ -80,9 +85,73 @@ func (g *Graph) Init() hcl.Diagnostics {
 				// Context: names[variable.Name],
 			})
 		}
+		resourceMap[r.Name] = r
 		g.Add(
 			r,
 		)
+	}
+
+	for _,r := range rList {
+		if r.DependsOn != nil {
+			edges,edgeDiags :=getName(r)
+			diags = append(diags, edgeDiags...)
+			if diags.HasErrors(){
+				return diags
+			}
+			for _, edge := range edges {
+				added := false
+
+				resource := addrs.Resource{
+					Name:         edge.Name,
+					ResourceMode: edge.Type,
+				}
+				if edge.Type == ResourceType {
+
+					if res,exists :=resourceMap[resource.String()];exists{
+						g.Connect(dag.BasicEdge(r,res))
+						added = true
+					}
+				}
+				if edge.Type == ModuleType {
+					for _,vertex := range g.Vertices(){
+						res := vertex.(*decode.DecodedResource)
+						test := res.Name
+						test1 := resource.String()
+						if strings.HasPrefix(test,test1) {
+							if res.Depth == r.Depth+1 {
+								g.Connect(dag.BasicEdge(r,res))
+								added = true
+							}
+						}
+					}
+				}
+				if !added{
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary: "Couldn't find the depends on resource",
+						Detail: fmt.Sprintf("Entered %s which does not exist",resource.String()),
+						Subject: &edge.Range,
+					})	
+				}
+			} 
+		}
+
+	}
+	
+	for _, cycle := range g.Cycles() {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Circular dependencies",
+			Detail:   fmt.Sprintf("Resources %s %s have circular dependencies", cycle[0], cycle[1]),
+			// Context: names[variable.Name],
+		})
+	}
+
+	addRootNodeToGraph(g)
+
+	if err:=g.Validate(); err != nil {
+		fmt.Printf("%s",err)
+		panic("Should not be here")
 	}
 
 	return diags
@@ -113,107 +182,120 @@ func (g *Graph) Init() hcl.Diagnostics {
 
 // 	for _, r := range resourceList {
 // 		if r.DependsOn != nil {
-// 			edges, dependsOnDiags := getName(r)
+			// edges, dependsOnDiags := getName(r)
 // 			diags = append(diags, dependsOnDiags...)
 // 			if diags.HasErrors(){
 // 				return diags
 // 			}
 
-// 			for _, edge := range edges {
-// 				resource := addrs.Resource{
-// 					Name:         edge.Name,
-// 					ResourceMode: addrs.RMode,
-// 				}
+			// for _, edge := range edges {
+				// resource := addrs.Resource{
+				// 	Name:         edge.Name,
+				// 	ResourceMode: addrs.RMode,
+				// }
 
-// 				if val,exists :=addrMap[resource.String()]; !exists {
-// 					diags = append(diags, &hcl.Diagnostic{
-// 						Severity: hcl.DiagError,
-// 						Summary:  "Resource does not exist",
-// 						Detail:   fmt.Sprintf("There isn't a resource with this name %s", r.Name),
-// 						Subject: &edge.Range,
-// 						// Context: names[variable.Name],
-// 					})
-// 				} else {
-// 					g.Connect(dag.BasicEdge(r,
-// 						val,
-// 					))
-// 				}
-// 			}
-// 		}
-// 	}
-// 	for _, cycle := range g.Cycles() {
-// 		diags = append(diags, &hcl.Diagnostic{
-// 			Severity: hcl.DiagError,
-// 			Summary:  "Circular dependencies",
-// 			Detail:   fmt.Sprintf("Resources %s %s have circular dependencies", cycle[0], cycle[1]),
-// 			// Context: names[variable.Name],
-// 		})
-// 	}
+			// 	if val,exists :=addrMap[resource.String()]; !exists {
+			// 		diags = append(diags, &hcl.Diagnostic{
+			// 			Severity: hcl.DiagError,
+			// 			Summary:  "Resource does not exist",
+			// 			Detail:   fmt.Sprintf("There isn't a resource with this name %s", r.Name),
+			// 			Subject: &edge.Range,
+			// 			// Context: names[variable.Name],
+			// 		})
+			// 	} else {
+			// 		g.Connect(dag.BasicEdge(r,
+			// 			val,
+			// 		))
+			// 	}
+			// }
+		// }
+	// }
+	// for _, cycle := range g.Cycles() {
+	// 	diags = append(diags, &hcl.Diagnostic{
+	// 		Severity: hcl.DiagError,
+	// 		Summary:  "Circular dependencies",
+	// 		Detail:   fmt.Sprintf("Resources %s %s have circular dependencies", cycle[0], cycle[1]),
+	// 		// Context: names[variable.Name],
+	// 	})
+	// }
 
-// 	addRootNodeToGraph(g)
+	// addRootNodeToGraph(g)
 
-// 	if err:=g.Validate(); err != nil {
-// 		fmt.Printf("%s",err)
-// 		panic("Should not be here")
-// 	}
+	// if err:=g.Validate(); err != nil {
+	// 	fmt.Printf("%s",err)
+	// 	panic("Should not be here")
+	// }
 
-// 	return diags
+	// return diags
 // }
+type rangeName  struct{
+	Name string
+	Type string
+	// Rest string
+	Range hcl.Range
+}
 
-// func getName(resource *Resource) ([]rangeName, hcl.Diagnostics) {
+func getName(resource *decode.DecodedResource) ([]rangeName, hcl.Diagnostics) {
 
-// 	var diags hcl.Diagnostics
-// 	// var dag dag.AcyclicGraph
-// 	var rNames = []rangeName{}
-// 	for _, traversal := range resource.DependsOn {
-// 		if len(traversal) != 2 {
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "Invalid reference",
-// 				Detail:   `Depends on must have resource/module and the name of the module`,
-// 				Subject:  hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()).Ptr(),
-// 			})
-// 			return rNames, diags
-// 		}
+	var diags hcl.Diagnostics
+	// var dag dag.AcyclicGraph
+	var rNames = []rangeName{}
+	for _, traversal := range resource.DependsOn {
+		if len(traversal) < 2 {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid reference",
+				Detail:   `Depends on must have resource/module and the name of the module`,
+				Subject:  hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()).Ptr(),
+			})
+			return rNames, diags
+		}
 
-// 		var resourceType, resourceName string
-// 		switch tt := traversal[0].(type) {
-// 		case hcl.TraverseRoot:
-// 			resourceType = tt.Name
-// 		case hcl.TraverseAttr:
-// 			resourceType = tt.Name
-// 		default:
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "Unknown error",
-// 				Detail:   `Unknown error`,
-// 				Subject:  hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()).Ptr(),
-// 			})
-// 		}
-// 		switch tt := traversal[1].(type) {
-// 		case hcl.TraverseAttr:
-// 			resourceName = tt.Name
-// 		default:
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "Invalid address",
-// 				Detail:   "A resource name is require.",
-// 				Subject:  traversal[1].SourceRange().Ptr(),
-// 			})
-// 		}
-// 		if resourceType != "resource" {
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "This type is not supported",
-// 				Detail:   fmt.Sprintf("Allowed types are [resource] got: %s",resourceType),
-// 				Subject:  traversal[0].SourceRange().Ptr(),
-// 			})
-// 		}
-// 		rNames = append(rNames, rangeName{
-// 			Name: resourceName,
-// 			Range: hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()),
-// 		})
-// 	}
+		var resourceType, resourceName string
+		switch tt := traversal[0].(type) {
+		case hcl.TraverseRoot:
+			resourceType = tt.Name
+		case hcl.TraverseAttr:
+			resourceType = tt.Name
+		default:
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Unknown error",
+				Detail:   `Unknown error`,
+				Subject:  hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()).Ptr(),
+			})
+		}
+		switch tt := traversal[1].(type) {
+		case hcl.TraverseAttr:
+			resourceName = tt.Name
+		default:
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid address",
+				Detail:   "A resource name is require.",
+				Subject:  traversal[1].SourceRange().Ptr(),
+			})
+		}
+		if resourceType != ResourceType && resourceType != ModuleType {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "This type is not supported",
+				Detail:   fmt.Sprintf("Allowed types are [resource,module] got: %s",resourceType),
+				Subject:  traversal[0].SourceRange().Ptr(),
+			})
+		}
 
-// 	return rNames, diags
-// }
+		rNames = append(rNames, rangeName{
+			Name: resourceName,
+			Type: resourceType,
+			Range: hcl.RangeBetween(traversal[0].SourceRange(), traversal[len(traversal)-1].SourceRange()),
+		})
+	}
+
+	return rNames, diags
+}
+
+const (
+	ResourceType = "resource"
+	ModuleType = "module"
+)

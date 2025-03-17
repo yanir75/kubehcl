@@ -144,7 +144,7 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 		}
 		if useCompact {
 			msg := format.DiagnosticWarningsCompact(diags, v.colorize)
-			msg = "\n" + msg + "\nTo see the full warning notes, run OpenTofu without -compact-warnings.\n"
+			msg = "\n" + msg + "\nTo see the full warning notes, run kubehcl without -compact-warnings.\n"
 			v.streams.Print(msg)
 			return
 		}

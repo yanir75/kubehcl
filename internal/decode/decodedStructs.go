@@ -1,6 +1,8 @@
 package decode
 
 import (
+	// "maps"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
@@ -23,6 +25,7 @@ func (d *DecodedDeployable) Addr() addrs.Deployable {
 
 type DecodedResource struct {
 	DecodedDeployable
+	Depth int
 }
 
 type DecodedResourceList []*DecodedResource

@@ -23,7 +23,7 @@ type Variable struct {
 	HasDefault  bool // for checking if needed request from the user
 }
 
-type VariableList []*Variable
+type VariableMap map[string]*Variable
 
 func (v *Variable) addr() addrs.Variable {
 	return addrs.Variable{
@@ -56,8 +56,8 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  "Invalid default value for variable",
-				Detail:   fmt.Sprintf("This default value is not compatible with the variable's type constraint: %s.", err),
+				Summary:  "Invalid value value for variable",
+				Detail:   fmt.Sprintf("This value is not compatible with the variable's type constraint: %s.", err),
 				Subject:  v.Default.Range().Ptr(),
 			})
 			val = cty.DynamicVal
@@ -68,7 +68,7 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 	return dV, diags
 }
 
-func (v VariableList) Decode() (decode.DecodedVariableList, hcl.Diagnostics) {
+func (v VariableMap) Decode() (decode.DecodedVariableList, hcl.Diagnostics) {
 	var dVars decode.DecodedVariableList
 	var diags hcl.Diagnostics
 	for _, variable := range v {
@@ -80,16 +80,14 @@ func (v VariableList) Decode() (decode.DecodedVariableList, hcl.Diagnostics) {
 	return dVars, diags
 }
 
-func DecodeVariableBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (VariableList, hcl.Diagnostics) {
-
+func DecodeVariableBlocks(blocks hcl.Blocks) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	var variables VariableList
+	var variables VariableMap = make(map[string]*Variable)
 	for _, block := range blocks {
 		variable, varDiags := decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
 		if variable != nil {
-			variables = append(variables, variable)
-			if addrMap.Add(variable.addr().String(), variable) {
+			if _,exists :=variables[variable.Name]; exists{
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Variables must have different names",
@@ -98,6 +96,8 @@ func DecodeVariableBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Variable
 					// Context: names[variable.Name],
 				})
 
+			} else {
+				variables[variable.Name] = variable
 			}
 		}
 	}

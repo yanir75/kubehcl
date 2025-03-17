@@ -19,7 +19,7 @@ func (r Resource) uniqueKeySigil() {
 func (r Resource) String() string {
 	switch r.ResourceMode {
 	case InModule:
-		return "module.resource." + r.Name
+		return "module." + r.Name
 	case RMode:
 		return "resource." + r.Name
 
@@ -37,6 +37,6 @@ func (r Resource) Equals(o Resource) bool {
 }
 
 const (
-	InModule = "I"
-	RMode    = "R"
+	InModule = "module"
+	RMode    = "resource"
 )
