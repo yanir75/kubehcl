@@ -65,6 +65,7 @@ type Module struct {
 	Annotations configs.Annotations
 	Resources   configs.ResourceList
 	ModuleCalls configs.ModuleCallList
+	DependsOn []hcl.Traversal
 }
 
 type ModuleList []*Module
@@ -99,6 +100,7 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	decodedModule := &decode.DecodedModule{
 		Depth: depth,
 		Name:  m.Name,
+		DependsOn: m.DependsOn,
 	}
 	var diags hcl.Diagnostics
 	var modules []*Module
@@ -110,6 +112,9 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 		module,modDiags :=decodeFolder(source)
 		diags = append(diags, modDiags...)
 		for _,attr := range attrs {
+			if attr.Name == "depends_on"{
+				continue
+			}
 			variable  := &configs.Variable{
 				Name: attr.Name,
 				Default: attr.Expr,
@@ -130,6 +135,8 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 				module.Inputs[variable.Name] = variable
 			}
 		}
+		module.Name = call.Name
+		module.DependsOn = call.DependsOn
 		modules = append(modules, module)
 		
 	}
@@ -165,6 +172,7 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
+
 
 	return decodedModule, diags
 }

@@ -22,10 +22,14 @@ func (d *DecodedDeployable) Addr() addrs.Deployable {
 		Name: d.Name,
 	}
 }
-
+type DependsOn struct{
+	Trav []hcl.Traversal
+	Depth int
+}
 type DecodedResource struct {
 	DecodedDeployable
 	Depth int
+	Dependencies []DependsOn
 }
 
 type DecodedResourceList []*DecodedResource
@@ -70,6 +74,7 @@ type DecodedModule struct {
 	ModuleCalls DecodedModuleCallList
 	Modules     DecodedModuleList
 	Depth       int
+	DependsOn []hcl.Traversal
 }
 
 type DecodedModuleList []*DecodedModule

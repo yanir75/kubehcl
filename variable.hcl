@@ -29,10 +29,10 @@
 # }
 
 
-# resource "nane" {
-#     count = 1
-#     depends_on = [module.test]
-# }
+resource "nane" {
+    count = 1
+    depends_on = [resource.t]
+}
 
 # resource "g" {
 #     for_each = toset(["test","asdf"])
@@ -46,20 +46,18 @@
     
 # }
 
-# resource "t" {
-#     for_each = var.bla
-#     po = each.key
-#     bla = each.value
-#     depends_on = [resource.a]
-# }
+resource "t" {
+    depends_on = [module.test]
+
+}
 
 # resource "a" {
-#     count = 2
-#     # spec {
-#     #     t = "testing"
-#     #     i = "bla"
-#     # }
-#     test = count.index
+#     # count = 2
+#     # # spec {
+#     # #     t = "testing"
+#     # #     i = "bla"
+#     # # }
+#     # test = count.index
 # }
 
 # resource "b" {
@@ -77,4 +75,5 @@
 module "test" {
     source = "./test"
     bla = {"testing" = "testing"}
+    # depends_on = [resource.t,resource.a]
 }
