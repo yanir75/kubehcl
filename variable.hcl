@@ -26,12 +26,10 @@
 
 variable "bla" {
 
-    type = any
-    default = {
-                ra = {"gasdfasd"="gasdfas"},
-
-                werwer = "grewrw"
-            }
+    type = list(map(number))
+    default = [{
+             containerPort = 80   
+            }]
     description = "test"
 }
 
@@ -61,11 +59,7 @@ resource "nane" {
         containers = [{
           name  = "nginx"
           image = "nginx:1.14.2"
-          ports = [
-            {
-              "containerPort" = 80
-            }
-          ]
+          ports = var.bla
         }]
       }
     }
