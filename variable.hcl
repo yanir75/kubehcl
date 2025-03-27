@@ -34,30 +34,31 @@ variable "bla" {
 }
 
 resource "nane" {
+  for_each = {"key" = "value","key2"="value2"}
   apiVersion = "apps/v1"
   kind       = "Deployment"
   metadata = {
-    name = "nginx-deployment"
+    name = each.key
     labels = {
-      app = "nginx"
+      app = each.value
     }
   }
   spec = {
     replicas = 3
     selector = {
       matchLabels = {
-        app = "nginx"
+        app = each.value
       }
     }
     template = {
       metadata = {
         labels = {
-          app = "nginx"
+          app = each.value
         }
       }
       spec = {
         containers = [{
-          name  = "nginx"
+          name  = each.value
           image = "nginx:1.14.2"
           ports = var.bla
         }]

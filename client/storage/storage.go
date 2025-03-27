@@ -1,14 +1,15 @@
 package storage
 
 import (
+	"sync"
+
 	"github.com/hashicorp/hcl/v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 )
 
 
-
+var mutex sync.Mutex
 type Storage struct {
 	resourceList map[string][]byte
 } 
@@ -26,7 +27,7 @@ func (s *Storage) GenSecret(key string,lbs labels) (*v1.Secret, hcl.Diagnostics)
 
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   key,
+			Name:   "kubehcl."+key,
 			Labels: lbs.toMap(),
 		},
 		Type: "kubehcl.sh/module.v1",
@@ -35,6 +36,8 @@ func (s *Storage) GenSecret(key string,lbs labels) (*v1.Secret, hcl.Diagnostics)
 }
 
 func (s *Storage) Add(name string, data []byte){
+	mutex.Lock()
+	defer mutex.Unlock()
 	s.resourceList[name] = data
 }
 
