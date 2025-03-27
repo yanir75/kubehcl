@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/hashicorp/hcl/v2"
@@ -24,21 +25,35 @@ func (s *Storage) GenSecret(key string,lbs labels) (*v1.Secret, hcl.Diagnostics)
 		lbs.init()
 	}
 	lbs.set("owner","kubehcl")
-
+	releaseMap := make(map[string][]byte)
+	data,err := json.Marshal(s.resourceList)
+	if err != nil {
+		panic("Should not get here: " + err.Error())
+	}
+	releaseMap["release"] = data
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "kubehcl."+key,
 			Labels: lbs.toMap(),
 		},
 		Type: "kubehcl.sh/module.v1",
-		Data: s.resourceList,
+		Data: releaseMap,
 	}, diags
 }
+
+
 
 func (s *Storage) Add(name string, data []byte){
 	mutex.Lock()
 	defer mutex.Unlock()
 	s.resourceList[name] = data
+}
+
+func (s *Storage) Get(name string)[]byte{
+	if data,exists:=s.resourceList[name]; exists {
+		return data
+	}
+	return nil
 }
 
 
