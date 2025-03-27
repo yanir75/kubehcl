@@ -4,6 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/ext/typeexpr"
+	"github.com/zclconf/go-cty/cty"
+
+	// "github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
@@ -30,7 +34,15 @@ func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hc
 		DeclRange: l.DeclRange,
 	}
 	value, diags := l.Value.Value(ctx)
-
+	if !value.Type().Equals(cty.String) {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Annotation must be string",
+			Detail: fmt.Sprintf("Annotation has to be string but recevied: %s",typeexpr.TypeString(value.Type())),
+			Subject: l.Value.Range().Ptr(),
+		},
+		)
+	}
 	dA.Value = value
 	return dA, diags
 }

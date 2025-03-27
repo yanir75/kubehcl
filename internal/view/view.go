@@ -6,8 +6,11 @@ package view
 // SPDX-License-Identifier: MPL-2.0
 
 import (
+	"os"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
+	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/format"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/tfdiags"
@@ -207,4 +210,26 @@ func (v *View) outputHorizRule() {
 
 func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
+}
+
+func DiagPrinter(diags hcl.Diagnostics) {
+	v := NewView(&terminal.Streams{
+		Stdout: &terminal.OutputStream{
+			File: os.Stdout,
+		},
+		Stderr: &terminal.OutputStream{
+			File: os.Stderr,
+		},
+		Stdin: &terminal.InputStream{
+			File: os.Stdin,
+		},
+	})
+	v.SetConfigSources(configs.Parser().Files)
+	var d tfdiags.Diagnostics
+	d = d.Append(diags)
+	v.Configure(&ViewArgs{
+		NoColor: false,
+		ConsolidateWarnings: true,
+	})
+	v.Diagnostics(d)
 }
