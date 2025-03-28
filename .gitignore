@@ -17,4 +17,4 @@ cmd/helm/testdata/testcharts/issue-7233/charts/*
 
 # decoder.go
 # test*
-*.hcl
+# *.hcl
