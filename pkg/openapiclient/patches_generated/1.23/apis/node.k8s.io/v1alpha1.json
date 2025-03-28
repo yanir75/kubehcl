@@ -1,0 +1,32 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.api.node.v1alpha1.Overhead": {
+                "properties": {
+                    "podFixed": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}

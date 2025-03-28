@@ -1,0 +1,63 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.CustomResourceDefinitionCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.JSONSchemaProps": {
+                "properties": {
+                    "dependencies": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "enum": {
+                        "items": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.WebhookClientConfig": {
+                "properties": {
+                    "caBundle": {
+                        "allOf": [
+                            {
+                                "anyOf": [
+                                    {
+                                        "format": "byte"
+                                    },
+                                    {
+                                        "maxLength": 0
+                                    }
+                                ]
+                            }
+                        ],
+                        "format": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}

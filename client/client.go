@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"helm.sh/helm/v4/pkg/kube"
@@ -18,7 +19,7 @@ import (
 	"kubehcl.sh/kubehcl/cli"
 	"kubehcl.sh/kubehcl/client/storage"
 	"kubehcl.sh/kubehcl/internal/decode"
-
+	"kubehcl.sh/kubehcl/syntaxvalidator"
 )
 
 
@@ -223,7 +224,9 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result,hcl.Di
 	var diags hcl.Diagnostics
 	var results *kube.Result = &kube.Result{}
 	for key,value := range resource.Config {
+
 		data,err :=ctyjson.Marshal(value,value.Type())
+
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -232,23 +235,9 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result,hcl.Di
 				Subject: &resource.DeclRange,
 			})
 		}
+
 		cfg.Storage.Add(key,data)
 		reader := bytes.NewReader(data)
-		validator,validatorErr := cfg.Client.Factory.Validator(metav1.FieldValidationStrict)
-		if validatorErr!=nil {
-			panic("shouldn't get here"+validatorErr.Error())
-		}
-		validResrouceErr :=validator.ValidateBytes(data)
-		if validResrouceErr != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary: "Resource is not valid",
-				Detail: fmt.Sprintf("Need to define the following in %s :%s",resource.Name,validResrouceErr.Error()),
-				Subject: &resource.DeclRange,
-			})
-			return nil,diags
-		}
-
 		kubeResourceList,buildErr :=cfg.Client.Build(reader,true)
 		if buildErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
@@ -258,6 +247,7 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result,hcl.Di
 				Subject: &resource.DeclRange,
 			})
 		}
+
 		res,updateDiags := cfg.compareStates(kubeResourceList,cfg.Name,key)
 		if !updateDiags.HasErrors(){
 			results.Created = append(results.Created, res.Created...)
@@ -266,9 +256,47 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result,hcl.Di
 		}
 		diags = append(diags,updateDiags...)
 	}
+
+	for _,diag := range diags {
+		diag.Subject = &resource.DeclRange
+	}
 	
 
 	return results,diags
 	
 
+}
+
+func (cfg *Config) Validate(resource *decode.DecodedResource) (hcl.Diagnostics){
+	var diags hcl.Diagnostics
+	for key,value := range resource.Config {
+		data,err :=ctyjson.Marshal(value,value.Type())
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Couldn't convert resource config to json",
+				Detail: fmt.Sprintf("%s",err),
+				Subject: &resource.DeclRange,
+			})
+		}
+		factory,validatorDiags :=syntaxvalidator.New()
+		diags = append(diags, validatorDiags...)
+		err = syntaxvalidator.ValidateDocument(data,factory)
+		
+		if err!=nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Resource Failed Validation",
+				Detail: fmt.Sprintf("Resource: %s failed validation\nErrors will be listed below\n%s",key,formatErr(err)),
+				Subject: &resource.DeclRange,
+			})
+		}
+	}
+	return diags
+}
+
+func formatErr(err error) string {
+	errStr := strings.Join(strings.Split(err.Error(),", "),"\n")
+	errStr = strings.ReplaceAll(errStr,"[","")
+	return strings.ReplaceAll(errStr,"]","")
 }

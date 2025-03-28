@@ -231,5 +231,6 @@ func DiagPrinter(diags hcl.Diagnostics) {
 		NoColor: false,
 		ConsolidateWarnings: true,
 	})
+	v.streams.Stderr.Columns()
 	v.Diagnostics(d)
 }

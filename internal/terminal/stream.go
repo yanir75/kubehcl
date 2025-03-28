@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-const defaultColumns int = 78
+const defaultColumns int = 200
 const defaultIsTerminal bool = false
 
 // OutputStream represents an output stream that might or might not be connected

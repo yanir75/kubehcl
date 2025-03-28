@@ -1,0 +1,67 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.api.core.v1.HTTPGetAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PodSpec": {
+                "properties": {
+                    "overhead": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceFieldSelector": {
+                "properties": {
+                    "divisor": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceRequirements": {
+                "properties": {
+                    "limits": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "requests": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.TCPSocketAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}

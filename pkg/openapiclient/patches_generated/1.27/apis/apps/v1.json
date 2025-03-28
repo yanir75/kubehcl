@@ -1,0 +1,129 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.api.apps.v1.ControllerRevision": {
+                "properties": {
+                    "data": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.apps.v1.DaemonSetCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.apps.v1.DeploymentCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    },
+                    "lastUpdateTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.apps.v1.ReplicaSetCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.apps.v1.StatefulSetCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.HTTPGetAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PersistentVolumeClaimCondition": {
+                "properties": {
+                    "lastProbeTime": {
+                        "default": null
+                    },
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PersistentVolumeClaimStatus": {
+                "properties": {
+                    "allocatedResources": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "capacity": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PodSpec": {
+                "properties": {
+                    "overhead": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceFieldSelector": {
+                "properties": {
+                    "divisor": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceRequirements": {
+                "properties": {
+                    "limits": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "requests": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.TCPSocketAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}

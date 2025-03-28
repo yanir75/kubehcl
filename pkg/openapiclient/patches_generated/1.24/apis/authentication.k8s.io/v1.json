@@ -1,0 +1,16 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            }
+        }
+    }
+}

@@ -33,45 +33,45 @@ variable "bla" {
     description = "test"
 }
 
-# resource "nane" {
-#   for_each = {"key" = "tasd","key2" = "asdf"}
-#   apiVersion = "apps/v1"
-#   kind       = "Deployment"
-#   metadata = {
-#     name = each.key
-#     labels = {
-#       app = each.value
-#     }
-#   }
-#   spec = {
-#     replicas = 3
-#     selector = {
-#       matchLabels = {
-#         app = each.value
-#       }
-#     }
-#     template = {
-#       metadata = {
-#         labels = {
-#           app = each.value
-#         }
-#       }
-#       spec = {
-#         containers = [{
-#           name  = each.value
-#           image = "nginx:1.14.2"
-#           ports = var.bla
-#         }]
-#       }
-#     }
-#   }
-# }
-
-resource "t" {
+resource "nane" {
+  for_each = {"key" = "tasd"}
   apiVersion = "apps/v1"
   kind       = "Deployment"
-  # metadata = "test"
+  metadata = {
+    name = each.key
+    labels = {
+      app = each.value
+    }
+  }
+  spec = {
+    replicas = 3
+    selector = {
+      matchLabels = {
+        app = each.value
+      }
+    }
+    template = {
+      metadata = {
+        labels = {
+          app = each.value
+        }
+      }
+      spec = {
+        containers = [{
+          name  = each.value
+          image = "nginx:1.14.2"
+          ports = var.bla
+        }]
+      }
+    }
+  }
 }
+
+# resource "t" {
+#   apiVersion = "apps/v1"
+#   kind       = "Deployment"
+#   # metadata = "test"
+# }
 # resource "g" {
 #     for_each = toset(["test","asdf"])
 #     test = "asdf"

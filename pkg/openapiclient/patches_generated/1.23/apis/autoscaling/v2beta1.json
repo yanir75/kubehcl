@@ -1,0 +1,79 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.api.autoscaling.v2beta1.ContainerResourceMetricStatus": {
+                "properties": {
+                    "currentAverageValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.ExternalMetricStatus": {
+                "properties": {
+                    "currentValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.HorizontalPodAutoscalerCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.ObjectMetricSource": {
+                "properties": {
+                    "targetValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.ObjectMetricStatus": {
+                "properties": {
+                    "currentValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.PodsMetricSource": {
+                "properties": {
+                    "targetAverageValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.PodsMetricStatus": {
+                "properties": {
+                    "currentAverageValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.autoscaling.v2beta1.ResourceMetricStatus": {
+                "properties": {
+                    "currentAverageValue": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}

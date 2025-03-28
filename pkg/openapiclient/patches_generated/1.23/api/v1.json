@@ -1,0 +1,303 @@
+{
+    "components": {
+        "schemas": {
+            "io.k8s.api.authentication.v1.TokenRequestStatus": {
+                "properties": {
+                    "expirationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ConfigMap": {
+                "properties": {
+                    "binaryData": {
+                        "additionalProperties": {
+                            "allOf": [
+                                {
+                                    "anyOf": [
+                                        {
+                                            "format": "byte"
+                                        },
+                                        {
+                                            "maxLength": 0
+                                        }
+                                    ]
+                                }
+                            ],
+                            "format": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ContainerStateRunning": {
+                "properties": {
+                    "startedAt": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ContainerStateTerminated": {
+                "properties": {
+                    "finishedAt": {
+                        "default": null
+                    },
+                    "startedAt": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.Event": {
+                "properties": {
+                    "eventTime": {
+                        "default": null
+                    },
+                    "firstTimestamp": {
+                        "default": null
+                    },
+                    "lastTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.EventSeries": {
+                "properties": {
+                    "lastObservedTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.HTTPGetAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.LimitRangeItem": {
+                "properties": {
+                    "default": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "defaultRequest": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "max": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "maxLimitRequestRatio": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "min": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.NamespaceCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.NodeCondition": {
+                "properties": {
+                    "lastHeartbeatTime": {
+                        "default": null
+                    },
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.NodeStatus": {
+                "properties": {
+                    "allocatable": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "capacity": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PersistentVolumeClaimCondition": {
+                "properties": {
+                    "lastProbeTime": {
+                        "default": null
+                    },
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PersistentVolumeClaimStatus": {
+                "properties": {
+                    "allocatedResources": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "capacity": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PersistentVolumeSpec": {
+                "properties": {
+                    "capacity": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PodCondition": {
+                "properties": {
+                    "lastProbeTime": {
+                        "default": null
+                    },
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.PodSpec": {
+                "properties": {
+                    "overhead": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ReplicationControllerCondition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceFieldSelector": {
+                "properties": {
+                    "divisor": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceQuotaSpec": {
+                "properties": {
+                    "hard": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceQuotaStatus": {
+                "properties": {
+                    "hard": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "used": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ResourceRequirements": {
+                "properties": {
+                    "limits": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    },
+                    "requests": {
+                        "additionalProperties": {
+                            "default": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.Secret": {
+                "properties": {
+                    "data": {
+                        "additionalProperties": {
+                            "allOf": [
+                                {
+                                    "anyOf": [
+                                        {
+                                            "format": "byte"
+                                        },
+                                        {
+                                            "maxLength": 0
+                                        }
+                                    ]
+                                }
+                            ],
+                            "format": null
+                        }
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.ServicePort": {
+                "properties": {
+                    "targetPort": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.api.core.v1.TCPSocketAction": {
+                "properties": {
+                    "port": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Condition": {
+                "properties": {
+                    "lastTransitionTime": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+                "properties": {
+                    "creationTimestamp": {
+                        "default": null
+                    }
+                }
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+                "nullable": true
+            },
+            "io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent": {
+                "properties": {
+                    "object": {
+                        "default": null
+                    }
+                }
+            }
+        }
+    }
+}
