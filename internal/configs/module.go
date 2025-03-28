@@ -18,6 +18,7 @@ import (
 var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
+var folders map[string]bool = make(map[string]bool)
 
 // type Task struct {
 // 	function func()
@@ -112,6 +113,9 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 		diags = append(diags, sourceDiags...)
 		module,modDiags :=decodeFolder(source)
 		diags = append(diags, modDiags...)
+		if diags.HasErrors(){
+			return &decode.DecodedModule{},diags
+		}
 		for _,attr := range attrs {
 			if attr.Name == "depends_on"{
 				continue
@@ -309,9 +313,21 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 }
 
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if exists :=folders[folderName]; exists{
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Circle folder",
+			Detail: fmt.Sprintf("Folder can't be used as a module causes a loop: %s",folderName),
+		})
+		return &Module{},diags
+	}
+	folders[folderName] = true
+	folders[folderName+"/"] = true
+
 	var addrMap addrs.AddressMap = addrs.AddressMap{}
 	files, err := os.ReadDir(folderName)
-	var diags hcl.Diagnostics
 	var deployable *Module = &Module{}
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{

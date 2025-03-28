@@ -110,8 +110,8 @@ resource "nane" {
 # }
 
 
-# module "test" {
-#     source = "./test"
-#     bla = {"testing" = "testing"}
-#     # depends_on = [resource.t,resource.a]
-# }
+module "test" {
+    source = "./"
+    bla = {"testing" = "testing"}
+    # depends_on = [resource.t,resource.a]
+}
