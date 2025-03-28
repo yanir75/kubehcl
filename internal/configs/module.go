@@ -15,7 +15,7 @@ import (
 	"kubehcl.sh/kubehcl/internal/decode"
 )
 //TODO remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
-var maxGoRountines = 10
+// var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
 
