@@ -19,17 +19,15 @@ import (
 	"kubehcl.sh/kubehcl/cli"
 	"kubehcl.sh/kubehcl/client/storage"
 	"kubehcl.sh/kubehcl/internal/decode"
-	"kubehcl.sh/kubehcl/syntaxvalidator"
+	"kubehcl.sh/kubehcl/kube/syntaxvalidator"
 )
-
 
 type Config struct {
 	Settings *cli.EnvSettings
-	Client *kube.Client
-	Storage *storage.Storage 
-	Name string
+	Client   *kube.Client
+	Storage  *storage.Storage
+	Name     string
 }
-
 
 func New() *Config {
 
@@ -41,254 +39,249 @@ func New() *Config {
 	return cfg
 }
 
-
 // func (cfg *Config) Create() hcl.Diagnostics{
 
 // }
-func (cfg *Config) getState(module string) (map[string][]byte,hcl.Diagnostics){
-	secret,diags := cfg.Storage.GenSecret(module,nil)
-	client, err :=cfg.Client.Factory.KubernetesClientSet()
+func (cfg *Config) getState(module string) (map[string][]byte, hcl.Diagnostics) {
+	secret, diags := cfg.Storage.GenSecret(module, nil)
+	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't create or update state secret",
-			Detail: fmt.Sprintf("%s",err),
+			Summary:  "Couldn't create or update state secret",
+			Detail:   fmt.Sprintf("%s", err),
 		})
 	}
 
-
-	if getSecret, getSecretErr :=client.CoreV1().Secrets(cfg.Settings.Namespace()).Get(context.Background(),secret.Name,metav1.GetOptions{}); apierrors.IsNotFound(getSecretErr) {
-		return nil,diags
+	if getSecret, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Get(context.Background(), secret.Name, metav1.GetOptions{}); apierrors.IsNotFound(getSecretErr) {
+		return nil, diags
 	} else {
-		return getSecret.Data,diags
+		return getSecret.Data, diags
 	}
 }
 
-func (cfg *Config) getResource(module string) (map[string][]byte,hcl.Diagnostics){
-	data,diags := cfg.getState(module)
+func (cfg *Config) getResource(module string) (map[string][]byte, hcl.Diagnostics) {
+	data, diags := cfg.getState(module)
 	resourceMap := make(map[string][]byte)
 	if len(data) > 0 {
-		err :=json.Unmarshal(data["release"],&resourceMap)
+		err := json.Unmarshal(data["release"], &resourceMap)
 		if err != nil {
-			panic("should not get here: "+ err.Error())
+			panic("should not get here: " + err.Error())
 		}
 	}
 
-	return resourceMap,diags
+	return resourceMap, diags
 
 }
 
-
-func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.ResourceList,hcl.Diagnostics){
+func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resList kube.ResourceList
 
-	if res,err :=cfg.Client.Get(resources,false); apierrors.IsNotFound(err){
-		return resList,diags
+	if res, err := cfg.Client.Get(resources, false); apierrors.IsNotFound(err) {
+		return resList, diags
 	} else if err != nil {
-		for key := range res {		
-			diags = append(diags,&hcl.Diagnostic{
+		for key := range res {
+			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: fmt.Sprintf("Couldn't get resource: %s",key),
+				Summary:  fmt.Sprintf("Couldn't get resource: %s", key),
 			})
 		}
-		return resList,diags
+		return resList, diags
 	} else {
-		for _,value := range res {
-			for _,val := range value{
+		for _, value := range res {
+			for _, val := range value {
 				var resourceInfo *resource.Info = &resource.Info{}
-				refreshErr :=resourceInfo.Refresh(val,false)
+				refreshErr := resourceInfo.Refresh(val, false)
 				resourceInfo.Mapping = &meta.RESTMapping{}
 				resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")
 				resourceInfo.Mapping.GroupVersionKind = val.GetObjectKind().GroupVersionKind()
 				if refreshErr != nil {
-					panic("should not get here: "+refreshErr.Error())
-				} 
+					panic("should not get here: " + refreshErr.Error())
+				}
 				resList = append(resList, resourceInfo)
 			}
 		}
 	}
 
-	return resList,diags
+	return resList, diags
 }
 
-func (cfg *Config) compareStates(wanted kube.ResourceList,module string,name string) (*kube.Result,hcl.Diagnostics){
-	current,diags :=cfg.getResourceCurrentState(wanted)
-	saved,savedData := cfg.getResource(module)
+func (cfg *Config) compareStates(wanted kube.ResourceList, module string, name string) (*kube.Result, hcl.Diagnostics) {
+	current, diags := cfg.getResourceCurrentState(wanted)
+	saved, savedData := cfg.getResource(module)
 	reader := bytes.NewReader(saved[name])
-	savedResource,builderErr :=cfg.Client.Build(reader,true)
+	savedResource, builderErr := cfg.Client.Build(reader, true)
 	if builderErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't build and validate resources",
-			Detail: fmt.Sprintf("Kind: %s",saved[name],),
+			Summary:  "Couldn't build and validate resources",
+			Detail:   fmt.Sprintf("Kind: %s", saved[name]),
 		})
-		return nil,diags
+		return nil, diags
 	}
 	diags = append(diags, savedData...)
 
-	if len(current) > 1 || len(savedResource) > 1 || len(wanted) !=1 {
-		panic(fmt.Sprintf("Shouldn't get here\ncurrent:%d\nsavedResource:%d\nwanted:%d",len(current),len(savedResource),len(wanted)))
-	} 
-
-	if len(current) ==1 && len(savedResource) == 0{
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary: "Resource already exists but not managed by Kubehcl",
-			Detail: fmt.Sprintf("Kind: %s,\nResource:%s",current[0].Mapping.GroupVersionKind.Kind,current[0].Name,),
-		})
-		return nil,diags
+	if len(current) > 1 || len(savedResource) > 1 || len(wanted) != 1 {
+		panic(fmt.Sprintf("Shouldn't get here\ncurrent:%d\nsavedResource:%d\nwanted:%d", len(current), len(savedResource), len(wanted)))
 	}
 
-	res,err := cfg.Client.Update(current,wanted,false)
+	if len(current) == 1 && len(savedResource) == 0 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Resource already exists but not managed by Kubehcl",
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s", current[0].Mapping.GroupVersionKind.Kind, current[0].Name),
+		})
+		return nil, diags
+	}
+
+	res, err := cfg.Client.Update(current, wanted, false)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't update resource",
-			Detail: fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s",wanted[0].Mapping.GroupVersionKind.Kind,wanted[0].Name,err.Error()),
+			Summary:  "Couldn't update resource",
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
 		})
 	}
 
-	cfg.Client.Wait(wanted,100)
-	return res,diags
+	cfg.Client.Wait(wanted, 100)
+	return res, diags
 }
 
-func (cfg *Config) DeleteResources() (*kube.Result,hcl.Diagnostics){
+func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 	var wanted kube.ResourceList = kube.ResourceList{}
-	saved,diags := cfg.getResource(cfg.Name)
+	saved, diags := cfg.getResource(cfg.Name)
 	var toDelete kube.ResourceList
-	for key,value := range saved {
+	for key, value := range saved {
 		if cfg.Storage.Get(key) == nil {
 			reader := bytes.NewReader(value)
-			savedResource,builderErr :=cfg.Client.Build(reader,true)
+			savedResource, builderErr := cfg.Client.Build(reader, true)
 			if builderErr != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary: "Couldn't build and validate resources",
-					Detail: fmt.Sprintf("Kind: %s",value,),
+					Summary:  "Couldn't build and validate resources",
+					Detail:   fmt.Sprintf("Kind: %s", value),
 				})
-				return nil,diags
+				return nil, diags
 			}
 			toDelete = append(toDelete, savedResource...)
 		}
 
 	}
 
-	res,err := cfg.Client.Update(toDelete,wanted,false)
+	res, err := cfg.Client.Update(toDelete, wanted, false)
 	if err != nil {
-		for _,res := range toDelete {
+		for _, res := range toDelete {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't delete resource",
-				Detail: fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s",res.Mapping.GroupVersionKind.Kind,res.Name,err.Error()),
+				Summary:  "Couldn't delete resource",
+				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Mapping.GroupVersionKind.Kind, res.Name, err.Error()),
 			})
 		}
 	}
 
-	cfg.Client.Wait(wanted,100)
-	return res,diags
+	cfg.Client.Wait(wanted, 100)
+	return res, diags
 }
 
-func (cfg *Config) UpdateSecret() hcl.Diagnostics{
-	secret ,diags :=cfg.Storage.GenSecret(cfg.Name,nil)
-	client, err :=cfg.Client.Factory.KubernetesClientSet()
+func (cfg *Config) UpdateSecret() hcl.Diagnostics {
+	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
+	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't get client",
-			Detail: fmt.Sprintf("%s",err),
+			Summary:  "Couldn't get client",
+			Detail:   fmt.Sprintf("%s", err),
 		})
 	}
 
-	if _,createSecretErr :=client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(),secret,metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr){
-		if _,updateSecretErr :=client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(),secret,metav1.UpdateOptions{}); updateSecretErr !=nil{
+	if _, createSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
+		if _, updateSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't update state secret",
-				Detail: fmt.Sprintf("%s",updateSecretErr),
+				Summary:  "Couldn't update state secret",
+				Detail:   fmt.Sprintf("%s", updateSecretErr),
 			})
-		} 
-	} else if createSecretErr != nil{
+		}
+	} else if createSecretErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't create state secret",
-			Detail: fmt.Sprintf("%s",createSecretErr),
+			Summary:  "Couldn't create state secret",
+			Detail:   fmt.Sprintf("%s", createSecretErr),
 		})
 	}
 
 	return diags
 }
 
-func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result,hcl.Diagnostics){
+func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
 	var results *kube.Result = &kube.Result{}
-	for key,value := range resource.Config {
+	for key, value := range resource.Config {
 
-		data,err :=ctyjson.Marshal(value,value.Type())
+		data, err := ctyjson.Marshal(value, value.Type())
 
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't convert resource config to json",
-				Detail: fmt.Sprintf("%s",err),
-				Subject: &resource.DeclRange,
+				Summary:  "Couldn't convert resource config to json",
+				Detail:   fmt.Sprintf("%s", err),
+				Subject:  &resource.DeclRange,
 			})
 		}
 
-		cfg.Storage.Add(key,data)
+		cfg.Storage.Add(key, data)
 		reader := bytes.NewReader(data)
-		kubeResourceList,buildErr :=cfg.Client.Build(reader,true)
+		kubeResourceList, buildErr := cfg.Client.Build(reader, true)
 		if buildErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't build resource",
-				Detail: fmt.Sprintf("%s",buildErr),
-				Subject: &resource.DeclRange,
+				Summary:  "Couldn't build resource",
+				Detail:   fmt.Sprintf("%s", buildErr),
+				Subject:  &resource.DeclRange,
 			})
 		}
 
-		res,updateDiags := cfg.compareStates(kubeResourceList,cfg.Name,key)
-		if !updateDiags.HasErrors(){
+		res, updateDiags := cfg.compareStates(kubeResourceList, cfg.Name, key)
+		if !updateDiags.HasErrors() {
 			results.Created = append(results.Created, res.Created...)
 			results.Updated = append(results.Updated, res.Updated...)
 			results.Deleted = append(results.Deleted, res.Deleted...)
 		}
-		diags = append(diags,updateDiags...)
+		diags = append(diags, updateDiags...)
 	}
 
-	for _,diag := range diags {
+	for _, diag := range diags {
 		diag.Subject = &resource.DeclRange
 	}
-	
 
-	return results,diags
-	
+	return results, diags
 
 }
 
-func (cfg *Config) Validate(resource *decode.DecodedResource) (hcl.Diagnostics){
+func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	for key,value := range resource.Config {
-		data,err :=ctyjson.Marshal(value,value.Type())
+	for key, value := range resource.Config {
+		data, err := ctyjson.Marshal(value, value.Type())
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't convert resource config to json",
-				Detail: fmt.Sprintf("%s",err),
-				Subject: &resource.DeclRange,
+				Summary:  "Couldn't convert resource config to json",
+				Detail:   fmt.Sprintf("%s", err),
+				Subject:  &resource.DeclRange,
 			})
 		}
-		factory,validatorDiags :=syntaxvalidator.New()
+		factory, validatorDiags := syntaxvalidator.New()
 		diags = append(diags, validatorDiags...)
-		err = syntaxvalidator.ValidateDocument(data,factory)
-		
-		if err!=nil {
+		err = syntaxvalidator.ValidateDocument(data, factory)
+
+		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Resource Failed Validation",
-				Detail: fmt.Sprintf("Resource: %s failed validation\nErrors will be listed below\n%s",key,formatErr(err)),
-				Subject: &resource.DeclRange,
+				Summary:  "Resource Failed Validation",
+				Detail:   fmt.Sprintf("Resource: %s failed validation\nErrors will be listed below\n%s", key, formatErr(err)),
+				Subject:  &resource.DeclRange,
 			})
 		}
 	}
@@ -296,7 +289,7 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) (hcl.Diagnostics){
 }
 
 func formatErr(err error) string {
-	errStr := strings.Join(strings.Split(err.Error(),", "),"\n")
-	errStr = strings.ReplaceAll(errStr,"[","")
-	return strings.ReplaceAll(errStr,"]","")
+	errStr := strings.Join(strings.Split(err.Error(), ", "), "\n")
+	errStr = strings.ReplaceAll(errStr, "[", "")
+	return strings.ReplaceAll(errStr, "]", "")
 }

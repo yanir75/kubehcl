@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/openapi"
-	"kubehcl.sh/kubehcl/pkg/openapiclient/groupversion"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
 )
 
 func TestNewLocalCRDFiles(t *testing.T) {

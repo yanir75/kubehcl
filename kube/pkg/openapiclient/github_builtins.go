@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"k8s.io/client-go/openapi"
-	"kubehcl.sh/kubehcl/pkg/openapiclient/groupversion"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
 )
 
 // client which sources openapi definitions from GitHub

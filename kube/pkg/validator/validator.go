@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/openapi"
 	"k8s.io/kube-openapi/pkg/spec3"
 	"k8s.io/kube-openapi/pkg/validation/spec"
-	"kubehcl.sh/kubehcl/pkg/utils"
+	"kubehcl.sh/kubehcl/kube/pkg/utils"
 	"sigs.k8s.io/yaml"
 )
 

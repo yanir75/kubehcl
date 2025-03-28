@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kube-openapi/pkg/validation/spec"
-	"kubehcl.sh/kubehcl/pkg/utils"
+	"kubehcl.sh/kubehcl/kube/pkg/utils"
 )
 
 type SchemaPatch struct {

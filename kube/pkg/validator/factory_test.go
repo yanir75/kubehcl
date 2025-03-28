@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/openapi"
-	"kubehcl.sh/kubehcl/pkg/openapiclient"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient"
 	"sigs.k8s.io/yaml"
 )
 

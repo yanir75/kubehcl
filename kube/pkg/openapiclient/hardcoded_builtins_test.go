@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/version"
-	"kubehcl.sh/kubehcl/pkg/openapiclient"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient"
 )
 
 var LinkedK8sVersion *version.Version = func() *version.Version {

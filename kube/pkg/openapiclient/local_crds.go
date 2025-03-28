@@ -15,8 +15,8 @@ import (
 	"k8s.io/client-go/openapi"
 	"k8s.io/kube-openapi/pkg/spec3"
 	"k8s.io/kube-openapi/pkg/validation/spec"
-	"kubehcl.sh/kubehcl/pkg/openapiclient/groupversion"
-	"kubehcl.sh/kubehcl/pkg/utils"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
+	"kubehcl.sh/kubehcl/kube/pkg/utils"
 )
 
 //go:embed local_crds_metadata.json

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"k8s.io/client-go/openapi"
-	"kubehcl.sh/kubehcl/pkg/openapiclient/groupversion"
-	"kubehcl.sh/kubehcl/pkg/utils"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
+	"kubehcl.sh/kubehcl/kube/pkg/utils"
 )
 
 // client which provides openapi read from files on disk

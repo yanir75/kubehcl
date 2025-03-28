@@ -20,9 +20,9 @@
 # #     a = "test"
 # # }
 
-# default_annotations {
-#     # t = var.bla
-# }
+default_annotations {
+    t = "test"
+}
 
 variable "bla" {
 

@@ -13,17 +13,17 @@ import (
 
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
-	"kubehcl.sh/kubehcl/pkg/openapiclient"
-	"kubehcl.sh/kubehcl/pkg/validator"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient"
+	"kubehcl.sh/kubehcl/kube/pkg/validator"
 )
 
-func New() (*validator.Validator,hcl.Diagnostics){
+func New() (*validator.Validator, hcl.Diagnostics) {
 	var schemaPatchesFs, localSchemasFs fs.FS
 
 	var localCRDsFileSystems []fs.FS
 	var diags hcl.Diagnostics
 	// tool fetches openapi in the following priority order:
-	// factory, err := 
+	// factory, err :=
 	factory, err := validator.New(
 		openapiclient.NewOverlay(
 			// apply user defined patches on top of the final schema
@@ -58,11 +58,11 @@ func New() (*validator.Validator,hcl.Diagnostics){
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Summary: "Couldn't build validator",
-			Detail: "Kubernetes syntax won't be validated",
+			Detail:  "Kubernetes syntax won't be validated",
 		})
-		return nil,diags
+		return nil, diags
 	}
-	return factory,diags
+	return factory, diags
 
 }
 

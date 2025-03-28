@@ -173,6 +173,43 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
+	/*
+	Adding annotations to each decoded resource only if it has metadata defined beforehand
+	*/
+	for _,resource := range DecodedResources {
+		for res,resInfo := range resource.Config{
+			if resInfo.Type().IsObjectType() || resInfo.Type().IsMapType() {
+				resInfoMap := resInfo.AsValueMap()
+				if val,exists := resInfoMap["metadata"];exists {
+					if val.Type().IsObjectType() || val.Type().IsMapType() {
+						metadata :=val.AsValueMap()
+						if annotations,exists :=metadata["annotations"]; exists{
+							if annotations.Type().IsObjectType() || annotations.Type().IsMapType() {
+								annotationsMap :=val.AsValueMap()
+								for _,v := range DecodedAnnotations {
+									if _,exists := annotationsMap[v.Name];!exists{
+										annotationsMap[v.Name] = v.Value
+									}
+									metadata["annotations"] = cty.ObjectVal(annotationsMap)
+								}
+							}
+						} else {
+							annotationsMap := make(map[string]cty.Value)
+							for _,v := range DecodedAnnotations {
+								if _,exists := annotationsMap[v.Name];!exists{
+									annotationsMap[v.Name] = v.Value
+								}
+								
+							}
+							metadata["annotations"] = cty.ObjectVal(annotationsMap)
+						}
+						resInfoMap["metadata"] = cty.ObjectVal(metadata)
+					}
+				}
+				resource.Config[res] = cty.ObjectVal(resInfoMap)
+			}
+		}
+	}
 
 
 	return decodedModule, diags

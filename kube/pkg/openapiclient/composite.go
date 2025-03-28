@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"k8s.io/client-go/openapi"
-	"kubehcl.sh/kubehcl/pkg/openapiclient/groupversion"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
 )
 
 type compositeClient struct {

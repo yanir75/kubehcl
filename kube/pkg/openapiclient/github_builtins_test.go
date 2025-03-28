@@ -3,7 +3,7 @@ package openapiclient_test
 import (
 	"testing"
 
-	"kubehcl.sh/kubehcl/pkg/openapiclient"
+	"kubehcl.sh/kubehcl/kube/pkg/openapiclient"
 )
 
 func TestGitHubBuiltins(t *testing.T) {
