@@ -14,11 +14,10 @@ import (
 	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
-
+//TODO remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
 var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
-var folders map[string]bool = make(map[string]bool)
 
 // type Task struct {
 // 	function func()
@@ -68,6 +67,7 @@ type Module struct {
 	Resources   ResourceList
 	ModuleCalls ModuleCallList
 	DependsOn []hcl.Traversal
+	Source string
 }
 
 type ModuleList []*Module
@@ -98,24 +98,37 @@ func (m *Module) verify() hcl.Diagnostics {
 	return diags
 }
 
-func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	folders := make(map[string]bool)
+	folders[folderName] = true
+	folders[folderName+"/"] = true
+
 	decodedModule := &decode.DecodedModule{
 		Depth: depth,
 		Name:  m.Name,
 		DependsOn: m.DependsOn,
 	}
-	var diags hcl.Diagnostics
 	var modules []*Module
 	for _, call := range m.ModuleCalls {
 		source,sourceDiags := call.DecodeSource(&hcl.EvalContext{})
 		attrs,attrDiags :=call.Config.JustAttributes()
 		diags = append(diags, attrDiags...)
 		diags = append(diags, sourceDiags...)
-		module,modDiags :=decodeFolder(source)
-		diags = append(diags, modDiags...)
-		if diags.HasErrors(){
+		if exists :=folders[source]; exists{
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Circle folder",
+				Detail: fmt.Sprintf("Folder can't be used as a module causes a loop: %s",source),
+			})
 			return &decode.DecodedModule{},diags
 		}
+		folders[source] = true
+		folders[source+"/"] = true
+		module,modDiags :=decodeFolder(source)
+		module.Source = source
+		diags = append(diags, modDiags...)
 		for _,attr := range attrs {
 			if attr.Name == "depends_on"{
 				continue
@@ -173,7 +186,7 @@ func (m *Module) decode(depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _,module:= range modules {
-		dm,dmDiags :=module.decode(depth+1)
+		dm,dmDiags :=module.decode(depth+1,module.Source)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -315,17 +328,6 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
-	if exists :=folders[folderName]; exists{
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary: "Circle folder",
-			Detail: fmt.Sprintf("Folder can't be used as a module causes a loop: %s",folderName),
-		})
-		return &Module{},diags
-	}
-	folders[folderName] = true
-	folders[folderName+"/"] = true
-
 	var addrMap addrs.AddressMap = addrs.AddressMap{}
 	files, err := os.ReadDir(folderName)
 	var deployable *Module = &Module{}
@@ -367,7 +369,7 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 
 func DecodeFolderAndModules(folderName string, name string, depth int)(*decode.DecodedModule, hcl.Diagnostics){
 	mod,diags :=decodeFolder(folderName)
-	dm,decodeDiags := mod.decode(0)
+	dm,decodeDiags := mod.decode(0,folderName)
 	diags = append(diags, decodeDiags...)
 	return dm,diags
 }
