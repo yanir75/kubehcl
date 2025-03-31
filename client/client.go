@@ -145,6 +145,22 @@ func Destroy(args []string){
 	}
 }
 
+func List(){
+	cfg,diags := kubeclient.New("")
+	if diags.HasErrors(){
+		view.DiagPrinter(diags)
+	} else {
+		if secrets,diags := cfg.List(); diags.HasErrors() {
+			view.DiagPrinter(diags)
+		} else {
+			for _,secret := range secrets {
+				fmt.Printf("module: %s\n",secret)
+			}
+		}
+	}
+
+}
+
 func parseDestroyArgs(args []string) (string,hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 

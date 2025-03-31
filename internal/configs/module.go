@@ -9,6 +9,7 @@ Licesne: https://www.mozilla.org/en-US/MPL/2.0/
 package configs
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -63,7 +64,7 @@ var inputConfig = &hcl.BodySchema{
 
 var ext string = ".hcl"
 
-var varsFile string = "kubehcl.vars"
+var varsFile string = "kubehcl.tfvars"
 
 const (
 	rootName = "root"
@@ -94,19 +95,61 @@ func (m *Module) merge(o *Module) {
 	m.ModuleCalls = append(m.ModuleCalls, o.ModuleCalls...)
 }
 
-// func (m *Module) verify() hcl.Diagnostics {
-// 	var diags hcl.Diagnostics
-// 	for _, input := range m.Inputs {
-// 		if !input.HasDefault {
-// 			diags = append(diags, &hcl.Diagnostic{
-// 				Severity: hcl.DiagError,
-// 				Summary:  "Variable has no value",
-// 				Detail:   fmt.Sprintf("Variable %s has no value", input.Name),
-// 			})
-// 		}
-// 	}
-// 	return diags
-// }
+func (m *Module) verify() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	for _, input := range m.Inputs {
+		if !input.HasDefault {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Variable has no value",
+				Detail:   fmt.Sprintf("Variable %s has no value", input.Name),
+				Subject: &input.DeclRange,
+			})
+		}
+	}
+	return diags
+}
+
+func decodeVarsFile(folderName, fileName string) (VariableMap,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	var variables VariableMap = make(map[string]*Variable)
+	if fileName == "" {
+		fileName = varsFile
+	}
+	if string(folderName[len(folderName)-1]) != "/" {
+		folderName = folderName+"/"
+	}
+	fullName := folderName+fileName
+	if _, err := os.Stat(fullName); errors.Is(err, os.ErrNotExist) {
+		return VariableMap{},diags
+	}
+
+	f,err := os.Open(fullName)
+	if err!= nil {
+		fmt.Printf("%s",err)
+	}
+	data,err := io.ReadAll(f)
+	if err!= nil {
+		fmt.Printf("%s",err)
+	}
+
+	srcHCL, diagsParse := parser.ParseHCL(data, fileName)
+	diags = append(diags, diagsParse...)
+	attrs, attrDiags := srcHCL.Body.JustAttributes()
+	diags = append(diags, attrDiags...)
+	for _,attr := range attrs {
+		variables[attr.Name] = &Variable{
+			Name: attr.Name,
+			Default: attr.Expr,
+			HasDefault: true,
+			DeclRange: attr.NameRange,
+		}
+	}
+
+	return variables,diags
+	
+
+}
 
 func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -116,7 +159,30 @@ func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl
 		Name:  m.Name,
 		DependsOn: m.DependsOn,
 	}
+
+	if depth == 0 {
+		vars, varFileDiags :=decodeVarsFile(folderName,"")
+		diags = append(diags, varFileDiags...)
+		for key,variable := range vars {
+			if input,exists := m.Inputs[key]; exists {
+				input.Default = variable.Default
+				input.HasDefault = true
+			} else {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary: "Variable declared in vars but not in file",
+					Detail: fmt.Sprintf("Declare the variable in the file or remove it from vars file variabe: %s",variable.Name),
+					Subject: &variable.DeclRange,
+				})
+			}
+		}
+		diags = append(diags,m.verify()...)
+	}
 	
+	if diags.HasErrors() {
+		return &decode.DecodedModule{},diags
+	}
+
 	var modules ModuleList
 	for _, call := range m.ModuleCalls {
 		source,sourceDiags := call.DecodeSource(&hcl.EvalContext{})
@@ -182,6 +248,7 @@ func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl
 		modules = append(modules, module)
 		
 	}
+	
 	if diags.HasErrors() {
 		return &decode.DecodedModule{},diags
 	}
@@ -385,9 +452,6 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 		deployable.merge(module)
 	}
 
-	// verDiags := deployable.verify()
-	// diags = append(diags, verDiags...)
-
 	// dM, decodeModuleDiags := deployable.decode(depth)
 	// diags = append(diags, decodeModuleDiags...)
 	// dM.Name = name
@@ -395,7 +459,7 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 }
 
 func DecodeFolderAndModules(folderName string, name string, depth int)(*decode.DecodedModule, hcl.Diagnostics){
-	mod,diags :=decodeFolder(folderName)
+	mod,diags := decodeFolder(folderName)
 	dm,decodeDiags := mod.decode(0,folderName)
 	diags = append(diags, decodeDiags...)
 	return dm,diags

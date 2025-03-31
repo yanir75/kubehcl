@@ -19,6 +19,8 @@ import (
 
 
 var mutex sync.Mutex
+
+var SecretType = "kubehcl.sh/module.v1"
 type Storage struct {
 	resourceList map[string][]byte
 } 
@@ -44,7 +46,7 @@ func (s *Storage) GenSecret(key string,lbs labels) (*v1.Secret, hcl.Diagnostics)
 			Name:   "kubehcl."+key,
 			Labels: lbs.toMap(),
 		},
-		Type: "kubehcl.sh/module.v1",
+		Type: v1.SecretType(SecretType),
 		Data: releaseMap,
 	}, diags
 }

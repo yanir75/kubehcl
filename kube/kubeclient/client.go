@@ -377,3 +377,26 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 	cfg.deleteState()
 	return res, diags
 }
+
+
+func (cfg *Config) List() ([]string,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	client, err := cfg.Client.Factory.KubernetesClientSet()
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't get secrets",
+			Detail:   fmt.Sprintf("%s", err),
+		})
+	}
+
+	if secretList, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).List(context.Background(), metav1.ListOptions{FieldSelector: "type="+storage.SecretType}); apierrors.IsNotFound(getSecretErr) {
+		return nil, diags
+	} else {
+		var secretNames []string
+		for _,secret := range secretList.Items {
+			secretNames = append(secretNames, secret.Name)
+		}
+		return secretNames, diags
+	}
+}

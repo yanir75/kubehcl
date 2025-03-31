@@ -1,6 +1,6 @@
 file_dict = {
 "../main.go" : ("mine", False),
-"../settings/environment.go" : ("helm", False),
+"../settings/environment.go" : ("helm", True),
 "../internal/addrs/local_test.go" : ("opentofu", True),
 "../internal/addrs/deployable.go" : ("opentofu", True),
 "../internal/addrs/referenceable.go" : ("opentofu", True),
