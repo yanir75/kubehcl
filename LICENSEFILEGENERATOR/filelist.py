@@ -10,7 +10,7 @@ file_dict = {
 "../internal/addrs/local.go" : ("opentofu", True),
 "../internal/addrs/variable.go" : ("opentofu", True),
 "../internal/addrs/default_annotation_test.go" : ("opentofu", True),
-"../internal/addrs/address_map.go" : ("opentofu", True),
+"../internal/addrs/address_map.go" : ("mine", True),
 "../internal/addrs/unique_test.go" : ("opentofu", True),
 "../internal/addrs/module.go" : ("opentofu", True),
 "../internal/dag/edge.go" : ("opentofu", False),
