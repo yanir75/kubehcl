@@ -50,6 +50,7 @@ func Apply(args []string){
 	createFunc := func(v dag.Vertex) hcl.Diagnostics{
 		switch tt:=v.(type){
 		case *decode.DecodedResource:
+			fmt.Printf("Creating/Updating resource :%s\n",tt.Name)
 			res,createDiags := cfg.Create(tt)
 			if !createDiags.HasErrors(){
 				mutex.Lock()
@@ -57,6 +58,7 @@ func Apply(args []string){
 				results.Created = append(results.Created, res.Created...)
 				results.Updated = append(results.Updated, res.Updated...)
 				results.Deleted = append(results.Deleted, res.Deleted...)
+				fmt.Printf("Created/Updated resource :%s\n",tt.Name)
 			}
 			return createDiags
 			// fmt.Printf("%s",asdf.Created[0])

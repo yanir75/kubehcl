@@ -33,6 +33,7 @@ resource "foo" {
       }
     }
   }
+  depends_on = [module.test]
 }
 
 module "test" {
