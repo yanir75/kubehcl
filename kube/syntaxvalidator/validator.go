@@ -1,3 +1,11 @@
+/* 
+This file was inspired from https://github.com/kubernetes-sigs/kubectl-validate
+This file has been modified from the original version
+Changes made to fit kubehcl purposes
+This file retains its' original license
+// SPDX-License-Identifier: Apache-2.0
+Licesne: https://www.apache.org/licenses/LICENSE-2.0
+*/
 package syntaxvalidator
 
 import (
@@ -88,3 +96,4 @@ func ValidateDocument(document []byte, resolver *validator.Validator) error {
 	}
 	return resolver.Validate(parsed)
 }
+

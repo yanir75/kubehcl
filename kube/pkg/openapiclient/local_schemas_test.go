@@ -1,3 +1,7 @@
+/* 
+// SPDX-License-Identifier: Apache-2.0
+This file was copied from https://github.com/kubernetes-sigs/kubectl-validate and retains its' original license: https://www.apache.org/licenses/LICENSE-2.0
+*/
 package openapiclient
 
 import (
@@ -118,3 +122,4 @@ func Test_localSchemasClient_Paths(t *testing.T) {
 		})
 	}
 }
+

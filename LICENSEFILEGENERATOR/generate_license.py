@@ -5,6 +5,7 @@ def line_prepender(filename, line):
         content = f.read()
         f.seek(0, 0)
         f.write(line.rstrip('\r\n') + '\n' + content)
+        f.write("\n")
 
 comment = """/* 
 This file was inspired from {repo}
@@ -18,7 +19,7 @@ Licesne: {license}
 
 copy_comment = """/* 
 {spdx}
-This file was copied from {repo} and retains the {license}
+This file was copied from {repo} and retains its' original license: {license}
 */
 """
 
@@ -34,6 +35,6 @@ for key,value in file_dict.items():
     if repo_name !="mine":
         name,spdx,url = repo_dict[repo_name]
         if modified:
-            line_prepender(key,comment.format(repo = name, spdx = spdx, license = url)+"\n")
+            line_prepender(key,comment.format(repo = name, spdx = spdx, license = url))
         else:
-            line_prepender(key,copy_comment.format(repo = name, spdx = spdx, license = url)+"\n")
+            line_prepender(key,copy_comment.format(repo = name, spdx = spdx, license = url))

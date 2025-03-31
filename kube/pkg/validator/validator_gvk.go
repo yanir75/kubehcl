@@ -1,3 +1,7 @@
+/* 
+// SPDX-License-Identifier: Apache-2.0
+This file was copied from https://github.com/kubernetes-sigs/kubectl-validate and retains its' original license: https://www.apache.org/licenses/LICENSE-2.0
+*/
 package validator
 
 import (
@@ -136,3 +140,4 @@ func (s *basicValidatorAdapter) Validate(new interface{}, options ...validation.
 func (s *basicValidatorAdapter) ValidateUpdate(new, _ interface{}, options ...validation.ValidationOption) *validate.Result {
 	return s.Validate(new)
 }
+

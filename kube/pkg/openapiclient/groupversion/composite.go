@@ -1,3 +1,7 @@
+/* 
+// SPDX-License-Identifier: Apache-2.0
+This file was copied from https://github.com/kubernetes-sigs/kubectl-validate and retains its' original license: https://www.apache.org/licenses/LICENSE-2.0
+*/
 package groupversion
 
 import (
@@ -55,3 +59,4 @@ func (gv *compositeGroupVersion) ServerRelativeURL() string {
 func NewForComposite(gvFetchers ...openapi.GroupVersion) openapi.GroupVersion {
 	return &compositeGroupVersion{gvFetchers}
 }
+
