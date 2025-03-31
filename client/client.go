@@ -1,295 +1,132 @@
 package client
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"strings"
+	"os"
+	"sync"
 
-	"github.com/hashicorp/hcl/v2"
 	"helm.sh/helm/v4/pkg/kube"
 
-	"encoding/json"
-
+	"github.com/hashicorp/hcl/v2"
+	ctyyaml "github.com/zclconf/go-cty-yaml"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/resource"
-	"kubehcl.sh/kubehcl/cli"
-	"kubehcl.sh/kubehcl/client/storage"
+	"kubehcl.sh/kubehcl/internal/configs"
+	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
-	"kubehcl.sh/kubehcl/kube/syntaxvalidator"
+	"kubehcl.sh/kubehcl/internal/view"
+	"kubehcl.sh/kubehcl/kube/kubeclient"
 )
 
-type Config struct {
-	Settings *cli.EnvSettings
-	Client   *kube.Client
-	Storage  *storage.Storage
-	Name     string
-}
+func Apply(){
+	d, diags := configs.DecodeFolderAndModules(".", "root", 0)
+	g := &configs.Graph{
+		DecodedModule: d,
+	}
+	diags = append(diags, g.Init()...)
+	cfg,cfgDiags := kubeclient.New()
+	diags = append(diags, cfgDiags...)
 
-func New() *Config {
-
-	cfg := &Config{}
-	cfg.Settings = cli.New()
-	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
-	cfg.Storage = storage.New()
-	cfg.Name = "test"
-	return cfg
-}
-
-// func (cfg *Config) Create() hcl.Diagnostics{
-
-// }
-func (cfg *Config) getState(module string) (map[string][]byte, hcl.Diagnostics) {
-	secret, diags := cfg.Storage.GenSecret(module, nil)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't create or update state secret",
-			Detail:   fmt.Sprintf("%s", err),
-		})
+	if diags.HasErrors(){
+		view.DiagPrinter(diags)
+		os.Exit(1)
 	}
 
-	if getSecret, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Get(context.Background(), secret.Name, metav1.GetOptions{}); apierrors.IsNotFound(getSecretErr) {
-		return nil, diags
-	} else {
-		return getSecret.Data, diags
-	}
-}
-
-func (cfg *Config) getResource(module string) (map[string][]byte, hcl.Diagnostics) {
-	data, diags := cfg.getState(module)
-	resourceMap := make(map[string][]byte)
-	if len(data) > 0 {
-		err := json.Unmarshal(data["release"], &resourceMap)
-		if err != nil {
-			panic("should not get here: " + err.Error())
-		}
-	}
-
-	return resourceMap, diags
-
-}
-
-func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	var resList kube.ResourceList
-
-	if res, err := cfg.Client.Get(resources, false); apierrors.IsNotFound(err) {
-		return resList, diags
-	} else if err != nil {
-		for key := range res {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("Couldn't get resource: %s", key),
-			})
-		}
-		return resList, diags
-	} else {
-		for _, value := range res {
-			for _, val := range value {
-				var resourceInfo *resource.Info = &resource.Info{}
-				refreshErr := resourceInfo.Refresh(val, false)
-				resourceInfo.Mapping = &meta.RESTMapping{}
-				resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")
-				resourceInfo.Mapping.GroupVersionKind = val.GetObjectKind().GroupVersionKind()
-				if refreshErr != nil {
-					panic("should not get here: " + refreshErr.Error())
-				}
-				resList = append(resList, resourceInfo)
-			}
-		}
-	}
-
-	return resList, diags
-}
-
-func (cfg *Config) compareStates(wanted kube.ResourceList, module string, name string) (*kube.Result, hcl.Diagnostics) {
-	current, diags := cfg.getResourceCurrentState(wanted)
-	saved, savedData := cfg.getResource(module)
-	reader := bytes.NewReader(saved[name])
-	savedResource, builderErr := cfg.Client.Build(reader, true)
-	if builderErr != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't build and validate resources",
-			Detail:   fmt.Sprintf("Kind: %s", saved[name]),
-		})
-		return nil, diags
-	}
-	diags = append(diags, savedData...)
-
-	if len(current) > 1 || len(savedResource) > 1 || len(wanted) != 1 {
-		panic(fmt.Sprintf("Shouldn't get here\ncurrent:%d\nsavedResource:%d\nwanted:%d", len(current), len(savedResource), len(wanted)))
-	}
-
-	if len(current) == 1 && len(savedResource) == 0 {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Resource already exists but not managed by Kubehcl",
-			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s", current[0].Mapping.GroupVersionKind.Kind, current[0].Name),
-		})
-		return nil, diags
-	}
-
-	res, err := cfg.Client.Update(current, wanted, false)
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't update resource",
-			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
-		})
-	}
-
-	cfg.Client.Wait(wanted, 100)
-	return res, diags
-}
-
-func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
-	var wanted kube.ResourceList = kube.ResourceList{}
-	saved, diags := cfg.getResource(cfg.Name)
-	var toDelete kube.ResourceList
-	for key, value := range saved {
-		if cfg.Storage.Get(key) == nil {
-			reader := bytes.NewReader(value)
-			savedResource, builderErr := cfg.Client.Build(reader, true)
-			if builderErr != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Couldn't build and validate resources",
-					Detail:   fmt.Sprintf("Kind: %s", value),
-				})
-				return nil, diags
-			}
-			toDelete = append(toDelete, savedResource...)
-		}
-
-	}
-
-	res, err := cfg.Client.Update(toDelete, wanted, false)
-	if err != nil {
-		for _, res := range toDelete {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't delete resource",
-				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Mapping.GroupVersionKind.Kind, res.Name, err.Error()),
-			})
-		}
-	}
-
-	cfg.Client.Wait(wanted, 100)
-	return res, diags
-}
-
-func (cfg *Config) UpdateSecret() hcl.Diagnostics {
-	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't get client",
-			Detail:   fmt.Sprintf("%s", err),
-		})
-	}
-
-	if _, createSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
-		if _, updateSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't update state secret",
-				Detail:   fmt.Sprintf("%s", updateSecretErr),
-			})
-		}
-	} else if createSecretErr != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't create state secret",
-			Detail:   fmt.Sprintf("%s", createSecretErr),
-		})
-	}
-
-	return diags
-}
-
-func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
-
-	var diags hcl.Diagnostics
 	var results *kube.Result = &kube.Result{}
-	for key, value := range resource.Config {
-
-		data, err := ctyjson.Marshal(value, value.Type())
-
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't convert resource config to json",
-				Detail:   fmt.Sprintf("%s", err),
-				Subject:  &resource.DeclRange,
-			})
+	var mutex sync.Mutex
+	validateFunc := func(v dag.Vertex) hcl.Diagnostics{
+		switch tt:=v.(type){
+		case *decode.DecodedResource:
+			return cfg.Validate(tt)
 		}
-
-		cfg.Storage.Add(key, data)
-		reader := bytes.NewReader(data)
-		kubeResourceList, buildErr := cfg.Client.Build(reader, true)
-		if buildErr != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't build resource",
-				Detail:   fmt.Sprintf("%s", buildErr),
-				Subject:  &resource.DeclRange,
-			})
+		return nil
+	}
+	createFunc := func(v dag.Vertex) hcl.Diagnostics{
+		switch tt:=v.(type){
+		case *decode.DecodedResource:
+			res,createDiags := cfg.Create(tt)
+			if !createDiags.HasErrors(){
+				mutex.Lock()
+				defer mutex.Unlock()
+				results.Created = append(results.Created, res.Created...)
+				results.Updated = append(results.Updated, res.Updated...)
+				results.Deleted = append(results.Deleted, res.Deleted...)
+			}
+			return createDiags
+			// fmt.Printf("%s",asdf.Created[0])
 		}
-
-		res, updateDiags := cfg.compareStates(kubeResourceList, cfg.Name, key)
-		if !updateDiags.HasErrors() {
-			results.Created = append(results.Created, res.Created...)
-			results.Updated = append(results.Updated, res.Updated...)
-			results.Deleted = append(results.Deleted, res.Deleted...)
+		return nil
+	}
+	
+	diags = append(diags,g.Walk(validateFunc)...)
+	if !diags.HasErrors(){
+		diags = append(diags,g.Walk(createFunc)...)
+		cfg.DeleteResources()
+		if !diags.HasErrors(){
+			diags = append(diags,cfg.UpdateSecret()...)
 		}
-		diags = append(diags, updateDiags...)
 	}
 
-	for _, diag := range diags {
-		diag.Subject = &resource.DeclRange
-	}
-
-	return results, diags
+	view.DiagPrinter(diags)
 
 }
 
-func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	for key, value := range resource.Config {
-		data, err := ctyjson.Marshal(value, value.Type())
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't convert resource config to json",
-				Detail:   fmt.Sprintf("%s", err),
-				Subject:  &resource.DeclRange,
-			})
-		}
-		factory, validatorDiags := syntaxvalidator.New()
-		diags = append(diags, validatorDiags...)
-		err = syntaxvalidator.ValidateDocument(data, factory)
-
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Resource Failed Validation",
-				Detail:   fmt.Sprintf("Resource: %s failed validation\nErrors will be listed below\n%s", key, formatErr(err)),
-				Subject:  &resource.DeclRange,
-			})
-		}
+func Template(kind string) {
+	d, diags := configs.DecodeFolderAndModules(".", "root", 0)
+	g := &configs.Graph{
+		DecodedModule: d,
 	}
-	return diags
+	diags = append(diags, g.Init()...)
+
+	if diags.HasErrors(){
+		view.DiagPrinter(diags)
+		os.Exit(1)
+	}
+	var mutex sync.Mutex
+
+	printFunc := func(v dag.Vertex) hcl.Diagnostics{
+		switch resource:=v.(type){
+			case *decode.DecodedResource:
+			for key,value := range resource.Config {
+				var resourceOutput []byte
+				var err error
+
+				if kind == "yaml" {
+					resourceOutput,err =ctyyaml.Marshal(value)
+
+				}
+				if kind == "json" {
+					resourceOutput,err =ctyjson.Marshal(value,value.Type())
+				}
+
+				if err != nil {
+					mutex.Lock()
+					defer mutex.Unlock()
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary: "Resource couldn't be marshalled",
+						Detail: fmt.Sprintf("Resource: %s couldn't be marshalled",resource.Name),
+						Subject: &resource.DeclRange,
+					})
+				} else {
+					fmt.Printf("Resource: %s\n\n",key)	
+					fmt.Printf("%s______________________________________________\n",string(resourceOutput))	
+				}
+			}
+		}
+		return nil
+	}
+
+	diags = append(diags,g.Walk(printFunc)...)
+
+	view.DiagPrinter(diags)
+
 }
 
-func formatErr(err error) string {
-	errStr := strings.Join(strings.Split(err.Error(), ", "), "\n")
-	errStr = strings.ReplaceAll(errStr, "[", "")
-	return strings.ReplaceAll(errStr, "]", "")
+func Destroy(){
+	cfg,diags := kubeclient.New()
+	if diags.HasErrors() {
+		view.DiagPrinter(diags)
+	} else {
+		cfg.DeleteAllResources()
+	}
 }

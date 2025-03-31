@@ -101,22 +101,21 @@ func (m *Module) verify() hcl.Diagnostics {
 func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
-	folders := make(map[string]bool)
-	folders[folderName] = true
-	folders[folderName+"/"] = true
-
 	decodedModule := &decode.DecodedModule{
 		Depth: depth,
 		Name:  m.Name,
 		DependsOn: m.DependsOn,
 	}
-	var modules []*Module
+	
+	var modules ModuleList
 	for _, call := range m.ModuleCalls {
 		source,sourceDiags := call.DecodeSource(&hcl.EvalContext{})
 		attrs,attrDiags :=call.Config.JustAttributes()
 		diags = append(diags, attrDiags...)
 		diags = append(diags, sourceDiags...)
-		if exists :=folders[source]; exists{
+		module,modDiags := decodeFolder(source)
+		module.Source = source
+		if folderName ==source || folderName == source+"./" || folderName+"./"==source {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary: "Circle folder",
@@ -124,10 +123,7 @@ func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl
 			})
 			return &decode.DecodedModule{},diags
 		}
-		folders[source] = true
-		folders[source+"/"] = true
-		module,modDiags :=decodeFolder(source)
-		module.Source = source
+
 		diags = append(diags, modDiags...)
 		for _,attr := range attrs {
 			if attr.Name == "depends_on"{

@@ -34,7 +34,7 @@ variable "bla" {
 }
 
 resource "nane" {
-  for_each = {"key" = "tasd"}
+  for_each = {"key" = "tasd","key2" = "asdf"}
   apiVersion = "apps/v1"
   kind       = "Deployment"
   metadata = {
@@ -110,8 +110,8 @@ resource "nane" {
 # }
 
 
-module "test" {
-    source = "./"
-    bla = {"testing" = "testing"}
-    # depends_on = [resource.t,resource.a]
-}
+# module "test" {
+#     source = "./"
+#     bla = {"testing" = "testing"}
+#     # depends_on = [resource.t,resource.a]
+# }

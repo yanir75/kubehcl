@@ -234,3 +234,5 @@ func DiagPrinter(diags hcl.Diagnostics) {
 	v.streams.Stderr.Columns()
 	v.Diagnostics(d)
 }
+
+

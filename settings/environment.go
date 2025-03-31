@@ -21,7 +21,7 @@ Helm's environment encapsulates all of the service dependencies Helm has.
 These dependencies are expressed as interfaces so that alternate implementations
 (mocks, etc.) can be easily generated.
 */
-package cli
+package settings
 
 import (
 	"fmt"
