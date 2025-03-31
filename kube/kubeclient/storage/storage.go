@@ -57,6 +57,12 @@ func (s *Storage) Add(name string, data []byte){
 	s.resourceList[name] = data
 }
 
+func (s *Storage) Delete(name string){
+	mutex.Lock()
+	defer mutex.Unlock()
+	delete(s.resourceList,name)
+}
+
 func (s *Storage) Get(name string)[]byte{
 	if data,exists:=s.resourceList[name]; exists {
 		return data

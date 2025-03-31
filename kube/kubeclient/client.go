@@ -37,13 +37,13 @@ type Config struct {
 	Name     string
 }
 
-func New() (*Config,hcl.Diagnostics) {
+func New(name string) (*Config,hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
 	cfg.Settings = settings.New()
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
 	cfg.Storage = storage.New()
-	cfg.Name = "test"
+	cfg.Name = name
 	diags = append(diags, cfg.IsReachable()...)
 
 	return cfg,diags
@@ -135,7 +135,7 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 	return resList, diags
 }
 
-func (cfg *Config) compareStates(wanted kube.ResourceList, module string, name string) (*kube.Result, hcl.Diagnostics) {
+func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
 	current, diags := cfg.getResourceCurrentState(wanted)
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
@@ -160,6 +160,8 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, module string, name s
 			Summary:  "Resource already exists but not managed by Kubehcl",
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s", current[0].Mapping.GroupVersionKind.Kind, current[0].Name),
 		})
+		cfg.Storage.Delete(current[0].Name)
+
 		return nil, diags
 	}
 
@@ -270,7 +272,7 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 			})
 		}
 
-		res, updateDiags := cfg.compareStates(kubeResourceList, cfg.Name, key)
+		res, updateDiags := cfg.compareStates(kubeResourceList,  key)
 		if !updateDiags.HasErrors() {
 			results.Created = append(results.Created, res.Created...)
 			results.Updated = append(results.Updated, res.Updated...)

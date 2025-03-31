@@ -22,9 +22,11 @@ func CreateRootCMD() *cobra.Command{
 	
 
 	rootCmd.AddCommand(	
+						licenseCmd(),
 						applyCmd(),
 						destroyCmd(),
 						templateCmd(),
+						
 					)
 	rootCmd.Root().CompletionOptions.DisableDefaultCmd = true
 

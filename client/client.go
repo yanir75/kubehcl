@@ -17,13 +17,20 @@ import (
 	"kubehcl.sh/kubehcl/kube/kubeclient"
 )
 
-func Apply(){
-	d, diags := configs.DecodeFolderAndModules(".", "root", 0)
+func Apply(args []string){
+	name,folderName,diags := parseApplyArgs(args)
+	if diags.HasErrors(){
+		view.DiagPrinter(diags)
+		return
+	}
+
+	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0)
+	diags = append(diags, decodeDiags...)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
-	cfg,cfgDiags := kubeclient.New()
+	cfg,cfgDiags := kubeclient.New(name)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors(){
@@ -61,14 +68,14 @@ func Apply(){
 	if !diags.HasErrors(){
 		diags = append(diags,g.Walk(createFunc)...)
 		cfg.DeleteResources()
-		if !diags.HasErrors(){
-			diags = append(diags,cfg.UpdateSecret()...)
-		}
 	}
+	diags = append(diags,cfg.UpdateSecret()...)
+
 
 	view.DiagPrinter(diags)
 
 }
+
 
 func Template(kind string) {
 	d, diags := configs.DecodeFolderAndModules(".", "root", 0)
@@ -122,11 +129,55 @@ func Template(kind string) {
 
 }
 
-func Destroy(){
-	cfg,diags := kubeclient.New()
+func Destroy(args []string){
+	name,diags := parseDestroyArgs(args)
+	if diags.HasErrors(){
+		view.DiagPrinter(diags)
+		return
+	}
+	cfg,cfgDiags := kubeclient.New(name)
+	diags = append(diags, cfgDiags...)
+
 	if diags.HasErrors() {
 		view.DiagPrinter(diags)
 	} else {
 		cfg.DeleteAllResources()
 	}
+}
+
+func parseDestroyArgs(args []string) (string,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) > 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Too many arguments required arguments are: name",
+		})
+		return "",diags
+	}
+
+	if len(args) < 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Too few arguments required arguments are: name",
+		})
+		return "",diags
+	}
+
+	return args[0],diags
+
+}
+
+func parseApplyArgs(args []string) (string, string,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) != 2 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Required arguments are :[name, folder name]",
+		})
+		return "","",diags
+	}
+	return args[0],args[1],diags
+
 }

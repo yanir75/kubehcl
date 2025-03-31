@@ -36,8 +36,8 @@ func (m ModuleCall) Equals(o ModuleCall) bool {
 	return m.String() == o.String()
 }
 
-const (
-	mLocal  = "l"
-	mRemote = "r"
-)
+// const (
+// 	mLocal  = "l"
+// 	mRemote = "r"
+// )
 

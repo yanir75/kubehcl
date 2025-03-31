@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -14,6 +14,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+
 	// "sync"
 
 	"github.com/hashicorp/hcl/v2"
@@ -22,6 +23,7 @@ import (
 	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
+
 //TODO remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
 // var maxGoRountines = 10
 
@@ -92,19 +94,19 @@ func (m *Module) merge(o *Module) {
 	m.ModuleCalls = append(m.ModuleCalls, o.ModuleCalls...)
 }
 
-func (m *Module) verify() hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	for _, input := range m.Inputs {
-		if !input.HasDefault {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Variable has no input",
-				Detail:   fmt.Sprintf("Variable %s has no value", input.Name),
-			})
-		}
-	}
-	return diags
-}
+// func (m *Module) verify() hcl.Diagnostics {
+// 	var diags hcl.Diagnostics
+// 	for _, input := range m.Inputs {
+// 		if !input.HasDefault {
+// 			diags = append(diags, &hcl.Diagnostic{
+// 				Severity: hcl.DiagError,
+// 				Summary:  "Variable has no value",
+// 				Detail:   fmt.Sprintf("Variable %s has no value", input.Name),
+// 			})
+// 		}
+// 	}
+// 	return diags
+// }
 
 func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -118,6 +120,14 @@ func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl
 	var modules ModuleList
 	for _, call := range m.ModuleCalls {
 		source,sourceDiags := call.DecodeSource(&hcl.EvalContext{})
+		if string(folderName[len(folderName)-1]) != "/" {
+			folderName = folderName+"/"
+		}
+
+		if string(source[:2]) == "./" {
+			source = source[2:]
+		}
+		source = folderName+source
 		attrs,attrDiags :=call.Config.JustAttributes()
 		diags = append(diags, attrDiags...)
 		diags = append(diags, sourceDiags...)
@@ -157,10 +167,23 @@ func (m *Module) decode(depth int,folderName string) (*decode.DecodedModule, hcl
 				module.Inputs[variable.Name] = variable
 			}
 		}
+		for _,input := range module.Inputs {
+			if !input.HasDefault {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary: "Variable requires value",
+					Detail: fmt.Sprintf("Need to assign a value to variable which was declared in the module: %s",input.Name),
+					Subject: &input.DeclRange,
+				})
+			}
+		}
 		module.Name = call.Name
 		module.DependsOn = call.DependsOn
 		modules = append(modules, module)
 		
+	}
+	if diags.HasErrors() {
+		return &decode.DecodedModule{},diags
 	}
 
 	decodedVariables, decodeVarDiags := m.Inputs.Decode()
@@ -362,8 +385,8 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 		deployable.merge(module)
 	}
 
-	verDiags := deployable.verify()
-	diags = append(diags, verDiags...)
+	// verDiags := deployable.verify()
+	// diags = append(diags, verDiags...)
 
 	// dM, decodeModuleDiags := deployable.decode(depth)
 	// diags = append(diags, decodeModuleDiags...)
