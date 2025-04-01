@@ -7,6 +7,7 @@ Parts of the code were copied and modified from the following repositories.
 Links: [helm](https://github.com/helm/helm)  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[opentofu](https://github.com/opentofu/opentofu)  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[kubectl-validate](https://github.com/kubernetes-sigs/kubectl-validate)  
+
 **This project is not affiliated or endorsed by any of the projects/companies stated above or any other project/company at all.**
 
 ## Tool usage
