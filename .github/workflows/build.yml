@@ -1,27 +1,39 @@
-name: Go
+name: Release
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*' # Trigger release on version tag push (e.g., v1.0.0)
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        go-version: [ '1.24.1' ]
-        os: [macos-latest, windows-latest, ubuntu-latest]
-    
-    runs-on: ${{ matrix.os }}
+  build-and-release:
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
-      - name: Install dependencies
-        run: go get .
-      - name: Build
-        run: go build .
-      - name: Test with the Go CLI
-        run: go test ./...
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v2
 
+      # Set up Git
+      - name: Set up Git
+        run: git config --global user.name 'GitHub Actions' && git config --global user.email 'actions@github.com'
+
+      # Create the .zip archive
+      - name: Create .zip archive
+        run: |
+          zip -r repo.zip . > /dev/null
+
+      # Create the .tar.gz archive
+      - name: Create .tar.gz archive
+        run: |
+          tar -czf repo.tar.gz . > /dev/null
+
+      # Upload release assets to GitHub Releases
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            repo.zip
+            repo.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
