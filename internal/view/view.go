@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -236,12 +236,9 @@ func DiagPrinter(diags hcl.Diagnostics) {
 	var d tfdiags.Diagnostics
 	d = d.Append(diags)
 	v.Configure(&ViewArgs{
-		NoColor: false,
+		NoColor:             false,
 		ConsolidateWarnings: true,
 	})
 	v.streams.Stderr.Columns()
 	v.Diagnostics(d)
 }
-
-
-

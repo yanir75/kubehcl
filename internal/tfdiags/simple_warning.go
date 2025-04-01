@@ -1,4 +1,4 @@
-/* 
+/*
 // SPDX-License-Identifier: MPL-2.0
 This file was copied from https://github.com/opentofu/opentofu and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
 */
@@ -42,4 +42,3 @@ func (e simpleWarning) ExtraInfo() interface{} {
 	// Simple warnings cannot carry extra information.
 	return nil
 }
-

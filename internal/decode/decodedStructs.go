@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -30,13 +30,14 @@ func (d *DecodedDeployable) Addr() addrs.Deployable {
 		Name: d.Name,
 	}
 }
-type DependsOn struct{
-	Trav []hcl.Traversal
+
+type DependsOn struct {
+	Trav  []hcl.Traversal
 	Depth int
 }
 type DecodedResource struct {
 	DecodedDeployable
-	Depth int
+	Depth        int
 	Dependencies []DependsOn
 }
 
@@ -82,7 +83,7 @@ type DecodedModule struct {
 	ModuleCalls DecodedModuleCallList
 	Modules     DecodedModuleList
 	Depth       int
-	DependsOn []hcl.Traversal
+	DependsOn   []hcl.Traversal
 }
 
 type DecodedModuleList []*DecodedModule
@@ -109,4 +110,3 @@ func (locals DecodedLocals) getMapValues() map[string]cty.Value {
 	vars["local"] = cty.ObjectVal(vals)
 	return vars
 }
-

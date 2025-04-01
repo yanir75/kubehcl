@@ -1,4 +1,4 @@
-/* 
+/*
 // SPDX-License-Identifier: MPL-2.0
 This file was copied from https://github.com/opentofu/opentofu and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
 */
@@ -630,7 +630,6 @@ var ListFunc = function.New(&function.Spec{
 		AllowDynamicType: true,
 		AllowNull:        true,
 	},
-
 })
 
 // MapFunc constructs a function that takes an even number of arguments and
@@ -719,4 +718,3 @@ func Sum(list cty.Value) (cty.Value, error) {
 func Transpose(values cty.Value) (cty.Value, error) {
 	return TransposeFunc.Call([]cty.Value{values})
 }
-

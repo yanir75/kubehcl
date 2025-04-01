@@ -6,10 +6,9 @@ import (
 	"kubehcl.sh/kubehcl/cli"
 )
 
-
 func main() {
 	cmd := cli.CreateRootCMD()
-	if err := cmd.Execute(); err!= nil {
+	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 	}
 

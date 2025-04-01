@@ -7,9 +7,9 @@ import (
 
 func destroyCmd() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use: "destroy",
+		Use:   "destroy",
 		Short: "Destory all resources managed by kubehcl",
-		Long: "Destroy will destroy existing resources managed by kubehcl",
+		Long:  "Destroy will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {
 			client.Destroy(args)
 		},

@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/kubernetes-sigs/kubectl-validate
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -96,4 +96,3 @@ func ValidateDocument(document []byte, resolver *validator.Validator) error {
 	}
 	return resolver.Validate(parsed)
 }
-

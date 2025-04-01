@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -50,4 +50,3 @@ func (v *testDotVertex) DotNode(title string, opts *DotOpts) *DotNode {
 	v.DotNodeOpts = opts
 	return v.DotNodeReturn
 }
-

@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -57,62 +57,62 @@ type expandable struct {
 	ForEach cty.Value
 }
 
-func expandDynamicBlock(block *hclsyntax.Block,ctx *hcl.EvalContext) (cty.Value,hcl.Diagnostics){
+func expandDynamicBlock(block *hclsyntax.Block, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var blocks hclsyntax.Blocks
 	var exBlock expandable
 	var contentBlock *hclsyntax.Block
 	body := block.Body
 	if len(block.Labels) > 1 {
-		diags = append(diags,&hcl.Diagnostic{
+		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  `Dynamic block must have exactly one label`,
-			Detail:   fmt.Sprintf(`Your dynamic block has more than 1 label %s`,strings.Join(block.Labels, ",")),
+			Detail:   fmt.Sprintf(`Your dynamic block has more than 1 label %s`, strings.Join(block.Labels, ",")),
 			Subject:  &block.TypeRange,
-			Context: &block.LabelRanges[0],
+			Context:  &block.LabelRanges[0],
 		})
-		return cty.NilVal,diags
+		return cty.NilVal, diags
 	}
 
-	for _,b := range body.Blocks{
+	for _, b := range body.Blocks {
 		if b.Type != "content" {
-			diags = append(diags,&hcl.Diagnostic{
+			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  `Dynamic block must have 1 block exactly named content`,
-				Detail:   fmt.Sprintf(`Your dynamic block has more than 1 block %s`,b.Type),
+				Detail:   fmt.Sprintf(`Your dynamic block has more than 1 block %s`, b.Type),
 				Subject:  &b.TypeRange,
 			})
-			return cty.NilVal,diags
+			return cty.NilVal, diags
 		} else {
 			contentBlock = b
 		}
 	}
-	
+
 	if len(body.Blocks) != 1 {
-		diags = append(diags,&hcl.Diagnostic{
+		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  `Dynamic block must have 1 block exactly named content`,
 			Subject:  &block.TypeRange,
 		})
-		return cty.NilVal,diags
+		return cty.NilVal, diags
 	}
 
-	if attr, exists :=body.Attributes["for_each"]; !exists {
-		diags = append(diags,&hcl.Diagnostic{
+	if attr, exists := body.Attributes["for_each"]; !exists {
+		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  `Dynamic block must have for_each`,
 			Subject:  &block.TypeRange,
 		})
-		return cty.NilVal,diags
+		return cty.NilVal, diags
 	} else {
-		forEach,valDiags := decodeForExpr(ctx,attr.Expr)
+		forEach, valDiags := decodeForExpr(ctx, attr.Expr)
 		diags = append(diags, valDiags...)
 		exBlock.ForEach = forEach
 	}
 	ty := exBlock.ForEach.Type()
-	if ty.IsMapType() || ty.IsObjectType(){
-		for key,val := range exBlock.ForEach.AsValueMap(){
-			ctx.Variables[block.Type] = cty.ObjectVal(map[string]cty.Value{ "key" : cty.StringVal(key),"value": val})
+	if ty.IsMapType() || ty.IsObjectType() {
+		for key, val := range exBlock.ForEach.AsValueMap() {
+			ctx.Variables[block.Type] = cty.ObjectVal(map[string]cty.Value{"key": cty.StringVal(key), "value": val})
 			var b hclsyntax.Block
 			b.OpenBraceRange = block.OpenBraceRange
 			b.CloseBraceRange = block.CloseBraceRange
@@ -121,14 +121,14 @@ func expandDynamicBlock(block *hclsyntax.Block,ctx *hcl.EvalContext) (cty.Value,
 			b.Body = &hclsyntax.Body{}
 			b.Body.SrcRange = contentBlock.Body.SrcRange
 			b.Body.EndRange = contentBlock.Body.EndRange
-			for _,attr := range contentBlock.Body.Attributes {
+			for _, attr := range contentBlock.Body.Attributes {
 				b.Body.Attributes[attr.Name] = attr
 			}
 			b.Body.Blocks = contentBlock.Body.Blocks
 		}
 	} else if ty.IsSetType() {
-		for _,val := range exBlock.ForEach.AsValueSet().Values(){
-			ctx.Variables[block.Type] = cty.ObjectVal(map[string]cty.Value{ "key" : val,"value": val})
+		for _, val := range exBlock.ForEach.AsValueSet().Values() {
+			ctx.Variables[block.Type] = cty.ObjectVal(map[string]cty.Value{"key": val, "value": val})
 			var b hclsyntax.Block
 			b.OpenBraceRange = block.OpenBraceRange
 			b.CloseBraceRange = block.CloseBraceRange
@@ -137,7 +137,7 @@ func expandDynamicBlock(block *hclsyntax.Block,ctx *hcl.EvalContext) (cty.Value,
 			b.Body = &hclsyntax.Body{Attributes: hclsyntax.Attributes{}}
 			b.Body.SrcRange = contentBlock.Body.SrcRange
 			b.Body.EndRange = contentBlock.Body.EndRange
-			for _,attr := range contentBlock.Body.Attributes {
+			for _, attr := range contentBlock.Body.Attributes {
 				b.Body.Attributes[attr.Name] = attr
 			}
 			b.Body.Blocks = contentBlock.Body.Blocks
@@ -145,15 +145,15 @@ func expandDynamicBlock(block *hclsyntax.Block,ctx *hcl.EvalContext) (cty.Value,
 		}
 	}
 	valList := []cty.Value{}
-	for _,b := range blocks {
-		val,decodeDiags := decodeUnknownBody(ctx,b.Body)	
+	for _, b := range blocks {
+		val, decodeDiags := decodeUnknownBody(ctx, b.Body)
 		diags = append(diags, decodeDiags...)
 		valList = append(valList, val)
 	}
 	if len(valList) == 0 {
-		return cty.NilVal,diags
-	} 
-	return cty.ListVal(valList),diags
+		return cty.NilVal, diags
+	}
+	return cty.ListVal(valList), diags
 }
 
 func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, hcl.Diagnostics) {
@@ -176,13 +176,13 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, h
 					Subject:  &block.TypeRange,
 					Summary:  "Dynamic blocks will be converted to lists instead of maps",
 					// Detail:   fmt.Sprintf("Block has labels: %s and type: \"%s\"", strings.Join(block.Labels, ", "), block.Type),
-					Context:  &block.LabelRanges[0],
+					Context: &block.LabelRanges[0],
 				})
 
-				val,expandDiags :=expandDynamicBlock(block,ctx)
+				val, expandDiags := expandDynamicBlock(block, ctx)
 				diags = append(diags, expandDiags...)
-				if len(block.Labels) > 0 && val!= cty.NilVal{
-					attrMap[block.Labels[0]]= val
+				if len(block.Labels) > 0 && val != cty.NilVal {
+					attrMap[block.Labels[0]] = val
 				}
 			}
 			m, blockDiags := decodeUnknownBody(ctx, block.Body)
@@ -242,7 +242,7 @@ func (r Deployable) Decode(ctx *hcl.EvalContext) (*DecodedDeployable, hcl.Diagno
 				deployMap[fmt.Sprintf("%s[%s]", r.addr().String(), key)] = Attributes
 				delete(ctx.Variables, "each")
 			}
-		} else if ty.IsSetType(){
+		} else if ty.IsSetType() {
 			for _, val := range forEach.AsValueSet().Values() {
 				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{"key": val, "value": val})
 				Attributes, forEachDiags := decodeUnknownBody(ctx, body)
@@ -260,4 +260,3 @@ func (r Deployable) Decode(ctx *hcl.EvalContext) (*DecodedDeployable, hcl.Diagno
 	dR.Config = deployMap
 	return dR, diags
 }
-

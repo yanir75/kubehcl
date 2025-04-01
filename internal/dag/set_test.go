@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -169,4 +169,3 @@ func BenchmarkSetIntersection_100000_100(b *testing.B) {
 		large.Intersection(small)
 	}
 }
-

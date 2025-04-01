@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -25,20 +25,20 @@ func Test_Annotation(t *testing.T) {
 	}{
 		{
 			d: &hcl.Block{
-				Type: "default_annotations",
+				Type:   "default_annotations",
 				Labels: []string{},
 				Body: &hclsyntax.Body{
 					Attributes: hclsyntax.Attributes{
-						"test":&hclsyntax.Attribute{
+						"test": &hclsyntax.Attribute{
 							Name: "testing",
 							Expr: &hclsyntax.LiteralValueExpr{
-								Val:cty.StringVal("test"),
+								Val: cty.StringVal("test"),
 							},
 						},
-						"test1":&hclsyntax.Attribute{
+						"test1": &hclsyntax.Attribute{
 							Name: "testingadf",
 							Expr: &hclsyntax.LiteralValueExpr{
-								Val:cty.StringVal("testasdf"),
+								Val: cty.StringVal("testasdf"),
 							},
 						},
 					},
@@ -49,13 +49,13 @@ func Test_Annotation(t *testing.T) {
 				&Annotation{
 					Name: "testing",
 					Value: &hclsyntax.LiteralValueExpr{
-						Val:cty.StringVal("test"),
+						Val: cty.StringVal("test"),
 					},
 				},
 				&Annotation{
 					Name: "testingadf",
 					Value: &hclsyntax.LiteralValueExpr{
-						Val:cty.StringVal("testasdf"),
+						Val: cty.StringVal("testasdf"),
 					},
 				},
 			},
@@ -64,17 +64,17 @@ func Test_Annotation(t *testing.T) {
 
 		{
 			d: &hcl.Block{
-				Type: "default_annotations",
+				Type:   "default_annotations",
 				Labels: []string{},
 				Body: &hclsyntax.Body{
 					Attributes: hclsyntax.Attributes{
-						"test":&hclsyntax.Attribute{
+						"test": &hclsyntax.Attribute{
 							Name: "test1",
 							Expr: &hclsyntax.LiteralValueExpr{
-								Val:cty.StringVal("asdf"),
+								Val: cty.StringVal("asdf"),
 							},
 						},
-						"test1":&hclsyntax.Attribute{
+						"test1": &hclsyntax.Attribute{
 							Name: "test2",
 							Expr: &hclsyntax.ScopeTraversalExpr{
 								Traversal: hcl.Traversal{
@@ -95,7 +95,7 @@ func Test_Annotation(t *testing.T) {
 				&Annotation{
 					Name: "test1",
 					Value: &hclsyntax.LiteralValueExpr{
-						Val:cty.StringVal("asdf"),
+						Val: cty.StringVal("asdf"),
 					},
 				},
 				&Annotation{
@@ -114,16 +114,15 @@ func Test_Annotation(t *testing.T) {
 			},
 			wantErrors: false,
 		},
-		
 	}
 
-	for _,test := range tests {
-		want,diags := decodeAnnotationsBlock(test.d)
-		if diags.HasErrors() && !test.wantErrors{
-			t.Errorf("Don't want errors but received: %s",diags.Errs())
-		} else if !diags.HasErrors() && test.wantErrors{
+	for _, test := range tests {
+		want, diags := decodeAnnotationsBlock(test.d)
+		if diags.HasErrors() && !test.wantErrors {
+			t.Errorf("Don't want errors but received: %s", diags.Errs())
+		} else if !diags.HasErrors() && test.wantErrors {
 			t.Errorf("Want errors but did not receive any")
-		} else if !reflect.DeepEqual(want,test.want){
+		} else if !reflect.DeepEqual(want, test.want) {
 
 			t.Error("Annotations are not equal")
 		}

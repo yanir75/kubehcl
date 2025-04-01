@@ -1,4 +1,4 @@
-/* 
+/*
 // SPDX-License-Identifier: Apache-2.0
 This file was copied from https://github.com/kubernetes-sigs/kubectl-validate and retains its' original license: https://www.apache.org/licenses/LICENSE-2.0
 */
@@ -72,4 +72,3 @@ func findFilesInDir(dir string) ([]string, error) {
 	}
 	return files, nil
 }
-

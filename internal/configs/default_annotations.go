@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -45,9 +45,9 @@ func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hc
 	if !value.Type().Equals(cty.String) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Annotation must be string",
-			Detail: fmt.Sprintf("Annotation has to be string but recevied: %s",typeexpr.TypeString(value.Type())),
-			Subject: l.Value.Range().Ptr(),
+			Summary:  "Annotation must be string",
+			Detail:   fmt.Sprintf("Annotation has to be string but recevied: %s", typeexpr.TypeString(value.Type())),
+			Subject:  l.Value.Range().Ptr(),
 		},
 		)
 	}
@@ -125,4 +125,3 @@ func DecodeAnnotationsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Annot
 	}
 	return annotations, diags
 }
-

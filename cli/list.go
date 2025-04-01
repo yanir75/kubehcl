@@ -10,16 +10,15 @@ import (
 // 	Name string
 // }
 
-
 var listDesc string = `list will return all releases applied through kubehcl`
 
 func listCmd() *cobra.Command {
-	// var a apply 
+	// var a apply
 
 	applyCmd := &cobra.Command{
-		Use: "list",
+		Use:   "list",
 		Short: "list all modules",
-		Long: listDesc,
+		Long:  listDesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			client.List()
 		},

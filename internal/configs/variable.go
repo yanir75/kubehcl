@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -57,7 +57,7 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 	}
 	val, valDiags := v.Default.Value(nil)
 	diags = append(diags, valDiags...)
-	
+
 	if v.Type != cty.NilType {
 		var err error
 		val, err = convert.Convert(val, v.Type)
@@ -95,7 +95,7 @@ func DecodeVariableBlocks(blocks hcl.Blocks) (VariableMap, hcl.Diagnostics) {
 		variable, varDiags := decodeVariableBlock(block)
 		diags = append(diags, varDiags...)
 		if variable != nil {
-			if _,exists :=variables[variable.Name]; exists{
+			if _, exists := variables[variable.Name]; exists {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Variables must have different names",
@@ -149,4 +149,3 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 
 	return variable, diags
 }
-

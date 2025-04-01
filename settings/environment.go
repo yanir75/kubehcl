@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/helm/helm
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -206,12 +206,12 @@ func envCSV(name string) (ls []string) {
 
 func (s *EnvSettings) EnvVars() map[string]string {
 	envvars := map[string]string{
-		"KUBEHCL_BIN":               os.Args[0],
-		"KUBEHCL_DEBUG":             fmt.Sprint(s.Debug),
-		"KUBEHCL_NAMESPACE":         s.Namespace(),
-		"KUBEHCL_MAX_HISTORY":       strconv.Itoa(s.MaxHistory),
-		"KUBEHCL_BURST_LIMIT":       strconv.Itoa(s.BurstLimit),
-		"KUBEHCL_QPS":               strconv.FormatFloat(float64(s.QPS), 'f', 2, 32),
+		"KUBEHCL_BIN":         os.Args[0],
+		"KUBEHCL_DEBUG":       fmt.Sprint(s.Debug),
+		"KUBEHCL_NAMESPACE":   s.Namespace(),
+		"KUBEHCL_MAX_HISTORY": strconv.Itoa(s.MaxHistory),
+		"KUBEHCL_BURST_LIMIT": strconv.Itoa(s.BurstLimit),
+		"KUBEHCL_QPS":         strconv.FormatFloat(float64(s.QPS), 'f', 2, 32),
 
 		// broken, these are populated from KUBEHCL flags and not kubeconfig.
 		"KUBEHCL_KUBECONTEXT":                  s.KubeContext,

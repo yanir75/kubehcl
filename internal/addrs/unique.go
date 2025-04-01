@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/opentofu/opentofu
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -38,4 +38,3 @@ type UniqueKeyer interface {
 // func Equivalent[T UniqueKeyer](a, b T) bool {
 // 	return a.UniqueKey() == b.UniqueKey()
 // }
-

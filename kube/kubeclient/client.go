@@ -1,4 +1,4 @@
-/* 
+/*
 This file was inspired from https://github.com/helm/helm
 This file has been modified from the original version
 Changes made to fit kubehcl purposes
@@ -24,10 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
-	"kubehcl.sh/kubehcl/settings"
-	"kubehcl.sh/kubehcl/kube/kubeclient/storage"
 	"kubehcl.sh/kubehcl/internal/decode"
+	"kubehcl.sh/kubehcl/kube/kubeclient/storage"
 	"kubehcl.sh/kubehcl/kube/syntaxvalidator"
+	"kubehcl.sh/kubehcl/settings"
 )
 
 type Config struct {
@@ -37,7 +37,7 @@ type Config struct {
 	Name     string
 }
 
-func New(name string) (*Config,hcl.Diagnostics) {
+func New(name string) (*Config, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
 	cfg.Settings = settings.New()
@@ -46,7 +46,7 @@ func New(name string) (*Config,hcl.Diagnostics) {
 	cfg.Name = name
 	diags = append(diags, cfg.IsReachable()...)
 
-	return cfg,diags
+	return cfg, diags
 }
 
 // func (cfg *Config) Create() hcl.Diagnostics{
@@ -70,7 +70,7 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 	}
 }
 
-func (cfg *Config) deleteState() ( hcl.Diagnostics) {
+func (cfg *Config) deleteState() hcl.Diagnostics {
 	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
@@ -83,7 +83,7 @@ func (cfg *Config) deleteState() ( hcl.Diagnostics) {
 
 	if deleteSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Delete(context.Background(), secret.Name, metav1.DeleteOptions{}); apierrors.IsNotFound(deleteSecretErr) {
 		return diags
-	} 
+	}
 
 	return diags
 }
@@ -272,7 +272,7 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 			})
 		}
 
-		res, updateDiags := cfg.compareStates(kubeResourceList,  key)
+		res, updateDiags := cfg.compareStates(kubeResourceList, key)
 		if !updateDiags.HasErrors() {
 			results.Created = append(results.Created, res.Created...)
 			results.Updated = append(results.Updated, res.Updated...)
@@ -323,21 +323,20 @@ func formatErr(err error) string {
 	return strings.ReplaceAll(errStr, "]", "")
 }
 
-/* 
+/*
 Checks if the client is reachable
 */
-func (cfg *Config) IsReachable() hcl.Diagnostics{
+func (cfg *Config) IsReachable() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if err :=cfg.Client.IsReachable(); err!= nil {
-		return append(diags,&hcl.Diagnostic{
+	if err := cfg.Client.IsReachable(); err != nil {
+		return append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Client is not reachable",
-			Detail: fmt.Sprintf("Error: %s" ,err.Error()),
+			Summary:  "Client is not reachable",
+			Detail:   fmt.Sprintf("Error: %s", err.Error()),
 		})
 	}
 	return diags
 }
-
 
 func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 	var wanted kube.ResourceList = kube.ResourceList{}
@@ -348,17 +347,17 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 	for _, value := range saved {
 		// if the key doesn't exist in the storage meaning it doesn't exist in configuration so delete it
 		// if cfg.Storage.Get(key) == nil {
-			reader := bytes.NewReader(value)
-			savedResource, builderErr := cfg.Client.Build(reader, true)
-			if builderErr != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Couldn't build and validate resources",
-					Detail:   fmt.Sprintf("Kind: %s", value),
-				})
-				return nil, diags
-			}
-			toDelete = append(toDelete, savedResource...)
+		reader := bytes.NewReader(value)
+		savedResource, builderErr := cfg.Client.Build(reader, true)
+		if builderErr != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Couldn't build and validate resources",
+				Detail:   fmt.Sprintf("Kind: %s", value),
+			})
+			return nil, diags
+		}
+		toDelete = append(toDelete, savedResource...)
 		// }
 	}
 	// delete all managed resources that don't appear in configuration
@@ -378,8 +377,7 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 	return res, diags
 }
 
-
-func (cfg *Config) List() ([]string,hcl.Diagnostics) {
+func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
@@ -390,11 +388,11 @@ func (cfg *Config) List() ([]string,hcl.Diagnostics) {
 		})
 	}
 
-	if secretList, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).List(context.Background(), metav1.ListOptions{FieldSelector: "type="+storage.SecretType}); apierrors.IsNotFound(getSecretErr) {
+	if secretList, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).List(context.Background(), metav1.ListOptions{FieldSelector: "type=" + storage.SecretType}); apierrors.IsNotFound(getSecretErr) {
 		return nil, diags
 	} else {
 		var secretNames []string
-		for _,secret := range secretList.Items {
+		for _, secret := range secretList.Items {
 			secretNames = append(secretNames, secret.Name)
 		}
 		return secretNames, diags

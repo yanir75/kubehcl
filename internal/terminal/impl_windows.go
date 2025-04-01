@@ -1,4 +1,7 @@
-/* 
+//go:build windows
+// +build windows
+
+/*
 // SPDX-License-Identifier: MPL-2.0
 This file was copied from https://github.com/opentofu/opentofu and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
 */
@@ -6,9 +9,6 @@ This file was copied from https://github.com/opentofu/opentofu and retains its' 
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
-
-//go:build windows
-// +build windows
 
 package terminal
 
@@ -169,4 +169,3 @@ func staticTrue(f *os.File) bool {
 func staticFalse(f *os.File) bool {
 	return false
 }
-

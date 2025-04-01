@@ -1,4 +1,4 @@
-/* 
+/*
 // SPDX-License-Identifier: MPL-2.0
 This file was copied from https://github.com/opentofu/opentofu and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
 */
@@ -358,4 +358,3 @@ func (sd sortDiagnostics) Less(i, j int) bool {
 func (sd sortDiagnostics) Swap(i, j int) {
 	sd[i], sd[j] = sd[j], sd[i]
 }
-
