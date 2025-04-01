@@ -4,7 +4,9 @@ on:
   push:
     tags:
       - 'v*' # Trigger release on version tag push (e.g., v1.0.0)
-
+      
+permissions:
+  contents: write
 
 jobs:
   build:
