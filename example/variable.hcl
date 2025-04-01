@@ -1,7 +1,3 @@
-default_annotations {
-    foo = "bar"
-}
-
 variable "foo" {
 
     type = list(map(number))

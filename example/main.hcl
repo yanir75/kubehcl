@@ -41,3 +41,41 @@ module "test" {
     foo = ["service1","service2"]
     # depends_on = [resource.t,resource.a]
 }
+
+default_annotations {
+  foo = "bar"
+}
+
+resource "bar" {
+  count = 0
+  apiVersion = "apps/v1"
+  kind       = "Deployment"
+  metadata = {
+    name = "shouldntbecreated"
+    labels = {
+      app = "shouldntbecreated"
+    }
+  }
+  spec = {
+    replicas = 3
+    selector = {
+      matchLabels = {
+        app = "shouldntbecreated"
+      }
+    }
+    template = {
+      metadata = {
+        labels = {
+          app = "shouldntbecreated"
+        }
+      }
+      spec = {
+        containers = [{
+          name  = each.value
+          image = "nginx:1.14.2"
+          ports = var.foo
+        }]
+      }
+    }
+  }
+}
