@@ -28,11 +28,14 @@ jobs:
         run: go get .
       - name: Build
         run: go build .
+      
+      - name: tar
+        run:  tar -czf kubehcl.tar.gz kubehcl > /dev/null
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            kubehcl
+            kubehcl.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
