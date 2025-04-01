@@ -6,7 +6,8 @@ kubehcl was inspired by two tools helm and terraform/opentofu.
 Parts of the code were copied and modified from the following repositories.   
 Links: [helm](https://github.com/helm/helm)  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[opentofu](https://github.com/opentofu/opentofu)  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[kubectl-validate](https://github.com/kubernetes-sigs/kubectl-validate)  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[kubectl-validate](https://github.com/kubernetes-sigs/kubectl-validate)    
+Both licenses were copied from the reflective projects with copyrights within them.  
 
 **This project is not affiliated or endorsed by any of the projects/companies stated above or any other project/company at all.**
 
