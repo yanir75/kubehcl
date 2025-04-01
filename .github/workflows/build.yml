@@ -34,31 +34,3 @@ jobs:
             repo.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-  build:
-    strategy:
-      matrix:
-        go-version: [ '1.24.1' ]
-        os: [macos-latest]
-    
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
-      - name: Install dependencies
-        run: go get .
-      - name: Build
-        run: go build .
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            kubehcl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
