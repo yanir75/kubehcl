@@ -18,7 +18,9 @@ import (
 	"os"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/colorstring"
+	"github.com/zclconf/go-cty/cty"
 	"helm.sh/helm/v4/pkg/kube"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -250,19 +252,52 @@ func DiagPrinter(diags hcl.Diagnostics) {
 	
 }
 
-func printResourceInfo(res *resource.Info) {
-	switch tt:=res.Object.(type){
-	case *unstructured.Unstructured:
-		for key,value := range tt.Object {
-			fmt.Printf("key: %s value: %s\n",key,value)
-			fmt.Println()
 
+func inferType(value interface{})cty.Value {
+
+	switch tt:=value.(type){
+	case string:
+		return cty.StringVal(tt)
+	case int64:
+		return cty.NumberIntVal(tt)
+	case float64:
+		return cty.NumberFloatVal(tt)
+	case bool:
+		return cty.BoolVal(tt)
+	case []any:
+		var vals []cty.Value
+		for _,val := range tt {
+			vals = append(vals, inferType(val))
 		}
-	}
-	fmt.Println()
-	fmt.Println()
+		return cty.ListVal(vals)
 
-	fmt.Println()
+	case map[string]any:
+		valMap := make(map[string]cty.Value)
+		for key,val := range tt {
+			valMap[key] = inferType(val)
+		}
+		return cty.ObjectVal(valMap)
+	default:
+		panic("Unknown type")
+	}
+}
+
+
+func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
+    f := hclwrite.NewEmptyFile()
+	if current == nil {
+	switch tt:=wanted.Object.(type){
+	case *unstructured.Unstructured:
+			block := f.Body().AppendNewBlock("resource",[]string{name})
+			body := block.Body()
+			for key,value := range tt.Object{
+				body.SetAttributeValue(key,inferType(value))
+			}				// fmt.Printf("key: %s value: %s\n",key,value)
+	}
+	}
+	fmt.Printf("%s",f.Bytes())
+	// f.WriteTo(os.Stdout)
+
 
 }
 
@@ -270,21 +305,12 @@ func PlanPrinter(wanted,current map[string]kube.ResourceList){
 	// var buf bytes.Buffer
 	for key,value := range wanted {
 		currentList := current[key]
-		switch len(currentList) {
-		case 0:
-			res := value[0]
-			printResourceInfo(res)
-			fmt.Println()
-
-		case 1:
-			cur := currentList[0]
-			printResourceInfo(cur)
-			fmt.Println()
-
-		default:
-			// fmt.Println(currentList[0])
-			// fmt.Println(currentList[1])
-			// fmt.Println()
+		for i,val := range value {
+			if i< len(currentList){
+				printResourceDiff(key,currentList[i],val)
+			} else {
+				printResourceDiff(key,nil,val)
+			}
 		}
 	}
 }
