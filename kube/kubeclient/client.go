@@ -419,6 +419,7 @@ func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList,kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var wantedList,currentList kube.ResourceList
+	// fmt.Printf("%s:%d\n",resource.Name,len(resource.Config))
 	for key, value := range resource.Config {
 		wanted,buildDiags := cfg.buildResource(key,value,&resource.DeclRange)
 		wantedList = append(wantedList, wanted...)
@@ -427,5 +428,8 @@ func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList,kub
 		currentList = append(currentList, current...)
 		diags = append(diags, buildDiags...)
 	}
+	// if len(wantedList) == 0 {
+	// 	panic("err")
+	// }
 	return currentList,wantedList,diags
 }

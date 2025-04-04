@@ -14,10 +14,16 @@ package view
 // SPDX-License-Identifier: MPL-2.0
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
+	"helm.sh/helm/v4/pkg/kube"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/cli-runtime/pkg/resource"
+
 	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/format"
 	"kubehcl.sh/kubehcl/internal/terminal"
@@ -241,8 +247,44 @@ func DiagPrinter(diags hcl.Diagnostics) {
 	})
 	v.streams.Stderr.Columns()
 	v.Diagnostics(d)
+	
 }
 
-func (v *View) Plan(){
+func printResourceInfo(res *resource.Info) {
+	switch tt:=res.Object.(type){
+	case *unstructured.Unstructured:
+		for key,value := range tt.Object {
+			fmt.Printf("key: %s value: %s\n",key,value)
+			fmt.Println()
 
+		}
+	}
+	fmt.Println()
+	fmt.Println()
+
+	fmt.Println()
+
+}
+
+func PlanPrinter(wanted,current map[string]kube.ResourceList){
+	// var buf bytes.Buffer
+	for key,value := range wanted {
+		currentList := current[key]
+		switch len(currentList) {
+		case 0:
+			res := value[0]
+			printResourceInfo(res)
+			fmt.Println()
+
+		case 1:
+			cur := currentList[0]
+			printResourceInfo(cur)
+			fmt.Println()
+
+		default:
+			// fmt.Println(currentList[0])
+			// fmt.Println(currentList[1])
+			// fmt.Println()
+		}
+	}
 }
