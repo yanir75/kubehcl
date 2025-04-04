@@ -19,6 +19,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -135,7 +136,7 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 	return resList, diags
 }
 
-func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
+func (cfg *Config) buildResourceFromState(wanted kube.ResourceList,name string)(kube.ResourceList,hcl.Diagnostics){
 	current, diags := cfg.getResourceCurrentState(wanted)
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
@@ -164,8 +165,17 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 
 		return nil, diags
 	}
+	return current,diags
+}
 
+func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
+
+	current,diags := cfg.buildResourceFromState(wanted,name)
+	if diags.HasErrors() {
+		return &kube.Result{},diags
+	}
 	res, err := cfg.Client.Update(current, wanted, false)
+
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -242,6 +252,32 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 
 	return diags
 }
+func (cfg *Config) buildResource (key string ,value cty.Value,rg *hcl.Range) (kube.ResourceList,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	data, err := ctyjson.Marshal(value, value.Type())
+
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't convert resource config to json",
+			Detail:   fmt.Sprintf("%s", err),
+			Subject:  rg,
+		})
+	}
+
+	cfg.Storage.Add(key, data)
+	reader := bytes.NewReader(data)
+	kubeResourceList, buildErr := cfg.Client.Build(reader, true)
+	if buildErr != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't build resource",
+			Detail:   fmt.Sprintf("%s", buildErr),
+			Subject:  rg,
+		})
+	}
+	return kubeResourceList,diags
+}
 
 func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
 
@@ -249,29 +285,9 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 	var results *kube.Result = &kube.Result{}
 	for key, value := range resource.Config {
 
-		data, err := ctyjson.Marshal(value, value.Type())
 
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't convert resource config to json",
-				Detail:   fmt.Sprintf("%s", err),
-				Subject:  &resource.DeclRange,
-			})
-		}
-
-		cfg.Storage.Add(key, data)
-		reader := bytes.NewReader(data)
-		kubeResourceList, buildErr := cfg.Client.Build(reader, true)
-		if buildErr != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't build resource",
-				Detail:   fmt.Sprintf("%s", buildErr),
-				Subject:  &resource.DeclRange,
-			})
-		}
-
+		kubeResourceList,buildDiags := cfg.buildResource(key,value,&resource.DeclRange)
+		diags = append(diags, buildDiags...)
 		res, updateDiags := cfg.compareStates(kubeResourceList, key)
 		if !updateDiags.HasErrors() {
 			results.Created = append(results.Created, res.Created...)
@@ -397,4 +413,19 @@ func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 		}
 		return secretNames, diags
 	}
+}
+
+
+func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList,kube.ResourceList, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	var wantedList,currentList kube.ResourceList
+	for key, value := range resource.Config {
+		wanted,buildDiags := cfg.buildResource(key,value,&resource.DeclRange)
+		wantedList = append(wantedList, wanted...)
+		diags = append(diags, buildDiags...)
+		current,buildDiags := cfg.buildResourceFromState(wanted,key)
+		currentList = append(currentList, current...)
+		diags = append(diags, buildDiags...)
+	}
+	return currentList,wantedList,diags
 }
