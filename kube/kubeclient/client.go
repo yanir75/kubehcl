@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/hcl/v2"
 	"helm.sh/helm/v4/pkg/kube"
@@ -36,15 +37,21 @@ type Config struct {
 	Client   *kube.Client
 	Storage  *storage.Storage
 	Name     string
+	Timeout time.Duration
 }
 
-func New(name string) (*Config, hcl.Diagnostics) {
+func New(name string,conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
-	cfg.Settings = settings.New()
+	cfg.Settings = conf
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
 	cfg.Storage = storage.New()
 	cfg.Name = name
+	if conf.Timeout < 0 {
+		cfg.Timeout = time.Duration(100) * time.Second
+	} else {
+		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
+	}
 	diags = append(diags, cfg.IsReachable()...)
 
 	return cfg, diags
@@ -184,7 +191,13 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 		})
 	}
 
-	cfg.Client.Wait(wanted, 100)
+	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Resource is not ready within the timeout",
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
+		})
+	}
 	return res, diags
 }
 
@@ -219,7 +232,13 @@ func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 		}
 	}
 
-	cfg.Client.Wait(wanted, 100)
+	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't delete resource within the timeout",
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
+		})
+	}
 	return res, diags
 }
 
@@ -388,7 +407,13 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 		}
 	}
 
-	cfg.Client.Wait(wanted, 100)
+	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't delete resource within the timeout",
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
+		})
+	}
 	cfg.deleteState()
 	return res, diags
 }

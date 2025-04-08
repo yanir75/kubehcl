@@ -15,22 +15,23 @@ import (
 	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/kube/kubeclient"
+	"kubehcl.sh/kubehcl/settings"
 )
 
-func Apply(args []string) {
+func Apply(args []string,conf *settings.EnvSettings) {
 	name, folderName, diags := parseApplyArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags)
 		return
 	}
 
-	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0)
+	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0,conf.Namespace())
 	diags = append(diags, decodeDiags...)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
-	cfg, cfgDiags := kubeclient.New(name)
+	cfg, cfgDiags := kubeclient.New(name,conf)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
@@ -78,7 +79,7 @@ func Apply(args []string) {
 }
 
 func Template(kind string) {
-	d, diags := configs.DecodeFolderAndModules(".", "root", 0)
+	d, diags := configs.DecodeFolderAndModules(".", "root", 0,"")
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
@@ -129,13 +130,13 @@ func Template(kind string) {
 
 }
 
-func Destroy(args []string) {
+func Destroy(args []string,conf *settings.EnvSettings) {
 	name, diags := parseDestroyArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags)
 		return
 	}
-	cfg, cfgDiags := kubeclient.New(name)
+	cfg, cfgDiags := kubeclient.New(name,conf)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
@@ -145,8 +146,8 @@ func Destroy(args []string) {
 	}
 }
 
-func List() {
-	cfg, diags := kubeclient.New("")
+func List(conf *settings.EnvSettings) {
+	cfg, diags := kubeclient.New("",conf)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags)
 	} else {

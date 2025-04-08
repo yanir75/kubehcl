@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/settings"
 )
 
 // type apply struct {
@@ -21,9 +22,12 @@ func applyCmd() *cobra.Command {
 		Short: "Create or update resources",
 		Long:  applydesc,
 		Run: func(cmd *cobra.Command, args []string) {
-			client.Apply(args)
+			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
+
+			client.Apply(args,conf)
 		},
 	}
+	addCommonToCommand(applyCmd)
 
 	return applyCmd
 

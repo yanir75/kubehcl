@@ -150,7 +150,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 
 }
 
-func (m *Module) decode(depth int, folderName string) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(depth int, folderName string, namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	decodedModule := &decode.DecodedModule{
@@ -279,7 +279,7 @@ func (m *Module) decode(depth int, folderName string) (*decode.DecodedModule, hc
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(depth+1, module.Source)
+		dm, dmDiags := module.decode(depth+1, module.Source,namespace)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -301,6 +301,9 @@ func (m *Module) decode(depth int, folderName string) (*decode.DecodedModule, hc
 										annotationsMap[v.Name] = v.Value
 									}
 									metadata["annotations"] = cty.ObjectVal(annotationsMap)
+									if _,exists := metadata["namespace"]; !exists && namespace != "" {
+										metadata["namespace"] = cty.StringVal(namespace)
+									}
 								}
 							}
 						} else {
@@ -456,9 +459,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	return deployable, diags
 }
 
-func DecodeFolderAndModules(folderName string, name string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
+func DecodeFolderAndModules(folderName string, name string, depth int,namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(0, folderName)
+	dm, decodeDiags := mod.decode(0, folderName,namespace)
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

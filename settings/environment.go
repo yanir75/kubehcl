@@ -51,6 +51,8 @@ const defaultMaxHistory = 10
 // defaultBurstLimit sets the default client-side throttling limit
 const defaultBurstLimit = 100
 
+const defaultTimeout = 100
+
 // defaultQPS sets the default QPS value to 0 to use library defaults unless specified
 const defaultQPS = float32(0)
 
@@ -85,6 +87,8 @@ type EnvSettings struct {
 	MaxHistory int
 	// BurstLimit is the default client-side throttling limit.
 	BurstLimit int
+
+	Timeout int
 	// QPS is queries per second which may be used to avoid throttling.
 	QPS float32
 }
@@ -102,6 +106,7 @@ func New() *EnvSettings {
 		KubeTLSServerName:         os.Getenv("KUBEHCL_KUBETLS_SERVER_NAME"),
 		KubeInsecureSkipTLSVerify: envBoolOr("KUBEHCL_KUBEINSECURE_SKIP_TLS_VERIFY", false),
 		BurstLimit:                envIntOr("KUBEHCL_BURST_LIMIT", defaultBurstLimit),
+		Timeout:                envIntOr("KUBEHCL_TIMEOUT", defaultTimeout),
 		QPS:                       envFloat32Or("KUBEHCL_QPS", defaultQPS),
 	}
 	env.Debug, _ = strconv.ParseBool(os.Getenv("KUBEHCL_DEBUG"))
@@ -151,6 +156,8 @@ func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.Debug, "debug", s.Debug, "enable verbose output")
 	fs.IntVar(&s.BurstLimit, "burst-limit", s.BurstLimit, "client-side default throttling limit")
 	fs.Float32Var(&s.QPS, "qps", s.QPS, "queries per second used when communicating with the Kubernetes API, not including bursting")
+	fs.IntVar(&s.Timeout, "timeout", s.Timeout, "Timeout for resource creation")
+	
 }
 
 func envOr(name, def string) string {
