@@ -14,22 +14,16 @@ package view
 // SPDX-License-Identifier: MPL-2.0
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/colorstring"
-	"github.com/zclconf/go-cty/cty"
-	"helm.sh/helm/v4/pkg/kube"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/cli-runtime/pkg/resource"
 
 	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/format"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/tfdiags"
+	// "github.com/mitchellh/colorstring"
 	// "github.com/opentofu/opentofu/internal/command/arguments"
 	// "github.com/opentofu/opentofu/internal/command/format"
 	// "github.com/opentofu/opentofu/internal/terminal"
@@ -253,64 +247,144 @@ func DiagPrinter(diags hcl.Diagnostics) {
 }
 
 
-func inferType(value interface{})cty.Value {
+// func inferType(value interface{})cty.Value {
 
-	switch tt:=value.(type){
-	case string:
-		return cty.StringVal(tt)
-	case int64:
-		return cty.NumberIntVal(tt)
-	case float64:
-		return cty.NumberFloatVal(tt)
-	case bool:
-		return cty.BoolVal(tt)
-	case []any:
-		var vals []cty.Value
-		for _,val := range tt {
-			vals = append(vals, inferType(val))
-		}
-		return cty.ListVal(vals)
+// 	switch tt:=value.(type){
+// 	case string:
+// 		return cty.StringVal(tt)
+// 	case int64:
+// 		return cty.NumberIntVal(tt)
+// 	case float64:
+// 		return cty.NumberFloatVal(tt)
+// 	case bool:
+// 		return cty.BoolVal(tt)
+// 	case []any:
+// 		var vals []cty.Value
+// 		for _,val := range tt {
+// 			vals = append(vals, inferType(val))
+// 		}
+// 		return cty.ListVal(vals)
 
-	case map[string]any:
-		valMap := make(map[string]cty.Value)
-		for key,val := range tt {
-			valMap[key] = inferType(val)
-		}
-		return cty.ObjectVal(valMap)
-	default:
-		panic("Unknown type")
-	}
-}
+// 	case map[string]any:
+// 		valMap := make(map[string]cty.Value)
+// 		for key,val := range tt {
+// 			valMap[key] = inferType(val)
+// 		}
+// 		return cty.ObjectVal(valMap)
+// 	default:
+// 		panic("Unknown type")
+// 	}
+// }
+
+// func determineAttr(attrName string ,current *resource.Info,wanted *resource.Info) string{
+// 	if current == nil {
+// 		return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName))
+// 	}
+
+// 	if wanted == nil {
+// 		return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName))
+// 	}
+
+// 	switch w:=wanted.Object.(type) {
+// 	case *unstructured.Unstructured:
+// 		switch c:=current.Object.(type){
+// 		case *unstructured.Unstructured:
+// 			if _,exists := c.Object[attrName]; !exists {
+// 				return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName)) 
+// 			}
+
+// 			if _,exists := w.Object[attrName]; !exists {
+// 				return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName)) 
+// 			}
+
+// 			if reflect.DeepEqual(c.Object[attrName],w.Object[attrName]) {
+// 				return ""
+// 			} else {
+// 				return colorstring.Color(fmt.Sprintf("[bold][yellow]~[reset] %s",attrName)) 
+// 			}
+
+// 		}
+// 	}
+// 	panic("Didn't return any value")
+// }
 
 
-func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
-    f := hclwrite.NewEmptyFile()
-	if current == nil {
-	switch tt:=wanted.Object.(type){
-	case *unstructured.Unstructured:
-			block := f.Body().AppendNewBlock("resource",[]string{name})
-			body := block.Body()
-			for key,value := range tt.Object{
-				body.SetAttributeValue(key,inferType(value))
-			}				// fmt.Printf("key: %s value: %s\n",key,value)
-	}
-	}
-	fmt.Printf("%s",f.Bytes())
-	// f.WriteTo(os.Stdout)
+
+// func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
+//     f := hclwrite.NewEmptyFile()
+// 	if wanted != nil {
+// 		switch tt:=wanted.Object.(type){
+// 		case *unstructured.Unstructured:
+// 				block := f.Body().AppendNewBlock(name,[]string{})
+// 				body := block.Body()
+// 				if attr:=determineAttr("kind",current,wanted); attr!= "" {
+// 					body.SetAttributeValue(attr,inferType(tt.Object["kind"]))
+// 				}
+
+// 				if attr:=determineAttr("apiVersion",current,wanted); attr!= "" {
+// 					body.SetAttributeValue(attr,inferType(tt.Object["apiVersion"]))
+// 				}
+
+// 				for key,value := range tt.Object{
+// 					if attr:=determineAttr(key,current,wanted); attr!= "" {
+// 						body.SetAttributeValue(attr,inferType(value))
+// 					}
+// 				}				// fmt.Printf("key: %s value: %s\n",key,value)
+				
+// 		}
+// 	}
+	
+// 	if wanted == nil {
+// 		switch tt:=current.Object.(type){
+// 		case *unstructured.Unstructured:
+// 				block := f.Body().AppendNewBlock(name,[]string{})
+// 				body := block.Body()
+// 				if attr:=determineAttr("kind",current,wanted); attr!= "" {
+// 					body.SetAttributeValue(attr,inferType(tt.Object["kind"]))
+// 				}
+
+// 				if attr:=determineAttr("apiVersion",current,wanted); attr!= "" {
+// 					body.SetAttributeValue(attr,inferType(tt.Object["apiVersion"]))
+// 				}
+
+// 				for key,value := range tt.Object{
+// 					if attr:=determineAttr(key,current,wanted); attr!= "" {
+// 						body.SetAttributeValue(attr,inferType(value))
+// 					}
+// 				}				// fmt.Printf("key: %s value: %s\n",key,value)
+				
+// 		}
+// 	}
+
+// 	hclStr := string(f.Bytes())
+// 	splitStr := strings.Split(hclStr, "\n")
+// 	splitStr[0] = colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",splitStr[0]))
+// 	fmt.Printf("%s",strings.Join(splitStr,"\n"))
+// 	// f.WriteTo(os.Stdout)
 
 
-}
+// }
 
-func PlanPrinter(wanted,current map[string]kube.ResourceList){
-	// var buf bytes.Buffer
-	for key,value := range wanted {
-		currentList := current[key]
-		for i,val := range value {
-			if i< len(currentList){
-				printResourceDiff(key,currentList[i],val)
-			} else {
-				printResourceDiff(key,nil,val)
-			}
-		}
-	}
-}
+// func PlanPrinter(wanted,current map[string]kube.ResourceList){
+// 	// var buf bytes.Buffer
+// 	fmt.Println("Kubehcl will use the following symbols for each action and attribute")
+// 	fmt.Println()
+// 	fmt.Println(colorstring.Color("[bold][green]+[reset] create"))
+// 	fmt.Println(colorstring.Color("[bold][yellow]~[reset] replace"))
+// 	fmt.Println(colorstring.Color("[bold][red]-[reset] destroy"))
+// 	fmt.Println()
+// 	fmt.Println("Kubehcl will perform the following actions:")
+// 	fmt.Println()
+
+
+// 	for key,value := range wanted {
+// 		currentList := current[key]
+// 		for i,val := range value {
+// 			if i< len(currentList){
+// 				printResourceDiff(key,currentList[i],val)
+// 			} else {
+// 				printResourceDiff(key,nil,val)
+// 			}
+// 		}
+// 	}
+// }
