@@ -7,6 +7,17 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+type key string
+
+func (c key) String() string {
+	return string(c)
+}
+
+const (
+	settingsKey = key("settings")
+	viewKey     = key("viewSettings")
+)
+
 // Adds he common flags to the command
 // Example of common flag is --namespace
 func addCommonToCommand(cmd *cobra.Command) {
@@ -14,9 +25,9 @@ func addCommonToCommand(cmd *cobra.Command) {
 	definitions.AddFlags(cmd.Flags())
 
 	viewSettings := settings.NewView()
-	settings.AddViewFlags(viewSettings,cmd.Flags())
-	ctx := context.WithValue(context.Background(),"settings",definitions)
-	ctx = context.WithValue(ctx,"viewSettings",viewSettings)
+	settings.AddViewFlags(viewSettings, cmd.Flags())
+	ctx := context.WithValue(context.Background(), settingsKey, definitions)
+	ctx = context.WithValue(ctx, viewKey, viewSettings)
 
 	cmd.SetContext(ctx)
 

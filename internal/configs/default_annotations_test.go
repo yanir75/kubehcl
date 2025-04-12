@@ -124,11 +124,11 @@ func Test_Annotation(t *testing.T) {
 			t.Errorf("Want errors but did not receive any")
 		} else {
 			annoMap := make(map[string]hcl.Expression)
-			for _,annotation := range want {
+			for _, annotation := range want {
 				annoMap[annotation.Name] = annotation.Value
 			}
-			for _,annotation := range test.want {
-				if !reflect.DeepEqual(annotation.Value,annoMap[annotation.Name]) {
+			for _, annotation := range test.want {
+				if !reflect.DeepEqual(annotation.Value, annoMap[annotation.Name]) {
 					t.Errorf("Values are not equal")
 				}
 			}

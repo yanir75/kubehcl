@@ -14,10 +14,10 @@ func destroyCmd() *cobra.Command {
 		Short: "Destory all resources managed by kubehcl",
 		Long:  "Destroy will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
+			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
-			client.Destroy(args,conf,viewSettings)
+			client.Destroy(args, conf, viewSettings)
 		},
 	}
 	addCommonToCommand(destroyCmd)

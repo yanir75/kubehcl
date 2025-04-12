@@ -23,14 +23,14 @@ func templateCmd() *cobra.Command {
 		Long:  "Template converts the hcl to yaml in order to view the kubernetes yamls which will be applied and created in your environment",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
+			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
 			switch t.Kind {
 			case "yaml":
-				client.Template(args,"yaml",conf,viewSettings)
+				client.Template(args, "yaml", conf, viewSettings)
 			case "json":
-				client.Template(args,"json",conf,viewSettings)
+				client.Template(args, "json", conf, viewSettings)
 			default:
 				fmt.Println("Valid arguments for kind are [yaml, json]")
 				os.Exit(1)

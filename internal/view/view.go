@@ -222,7 +222,7 @@ func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
 }
 
-func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
+func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 	v := NewView(&terminal.Streams{
 		Stdout: &terminal.OutputStream{
 			File: os.Stdout,
@@ -240,7 +240,6 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 	v.Configure(viewDef)
 	v.Diagnostics(d)
 }
-
 
 // func inferType(value interface{})cty.Value {
 
@@ -285,25 +284,23 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 // 		switch c:=current.Object.(type){
 // 		case *unstructured.Unstructured:
 // 			if _,exists := c.Object[attrName]; !exists {
-// 				return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName)) 
+// 				return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName))
 // 			}
 
 // 			if _,exists := w.Object[attrName]; !exists {
-// 				return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName)) 
+// 				return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName))
 // 			}
 
 // 			if reflect.DeepEqual(c.Object[attrName],w.Object[attrName]) {
 // 				return ""
 // 			} else {
-// 				return colorstring.Color(fmt.Sprintf("[bold][yellow]~[reset] %s",attrName)) 
+// 				return colorstring.Color(fmt.Sprintf("[bold][yellow]~[reset] %s",attrName))
 // 			}
 
 // 		}
 // 	}
 // 	panic("Didn't return any value")
 // }
-
-
 
 // func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
 //     f := hclwrite.NewEmptyFile()
@@ -325,10 +322,10 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 // 						body.SetAttributeValue(attr,inferType(value))
 // 					}
 // 				}				// fmt.Printf("key: %s value: %s\n",key,value)
-				
+
 // 		}
 // 	}
-	
+
 // 	if wanted == nil {
 // 		switch tt:=current.Object.(type){
 // 		case *unstructured.Unstructured:
@@ -347,7 +344,7 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 // 						body.SetAttributeValue(attr,inferType(value))
 // 					}
 // 				}				// fmt.Printf("key: %s value: %s\n",key,value)
-				
+
 // 		}
 // 	}
 
@@ -356,7 +353,6 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 // 	splitStr[0] = colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",splitStr[0]))
 // 	fmt.Printf("%s",strings.Join(splitStr,"\n"))
 // 	// f.WriteTo(os.Stdout)
-
 
 // }
 
@@ -370,7 +366,6 @@ func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 // 	fmt.Println()
 // 	fmt.Println("Kubehcl will perform the following actions:")
 // 	fmt.Println()
-
 
 // 	for key,value := range wanted {
 // 		currentList := current[key]

@@ -83,7 +83,7 @@ type EnvSettings struct {
 	KubeTLSServerName string
 	// Debug indicates whether or not Helm is running in Debug mode.
 	Debug bool
-	
+
 	MaxHistory int
 	// BurstLimit is the default client-side throttling limit.
 	BurstLimit int
@@ -107,7 +107,7 @@ func NewSettings() *EnvSettings {
 		KubeTLSServerName:         os.Getenv("KUBEHCL_KUBETLS_SERVER_NAME"),
 		KubeInsecureSkipTLSVerify: envBoolOr("KUBEHCL_KUBEINSECURE_SKIP_TLS_VERIFY", false),
 		BurstLimit:                envIntOr("KUBEHCL_BURST_LIMIT", defaultBurstLimit),
-		Timeout:                envIntOr("KUBEHCL_TIMEOUT", defaultTimeout),
+		Timeout:                   envIntOr("KUBEHCL_TIMEOUT", defaultTimeout),
 		QPS:                       envFloat32Or("KUBEHCL_QPS", defaultQPS),
 	}
 	env.Debug, _ = strconv.ParseBool(os.Getenv("KUBEHCL_DEBUG"))
@@ -158,8 +158,7 @@ func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.BurstLimit, "burst-limit", s.BurstLimit, "client-side default throttling limit")
 	fs.Float32Var(&s.QPS, "qps", s.QPS, "queries per second used when communicating with the Kubernetes API, not including bursting")
 	fs.IntVar(&s.Timeout, "timeout", s.Timeout, "Timeout for resource creation")
-	
-	
+
 }
 
 func envOr(name, def string) string {

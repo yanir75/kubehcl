@@ -23,10 +23,10 @@ func applyCmd() *cobra.Command {
 		Short: "Create or update resources",
 		Long:  applydesc,
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
+			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
-			client.Apply(args,conf,viewSettings)
+			client.Apply(args, conf, viewSettings)
 		},
 	}
 	addCommonToCommand(applyCmd)

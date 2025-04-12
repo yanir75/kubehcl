@@ -37,10 +37,10 @@ type Config struct {
 	Client   *kube.Client
 	Storage  *storage.Storage
 	Name     string
-	Timeout time.Duration
+	Timeout  time.Duration
 }
 
-func New(name string,conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
+func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
 	cfg.Settings = conf
@@ -143,7 +143,7 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 	return resList, diags
 }
 
-func (cfg *Config) buildResourceFromState(wanted kube.ResourceList,name string)(kube.ResourceList,hcl.Diagnostics){
+func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
 	current, diags := cfg.getResourceCurrentState(wanted)
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
@@ -172,14 +172,14 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList,name string)(
 
 		return nil, diags
 	}
-	return current,diags
+	return current, diags
 }
 
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
 
-	current,diags := cfg.buildResourceFromState(wanted,name)
+	current, diags := cfg.buildResourceFromState(wanted, name)
 	if diags.HasErrors() {
-		return &kube.Result{},diags
+		return &kube.Result{}, diags
 	}
 	res, err := cfg.Client.Update(current, wanted, false)
 
@@ -191,7 +191,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 		})
 	}
 
-	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Resource is not ready within the timeout",
@@ -232,7 +232,7 @@ func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 		}
 	}
 
-	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't delete resource within the timeout",
@@ -271,7 +271,7 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 
 	return diags
 }
-func (cfg *Config) buildResource (key string ,value cty.Value,rg *hcl.Range) (kube.ResourceList,hcl.Diagnostics) {
+func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	data, err := ctyjson.Marshal(value, value.Type())
 
@@ -295,7 +295,7 @@ func (cfg *Config) buildResource (key string ,value cty.Value,rg *hcl.Range) (ku
 			Subject:  rg,
 		})
 	}
-	return kubeResourceList,diags
+	return kubeResourceList, diags
 }
 
 func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
@@ -304,8 +304,7 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 	var results *kube.Result = &kube.Result{}
 	for key, value := range resource.Config {
 
-
-		kubeResourceList,buildDiags := cfg.buildResource(key,value,&resource.DeclRange)
+		kubeResourceList, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)
 		diags = append(diags, buildDiags...)
 		res, updateDiags := cfg.compareStates(kubeResourceList, key)
 		if !updateDiags.HasErrors() {
@@ -374,7 +373,7 @@ func (cfg *Config) IsReachable() hcl.Diagnostics {
 }
 
 func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
-	
+
 	var wanted kube.ResourceList = kube.ResourceList{}
 	// get saved secret which contains the state
 	saved, diags := cfg.getAllResourcesFromState()
@@ -408,7 +407,7 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 		}
 	}
 
-	if err :=cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't delete resource within the timeout",
@@ -441,21 +440,20 @@ func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 	}
 }
 
-
-func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList,kube.ResourceList, hcl.Diagnostics) {
+func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList, kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	var wantedList,currentList kube.ResourceList
+	var wantedList, currentList kube.ResourceList
 	// fmt.Printf("%s:%d\n",resource.Name,len(resource.Config))
 	for key, value := range resource.Config {
-		wanted,buildDiags := cfg.buildResource(key,value,&resource.DeclRange)
+		wanted, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)
 		wantedList = append(wantedList, wanted...)
 		diags = append(diags, buildDiags...)
-		current,buildDiags := cfg.buildResourceFromState(wanted,key)
+		current, buildDiags := cfg.buildResourceFromState(wanted, key)
 		currentList = append(currentList, current...)
 		diags = append(diags, buildDiags...)
 	}
 	// if len(wantedList) == 0 {
 	// 	panic("err")
 	// }
-	return currentList,wantedList,diags
+	return currentList, wantedList, diags
 }

@@ -7,12 +7,10 @@ import (
 
 // Apply view settings to the diagprinter
 
-
 func NewView() *view.ViewArgs {
 	view := &view.ViewArgs{
 		NoColor: envBoolOr("KUBEHCL_NOCOLOR", false),
 	}
-
 
 	return view
 }

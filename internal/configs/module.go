@@ -66,7 +66,6 @@ var ext string = ".hcl"
 
 var varsFile string = "kubehcl.tfvars"
 
-
 type Module struct {
 	Name        string
 	Inputs      VariableMap
@@ -276,7 +275,7 @@ func (m *Module) decode(depth int, folderName string, namespace string) (*decode
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(depth+1, module.Source,namespace)
+		dm, dmDiags := module.decode(depth+1, module.Source, namespace)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -290,7 +289,7 @@ func (m *Module) decode(depth int, folderName string, namespace string) (*decode
 				if val, exists := resInfoMap["metadata"]; exists {
 					if val.Type().IsObjectType() || val.Type().IsMapType() {
 						metadata := val.AsValueMap()
-						if _,exists := metadata["namespace"]; !exists && namespace != "" {
+						if _, exists := metadata["namespace"]; !exists && namespace != "" {
 							metadata["namespace"] = cty.StringVal(namespace)
 						}
 						if annotations, exists := metadata["annotations"]; exists {
@@ -456,9 +455,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	return deployable, diags
 }
 
-func DecodeFolderAndModules(folderName string, name string, depth int,namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
+func DecodeFolderAndModules(folderName string, name string, depth int, namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(0, folderName,namespace)
+	dm, decodeDiags := mod.decode(0, folderName, namespace)
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

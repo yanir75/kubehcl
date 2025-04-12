@@ -17,32 +17,31 @@ import (
 	"kubehcl.sh/kubehcl/kube/kubeclient"
 	"kubehcl.sh/kubehcl/settings"
 	"slices"
-
 )
 
-// Apply expects 2 arguments 
+// Apply expects 2 arguments
 // 1. Release name, name of the release to be saved.
 // 2. Folder name which folder to decode
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // After parsing the variables apply will decode the folder, validate the configuration and create the components.
-func Apply(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
+func Apply(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 	name, folderName, diags := parseApplyArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		return
 	}
 
-	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0,conf.Namespace())
+	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0, conf.Namespace())
 	diags = append(diags, decodeDiags...)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
-	cfg, cfgDiags := kubeclient.New(name,conf)
+	cfg, cfgDiags := kubeclient.New(name, conf)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 
@@ -81,28 +80,28 @@ func Apply(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs
 	}
 	diags = append(diags, cfg.UpdateSecret()...)
 
-	view.DiagPrinter(diags,viewArguments)
+	view.DiagPrinter(diags, viewArguments)
 
 }
 
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values
-func Template(args []string,kind string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
+func Template(args []string, kind string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 	folderName, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		return
 	}
-	
-	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0,conf.Namespace())
+
+	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0, conf.Namespace())
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 	var mutex sync.Mutex
@@ -142,7 +141,7 @@ func Template(args []string,kind string,conf *settings.EnvSettings,viewArguments
 
 	diags = append(diags, g.Walk(printFunc)...)
 
-	view.DiagPrinter(diags,viewArguments)
+	view.DiagPrinter(diags, viewArguments)
 
 }
 
@@ -150,47 +149,47 @@ func Template(args []string,kind string,conf *settings.EnvSettings,viewArguments
 // 1. Release name, name of the release to be saved.
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // Destroy will destroy all resources registered to the given namespace and release name
-func Destroy(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
+func Destroy(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 	name, diags := parseDestroyArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		return
 	}
-	cfg, cfgDiags := kubeclient.New(name,conf)
+	cfg, cfgDiags := kubeclient.New(name, conf)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
-		return 
-	} 
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
 
-	secrets,secretDiags := cfg.List()
+	secrets, secretDiags := cfg.List()
 	diags = append(diags, secretDiags...)
 
 	if secretDiags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
-		return 
+		view.DiagPrinter(diags, viewArguments)
+		return
 	}
 
-	if !slices.Contains(secrets,"kubehcl." +cfg.Name){
+	if !slices.Contains(secrets, "kubehcl."+cfg.Name) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Release does not exist",
-			Detail: fmt.Sprintf("The release you provided \"%s\" does not exist in the given namespace \"%s\"",cfg.Name,conf.Namespace()),
+			Summary:  "Release does not exist",
+			Detail:   fmt.Sprintf("The release you provided \"%s\" does not exist in the given namespace \"%s\"", cfg.Name, conf.Namespace()),
 		})
 	}
 	cfg.DeleteAllResources()
-	view.DiagPrinter(diags,viewArguments)
+	view.DiagPrinter(diags, viewArguments)
 
 }
 
-func List(conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
-	cfg, diags := kubeclient.New("",conf)
+func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
+	cfg, diags := kubeclient.New("", conf)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 	} else {
 		if secrets, diags := cfg.List(); diags.HasErrors() {
-			view.DiagPrinter(diags,viewArguments)
+			view.DiagPrinter(diags, viewArguments)
 		} else {
 			for _, secret := range secrets {
 				fmt.Printf("module: %s\n", secret)
@@ -201,7 +200,7 @@ func List(conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 }
 
 // Parses arguments for template command
-func parseTemplateArgs (args [] string) (string, hcl.Diagnostics) {
+func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	if len(args) > 1 {
