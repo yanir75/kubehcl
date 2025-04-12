@@ -10,9 +10,14 @@ import (
 // Adds he common flags to the command
 // Example of common flag is --namespace
 func addCommonToCommand(cmd *cobra.Command) {
-	settings := settings.New()
-	settings.AddFlags(cmd.Flags())
-	ctx := context.WithValue(context.Background(),"settings",settings)
+	definitions := settings.NewSettings()
+	definitions.AddFlags(cmd.Flags())
+
+	viewSettings := settings.NewView()
+	settings.AddViewFlags(viewSettings,cmd.Flags())
+	ctx := context.WithValue(context.Background(),"settings",definitions)
+	ctx = context.WithValue(ctx,"viewSettings",viewSettings)
+
 	cmd.SetContext(ctx)
 
 }

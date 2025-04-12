@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
 
@@ -23,8 +24,9 @@ func applyCmd() *cobra.Command {
 		Long:  applydesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
 
-			client.Apply(args,conf)
+			client.Apply(args,conf,viewSettings)
 		},
 	}
 	addCommonToCommand(applyCmd)

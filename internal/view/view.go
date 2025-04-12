@@ -222,7 +222,7 @@ func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
 }
 
-func DiagPrinter(diags hcl.Diagnostics) {
+func DiagPrinter(diags hcl.Diagnostics,viewDef *ViewArgs) {
 	v := NewView(&terminal.Streams{
 		Stdout: &terminal.OutputStream{
 			File: os.Stdout,
@@ -237,13 +237,8 @@ func DiagPrinter(diags hcl.Diagnostics) {
 	v.SetConfigSources(configs.Parser().Files)
 	var d tfdiags.Diagnostics
 	d = d.Append(diags)
-	v.Configure(&ViewArgs{
-		NoColor:             false,
-		ConsolidateWarnings: true,
-	})
-	v.streams.Stderr.Columns()
+	v.Configure(viewDef)
 	v.Diagnostics(d)
-	
 }
 
 

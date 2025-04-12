@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
 
@@ -14,8 +15,9 @@ func destroyCmd() *cobra.Command {
 		Long:  "Destroy will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
 
-			client.Destroy(args,conf)
+			client.Destroy(args,conf,viewSettings)
 		},
 	}
 	addCommonToCommand(destroyCmd)

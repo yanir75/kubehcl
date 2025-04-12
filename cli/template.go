@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
 
@@ -23,12 +24,13 @@ func templateCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			conf := cmd.Context().Value("settings").(*settings.EnvSettings)
+			viewSettings := cmd.Context().Value("viewSettings").(*view.ViewArgs)
 
 			switch t.Kind {
 			case "yaml":
-				client.Template(args,"yaml",conf)
+				client.Template(args,"yaml",conf,viewSettings)
 			case "json":
-				client.Template(args,"json",conf)
+				client.Template(args,"json",conf,viewSettings)
 			default:
 				fmt.Println("Valid arguments for kind are [yaml, json]")
 				os.Exit(1)

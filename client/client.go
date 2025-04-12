@@ -25,10 +25,10 @@ import (
 // 2. Folder name which folder to decode
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // After parsing the variables apply will decode the folder, validate the configuration and create the components.
-func Apply(args []string,conf *settings.EnvSettings) {
+func Apply(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 	name, folderName, diags := parseApplyArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		return
 	}
 
@@ -42,7 +42,7 @@ func Apply(args []string,conf *settings.EnvSettings) {
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		os.Exit(1)
 	}
 
@@ -81,17 +81,17 @@ func Apply(args []string,conf *settings.EnvSettings) {
 	}
 	diags = append(diags, cfg.UpdateSecret()...)
 
-	view.DiagPrinter(diags)
+	view.DiagPrinter(diags,viewArguments)
 
 }
 
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values
-func Template(args []string,kind string,conf *settings.EnvSettings) {
+func Template(args []string,kind string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 	folderName, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		return
 	}
 	
@@ -102,7 +102,7 @@ func Template(args []string,kind string,conf *settings.EnvSettings) {
 	diags = append(diags, g.Init()...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		os.Exit(1)
 	}
 	var mutex sync.Mutex
@@ -142,7 +142,7 @@ func Template(args []string,kind string,conf *settings.EnvSettings) {
 
 	diags = append(diags, g.Walk(printFunc)...)
 
-	view.DiagPrinter(diags)
+	view.DiagPrinter(diags,viewArguments)
 
 }
 
@@ -150,17 +150,17 @@ func Template(args []string,kind string,conf *settings.EnvSettings) {
 // 1. Release name, name of the release to be saved.
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // Destroy will destroy all resources registered to the given namespace and release name
-func Destroy(args []string,conf *settings.EnvSettings) {
+func Destroy(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 	name, diags := parseDestroyArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		return
 	}
 	cfg, cfgDiags := kubeclient.New(name,conf)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		return 
 	} 
 
@@ -168,7 +168,7 @@ func Destroy(args []string,conf *settings.EnvSettings) {
 	diags = append(diags, secretDiags...)
 
 	if secretDiags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 		return 
 	}
 
@@ -180,17 +180,17 @@ func Destroy(args []string,conf *settings.EnvSettings) {
 		})
 	}
 	cfg.DeleteAllResources()
-	view.DiagPrinter(diags)
+	view.DiagPrinter(diags,viewArguments)
 
 }
 
-func List(conf *settings.EnvSettings) {
+func List(conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 	cfg, diags := kubeclient.New("",conf)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags)
+		view.DiagPrinter(diags,viewArguments)
 	} else {
 		if secrets, diags := cfg.List(); diags.HasErrors() {
-			view.DiagPrinter(diags)
+			view.DiagPrinter(diags,viewArguments)
 		} else {
 			for _, secret := range secrets {
 				fmt.Printf("module: %s\n", secret)
@@ -265,7 +265,7 @@ func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
 // func Plan(args []string) {
 // 	name, folderName, diags := parseApplyArgs(args)
 // 	if diags.HasErrors() {
-// 		view.DiagPrinter(diags)
+// 		view.DiagPrinter(diags,viewArguments)
 // 		return
 // 	}
 
@@ -279,7 +279,7 @@ func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
 // 	diags = append(diags, cfgDiags...)
 
 // 	if diags.HasErrors() {
-// 		view.DiagPrinter(diags)
+// 		view.DiagPrinter(diags,viewArguments)
 // 		os.Exit(1)
 // 	}
 
@@ -319,7 +319,7 @@ func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
 // 		cfg.DeleteResources()
 // 	}
 // 	if diags.HasErrors(){
-// 		view.DiagPrinter(diags)
+// 		view.DiagPrinter(diags,viewArguments)
 // 		return
 // 	}
 // 	// diags = append(diags, cfg.UpdateSecret()...)
