@@ -51,7 +51,7 @@ func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceList, 
 }
 
 func (r *Resource) decode(ctx *hcl.EvalContext) (*decode.DecodedResource, hcl.Diagnostics) {
-	deployable, diags := r.Deployable.Decode(ctx)
+	deployable, diags := r.Decode(ctx)
 	res := &decode.DecodedResource{DecodedDeployable: *deployable}
 
 	return res, diags
