@@ -16,6 +16,8 @@ import (
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/kube/kubeclient"
 	"kubehcl.sh/kubehcl/settings"
+	"slices"
+
 )
 
 // Apply expects 2 arguments 
@@ -159,9 +161,27 @@ func Destroy(args []string,conf *settings.EnvSettings) {
 
 	if diags.HasErrors() {
 		view.DiagPrinter(diags)
-	} else {
-		cfg.DeleteAllResources()
+		return 
+	} 
+
+	secrets,secretDiags := cfg.List()
+	diags = append(diags, secretDiags...)
+
+	if secretDiags.HasErrors() {
+		view.DiagPrinter(diags)
+		return 
 	}
+
+	if !slices.Contains(secrets,"kubehcl." +cfg.Name){
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Release does not exist",
+			Detail: fmt.Sprintf("The release you provided \"%s\" does not exist in the given namespace \"%s\"",cfg.Name,conf.Namespace()),
+		})
+	}
+	cfg.DeleteAllResources()
+	view.DiagPrinter(diags)
+
 }
 
 func List(conf *settings.EnvSettings) {

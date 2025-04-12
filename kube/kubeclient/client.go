@@ -374,6 +374,7 @@ func (cfg *Config) IsReachable() hcl.Diagnostics {
 }
 
 func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
+	
 	var wanted kube.ResourceList = kube.ResourceList{}
 	// get saved secret which contains the state
 	saved, diags := cfg.getAllResourcesFromState()
