@@ -6,15 +6,11 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-// type apply struct {
-// 	FolderName string
-// 	Name string
-// }
 
 var listDesc string = `list will return all releases applied through kubehcl`
 
+// List will list all deployments in a given namespace
 func listCmd() *cobra.Command {
-	// var a apply
 
 	listCmd := &cobra.Command{
 		Use:   "list",

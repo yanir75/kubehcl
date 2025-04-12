@@ -14,8 +14,8 @@ import (
 var applydesc string = `apply will create or update existing resources managed by kubehcl
 automatically searches for files with ending of .hcl`
 
+// Apply command will validate then create the corresponding components written in the configuration files
 func applyCmd() *cobra.Command {
-	// var a apply
 
 	applyCmd := &cobra.Command{
 		Use:   "apply [name] [folder]",

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Will print the licenses related to the project
 func licenseCmd() *cobra.Command {
 	licenseCmd := &cobra.Command{
 		Use:   "license",

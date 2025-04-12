@@ -7,6 +7,8 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+// Adds he common flags to the command
+// Example of common flag is --namespace
 func addCommonToCommand(cmd *cobra.Command) {
 	settings := settings.New()
 	settings.AddFlags(cmd.Flags())

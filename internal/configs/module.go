@@ -66,9 +66,6 @@ var ext string = ".hcl"
 
 var varsFile string = "kubehcl.tfvars"
 
-const (
-	rootName = "root"
-)
 
 type Module struct {
 	Name        string
@@ -293,6 +290,9 @@ func (m *Module) decode(depth int, folderName string, namespace string) (*decode
 				if val, exists := resInfoMap["metadata"]; exists {
 					if val.Type().IsObjectType() || val.Type().IsMapType() {
 						metadata := val.AsValueMap()
+						if _,exists := metadata["namespace"]; !exists && namespace != "" {
+							metadata["namespace"] = cty.StringVal(namespace)
+						}
 						if annotations, exists := metadata["annotations"]; exists {
 							if annotations.Type().IsObjectType() || annotations.Type().IsMapType() {
 								annotationsMap := val.AsValueMap()
@@ -301,9 +301,6 @@ func (m *Module) decode(depth int, folderName string, namespace string) (*decode
 										annotationsMap[v.Name] = v.Value
 									}
 									metadata["annotations"] = cty.ObjectVal(annotationsMap)
-									if _,exists := metadata["namespace"]; !exists && namespace != "" {
-										metadata["namespace"] = cty.StringVal(namespace)
-									}
 								}
 							}
 						} else {

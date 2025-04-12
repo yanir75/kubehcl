@@ -62,58 +62,58 @@ func Test_Annotation(t *testing.T) {
 			wantErrors: false,
 		},
 
-		// {
-		// 	d: &hcl.Block{
-		// 		Type:   "default_annotations",
-		// 		Labels: []string{},
-		// 		Body: &hclsyntax.Body{
-		// 			Attributes: hclsyntax.Attributes{
-		// 				"test": &hclsyntax.Attribute{
-		// 					Name: "test1",
-		// 					Expr: &hclsyntax.LiteralValueExpr{
-		// 						Val: cty.StringVal("asdf"),
-		// 					},
-		// 				},
-		// 				"test1": &hclsyntax.Attribute{
-		// 					Name: "test2",
-		// 					Expr: &hclsyntax.ScopeTraversalExpr{
-		// 						Traversal: hcl.Traversal{
-		// 							hcl.TraverseAttr{
-		// 								Name: "var",
-		// 							},
-		// 							hcl.TraverseAttr{
-		// 								Name: "bla",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
+		{
+			d: &hcl.Block{
+				Type:   "default_annotations",
+				Labels: []string{},
+				Body: &hclsyntax.Body{
+					Attributes: hclsyntax.Attributes{
+						"test": &hclsyntax.Attribute{
+							Name: "test1",
+							Expr: &hclsyntax.LiteralValueExpr{
+								Val: cty.StringVal("asdf"),
+							},
+						},
+						"test1": &hclsyntax.Attribute{
+							Name: "test2",
+							Expr: &hclsyntax.ScopeTraversalExpr{
+								Traversal: hcl.Traversal{
+									hcl.TraverseAttr{
+										Name: "var",
+									},
+									hcl.TraverseAttr{
+										Name: "bla",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 
-		// 	want: Annotations{
-		// 		&Annotation{
-		// 			Name: "test1",
-		// 			Value: &hclsyntax.LiteralValueExpr{
-		// 				Val: cty.StringVal("asdf"),
-		// 			},
-		// 		},
-		// 		&Annotation{
-		// 			Name: "test2",
-		// 			Value: &hclsyntax.ScopeTraversalExpr{
-		// 				Traversal: hcl.Traversal{
-		// 					hcl.TraverseAttr{
-		// 						Name: "var",
-		// 					},
-		// 					hcl.TraverseAttr{
-		// 						Name: "bla",
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErrors: false,
-		// },
+			want: Annotations{
+				&Annotation{
+					Name: "test1",
+					Value: &hclsyntax.LiteralValueExpr{
+						Val: cty.StringVal("asdf"),
+					},
+				},
+				&Annotation{
+					Name: "test2",
+					Value: &hclsyntax.ScopeTraversalExpr{
+						Traversal: hcl.Traversal{
+							hcl.TraverseAttr{
+								Name: "var",
+							},
+							hcl.TraverseAttr{
+								Name: "bla",
+							},
+						},
+					},
+				},
+			},
+			wantErrors: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -122,8 +122,16 @@ func Test_Annotation(t *testing.T) {
 			t.Errorf("Don't want errors but received: %s", diags.Errs())
 		} else if !diags.HasErrors() && test.wantErrors {
 			t.Errorf("Want errors but did not receive any")
-		} else if !reflect.DeepEqual(want, test.want) {
-			t.Error("Annotations are not equal")
+		} else {
+			annoMap := make(map[string]hcl.Expression)
+			for _,annotation := range want {
+				annoMap[annotation.Name] = annotation.Value
+			}
+			for _,annotation := range test.want {
+				if !reflect.DeepEqual(annotation.Value,annoMap[annotation.Name]) {
+					t.Errorf("Values are not equal")
+				}
+			}
 		}
 	}
 }

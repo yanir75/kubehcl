@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Create root command for the cmd tool
 func CreateRootCMD() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "kubehcl",

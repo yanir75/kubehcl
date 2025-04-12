@@ -6,6 +6,7 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+// Destroy will destroy the corresponding components of the given apply name
 func destroyCmd() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",

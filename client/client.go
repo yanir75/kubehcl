@@ -18,6 +18,11 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+// Apply expects 2 arguments 
+// 1. Release name, name of the release to be saved.
+// 2. Folder name which folder to decode
+// The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
+// After parsing the variables apply will decode the folder, validate the configuration and create the components.
 func Apply(args []string,conf *settings.EnvSettings) {
 	name, folderName, diags := parseApplyArgs(args)
 	if diags.HasErrors() {
@@ -78,8 +83,17 @@ func Apply(args []string,conf *settings.EnvSettings) {
 
 }
 
-func Template(kind string) {
-	d, diags := configs.DecodeFolderAndModules(".", "root", 0,"")
+// Template expects 1 argument
+// 1. Folder name which folder to decode
+// Template will render the configuration and print it as json/yaml format after inserting the values
+func Template(args []string,kind string,conf *settings.EnvSettings) {
+	folderName, diags := parseTemplateArgs(args)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags)
+		return
+	}
+	
+	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0,conf.Namespace())
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
@@ -130,6 +144,10 @@ func Template(kind string) {
 
 }
 
+// Destroy expects 1 argument
+// 1. Release name, name of the release to be saved.
+// The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
+// Destroy will destroy all resources registered to the given namespace and release name
 func Destroy(args []string,conf *settings.EnvSettings) {
 	name, diags := parseDestroyArgs(args)
 	if diags.HasErrors() {
@@ -162,6 +180,30 @@ func List(conf *settings.EnvSettings) {
 
 }
 
+// Parses arguments for template command
+func parseTemplateArgs (args [] string) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) > 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Too many arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	if len(args) < 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Too few arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	return args[0], diags
+}
+
+// Parses arguments for destroy command
 func parseDestroyArgs(args []string) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
@@ -185,6 +227,7 @@ func parseDestroyArgs(args []string) (string, hcl.Diagnostics) {
 
 }
 
+// Parses arguemtns for apply command
 func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
