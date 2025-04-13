@@ -63,7 +63,7 @@ jobs:
           event_type="update-brew" 
           asset="${{ needs.build.outputs.link }}"
           version="${{ github.ref_name }}"
-          sha=${{ needs.build.outputs.sha }}"
+          sha="${{ needs.build.outputs.sha }}"
   
           curl -L \
             -X POST \
