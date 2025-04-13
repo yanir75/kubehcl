@@ -55,7 +55,13 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Workflow in Another Repository
+      - name: Output version,link and sha
+        run: |
+          echo "${{ needs.build.outputs.link }}"
+          echo "${{ github.ref_name }}"
+          echo "${{ needs.build.outputs.sha }}"
+
+      - name: Trigger Update brew workflow
         run: |
           # Set the required variables
           repo_owner="yanir75" 
@@ -64,7 +70,7 @@ jobs:
           asset="${{ needs.build.outputs.link }}"
           version="${{ github.ref_name }}"
           sha="${{ needs.build.outputs.sha }}"
-  
+
           curl -L \
             -X POST \
             -H "Accept: application/vnd.github+json" \
