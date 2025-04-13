@@ -19,7 +19,7 @@ jobs:
 
     outputs:
       link: ${{ fromJSON(steps.upload.outputs.assets)[0].browser_download_url }}
-      sha: ${{ steps.upload.outputs.sha }}
+      sha: ${{ steps.sha.outputs.sha }}
 
     steps:
       - uses: actions/checkout@v4
