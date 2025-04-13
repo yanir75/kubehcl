@@ -19,7 +19,7 @@ jobs:
 
     outputs:
       link: ${{ fromJSON(steps.upload.outputs.assets)[0].browser_download_url }}
-      sha: ${{ steps.sha.outputs.kubehclsha }}
+      kubehclsha: ${{ steps.kubehclsha.outputs.kubehclsha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +36,8 @@ jobs:
       - name: tar
         run:  tar -czf kubehcl.tar.gz kubehcl > /dev/null
 
-      - name: sha
-        id: sha
+      - name: kubehclsha
+        id: kubehclsha
         run: echo "kubehclsha=$(shasum -a 256 kubehcl.tar.gz | awk '{print $1}' | tr -d '\n')" >> $GITHUB_OUTPUT
 
       - name: Upload release assets
