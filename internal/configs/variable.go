@@ -41,7 +41,7 @@ func (v *Variable) addr() addrs.Variable {
 
 var inputVariableBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "type", Required: true},
+		{Name: "type", Required: false},
 		{Name: "default", Required: false},
 		{Name: "description", Required: false},
 	},
@@ -135,7 +135,9 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 		t, _, valDiags := typeexpr.TypeConstraintWithDefaults(attr.Expr)
 		diags = append(diags, valDiags...)
 		variable.Type = t
-	}
+	} // else {
+	// 	variable.Type = cty.DynamicPseudoType
+	// }
 
 	if attr, exists := content.Attributes["description"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &variable.Description)

@@ -7,6 +7,3 @@ variable "foo" {
     description = "Ports of the container"
 }
 
-
-
-
