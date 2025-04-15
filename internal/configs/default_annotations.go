@@ -28,14 +28,18 @@ type Annotation struct {
 
 type Annotations []*Annotation
 
-// var annotaions Annotations
 
+
+// Returns a unique address for the default annotation
 func (d *Annotation) addr() addrs.DefaultAnnotation {
 	return addrs.DefaultAnnotation{
 		Name: d.Name,
 	}
 }
 
+// Decode returns the annotation after it has been assigned go values as a decoded annotation
+// It returns the decoded value as a cty.value
+// Annotation values must be strings
 func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hcl.Diagnostics) {
 	dA := &decode.DecodedAnnotation{
 		Name:      l.Name,
@@ -55,6 +59,7 @@ func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hc
 	return dA, diags
 }
 
+// Decode multiple annotations
 func (v Annotations) Decode(ctx *hcl.EvalContext) (decode.DecodedAnnotations, hcl.Diagnostics) {
 	var dVars decode.DecodedAnnotations
 	var diags hcl.Diagnostics
@@ -67,44 +72,27 @@ func (v Annotations) Decode(ctx *hcl.EvalContext) (decode.DecodedAnnotations, hc
 	return dVars, diags
 }
 
+// default annotation block turns into multiple annotations of name of annotation and the value of the annotation
 func decodeAnnotationsBlock(block *hcl.Block) (Annotations, hcl.Diagnostics) {
 	attrs, diags := block.Body.JustAttributes()
-	// names := make(map[string]bool)
+	
 	var annotaions Annotations
 
 	for _, attr := range attrs {
 
-		// value, valDiag := attr.Expr.Value(ctx)
-		// diags = append(diags, valDiag...)
-		// if val, err := convert.Convert(value, cty.String); err == nil {
+
 		annotaions = append(annotaions, &Annotation{
 			Name:      attr.Name,
 			Value:     attr.Expr,
 			DeclRange: attr.NameRange,
 		})
-		// } else {
-		// 	diags = append(diags, &hcl.Diagnostic{
-		// 		Severity: hcl.DiagError,
-		// 		Summary:  "Annotations must be string",
-		// 		Detail:   fmt.Sprintf("Couldn't convert value to string, this is value of type: %s", value.Type().FriendlyName()),
-		// 		Subject:  attr.Expr.Range().Ptr(),
-		// 	})
-		// }
-		// if exists := names[attr.Name]; exists {
-		// 	diags = append(diags, &hcl.Diagnostic{
-		// 		Severity: hcl.DiagError,
-		// 		Summary:  "Annotations must have different names",
-		// 		Detail:   fmt.Sprintf("Two Annotations have the same name: %s", attr.Name),
-		// 		// Context: names[variable.Name],
-		// 	})
-		// }
-		// names[attr.Name] = true
 
 	}
 
 	return annotaions, diags
 }
 
+// Decode multiple default_annotation blocks and verifies that there aren't any duplicates of the key and values in the attributes
 func DecodeAnnotationsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Annotations, hcl.Diagnostics) {
 	var annotations Annotations
 	var diags hcl.Diagnostics

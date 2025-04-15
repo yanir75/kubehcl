@@ -24,6 +24,7 @@ type Local struct {
 
 type Locals []*Local
 
+// returns unique address of local
 func (l *Local) addr() addrs.Local {
 	return addrs.Local{
 		Name: l.Name,

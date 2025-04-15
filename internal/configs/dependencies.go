@@ -9,10 +9,7 @@ Licesne: https://www.mozilla.org/en-US/MPL/2.0/
 package configs
 
 import (
-	// "fmt"
 
-	// "github.com/hashicorp/hcl/v2"
-	// "kubehcl.sh/kubehcl/internal/addrs"
 	"fmt"
 	"strings"
 
@@ -35,6 +32,8 @@ type graphNodeRoot struct{}
 func (n graphNodeRoot) Name() string {
 	return rootNodeName
 }
+
+
 func addRootNodeToGraph(g *Graph) {
 	// We always add the root node. This is a singleton so if it's already
 	// in the graph this will do nothing and just retain the existing root node.
@@ -61,6 +60,8 @@ func getResourceNames(m *decode.DecodedModule) decode.DecodedResourceList {
 	return getResourceName(m, decode.DecodedResourceList{}, "")
 }
 
+// Get the resources out of all the modules reassign their name accordingly within the module.
+// For example a resource named foo inside module called bar will be called module.bar.resource.foo
 func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, currentName string) decode.DecodedResourceList {
 	for _, r := range m.Resources {
 		r.Name = currentName + r.Addr().String()
@@ -88,6 +89,7 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 	return rList
 }
 
+// Creates a DAG based on dependencies for later purposes such as walking over the graph and activating a function on each resource.
 func (g *Graph) Init() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	rList := getResourceNames(g.DecodedModule)
@@ -120,16 +122,7 @@ func (g *Graph) Init() hcl.Diagnostics {
 			// }
 			for _, edge := range edges {
 				added := false
-				// for _, vertex := range g.Vertices(){
-				// 	res := vertex.(*decode.DecodedResource)
-				// 	if res.Depth != r.Depth
-				// }
-				// added := false
 
-				// resource := addrs.Resource{
-				// 	Name:         edge.Name,
-				// 	ResourceMode: edge.Type,
-				// }
 				startName := strings.Split(r.Name, ".")
 				fullName := strings.Join(startName[:edge.Depth*2], ".")
 				if fullName != "" {
@@ -190,77 +183,6 @@ func (g *Graph) Init() hcl.Diagnostics {
 	return diags
 }
 
-// func (g *Graph) Init() hcl.Diagnostics {
-// 	var diags hcl.Diagnostics
-// 	for _, r := range resourceList {
-// 		// resource := addrs.Resource{
-// 		// 	Name:         r.Name,
-// 		// 	ResourceMode: addrs.RMode,
-// 		// }
-// if g.HasVertex(r) {
-// 	diags = append(diags, &hcl.Diagnostic{
-// 		Severity: hcl.DiagError,
-// 		Summary:  "Resources must have different names",
-// 		Detail:   fmt.Sprintf("Two resources have the same name: %s", r.Name),
-// 		Subject:  &r.DeclRange,
-// 		// Context: names[variable.Name],
-// 	})
-// }
-
-// 		g.Add(
-// 			r,
-// 		)
-
-// 	}
-
-// 	for _, r := range resourceList {
-// 		if r.DependsOn != nil {
-// edges, dependsOnDiags := getName(r)
-// 			diags = append(diags, dependsOnDiags...)
-// 			if diags.HasErrors(){
-// 				return diags
-// 			}
-
-// for _, edge := range edges {
-// resource := addrs.Resource{
-// 	Name:         edge.Name,
-// 	ResourceMode: addrs.RMode,
-// }
-
-// 	if val,exists :=addrMap[resource.String()]; !exists {
-// 		diags = append(diags, &hcl.Diagnostic{
-// 			Severity: hcl.DiagError,
-// 			Summary:  "Resource does not exist",
-// 			Detail:   fmt.Sprintf("There isn't a resource with this name %s", r.Name),
-// 			Subject: &edge.Range,
-// 			// Context: names[variable.Name],
-// 		})
-// 	} else {
-// 		g.Connect(dag.BasicEdge(r,
-// 			val,
-// 		))
-// 	}
-// }
-// }
-// }
-// for _, cycle := range g.Cycles() {
-// 	diags = append(diags, &hcl.Diagnostic{
-// 		Severity: hcl.DiagError,
-// 		Summary:  "Circular dependencies",
-// 		Detail:   fmt.Sprintf("Resources %s %s have circular dependencies", cycle[0], cycle[1]),
-// 		// Context: names[variable.Name],
-// 	})
-// }
-
-// addRootNodeToGraph(g)
-
-// if err:=g.Validate(); err != nil {
-// 	fmt.Printf("%s",err)
-// 	panic("Should not be here")
-// }
-
-// return diags
-// }
 type rangeName struct {
 	Name  string
 	Type  string
@@ -268,6 +190,8 @@ type rangeName struct {
 	Range hcl.Range
 }
 
+// Get the name of the resource based on the depends on attribute in resource and module blocks
+// Decode it into strings and put it in the graph accordingly
 func getName(resource *decode.DecodedResource) ([]rangeName, hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
