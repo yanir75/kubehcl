@@ -47,7 +47,7 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
+func (v *Variable) decode(ctx *hcl.EvalContext) (*decode.DecodedVariable, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	dV := &decode.DecodedVariable{
 		Name:        v.Name,
@@ -55,7 +55,7 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 		Type:        v.Type,
 		DeclRange:   v.DeclRange,
 	}
-	val, valDiags := v.Default.Value(nil)
+	val, valDiags := v.Default.Value(ctx)
 	diags = append(diags, valDiags...)
 
 	if v.Type != cty.NilType {
@@ -76,11 +76,11 @@ func (v *Variable) decode() (*decode.DecodedVariable, hcl.Diagnostics) {
 	return dV, diags
 }
 
-func (v VariableMap) Decode() (decode.DecodedVariableList, hcl.Diagnostics) {
+func (v VariableMap) Decode(ctx *hcl.EvalContext) (decode.DecodedVariableList, hcl.Diagnostics) {
 	var dVars decode.DecodedVariableList
 	var diags hcl.Diagnostics
 	for _, variable := range v {
-		dV, varDiags := variable.decode()
+		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
 		dVars = append(dVars, dV)
 	}

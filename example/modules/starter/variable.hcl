@@ -6,10 +6,11 @@ variable "foo" {
 
 variable "ports" {
 
-    type = list(map(number))
-    default = [{
-             containerPort = 80   
-            }]
+    # type = list(map(number))
+    # default = [{
+    #          containerPort = 80   
+    #         }]
+            # type = string
     description = "Ports of the container"
 }
 
