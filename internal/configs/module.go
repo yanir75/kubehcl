@@ -166,7 +166,7 @@ func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Variable declared in vars but not in file",
-					Detail:   fmt.Sprintf("Declare the variable in the file or remove it from vars file variabe: %s", variable.Name),
+					Detail:   fmt.Sprintf("Declare the variable in the file or remove it from vars file variable: %s", variable.Name),
 					Subject:  &variable.DeclRange,
 				})
 			}
@@ -204,6 +204,17 @@ func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *
 		}
 
 		diags = append(diags, modDiags...)
+
+		// check if variable is declared correctly
+		// _,diag := module.Inputs.Decode(nil)
+		// diags = append(diags, diag...)
+		for _, input := range module.Inputs {
+			if input.HasDefault {
+				_,diag :=input.Default.Value(nil)
+				diags = append(diags, diag...)
+			}
+		}
+
 		for _, attr := range attrs {
 			if attr.Name == "depends_on" {
 				continue

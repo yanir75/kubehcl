@@ -7,6 +7,7 @@ variable "foo" {
 variable "ports" {
 
     # type = list(map(number))
+    # default = var.foo
     # default = [{
     #          containerPort = 80   
     #         }]
