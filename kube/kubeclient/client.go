@@ -38,6 +38,7 @@ type Config struct {
 	Storage  *storage.Storage
 	Name     string
 	Timeout  time.Duration
+	Version string
 }
 
 // Applies the settings and creates a config to create,destroy and  validate all configuration files
@@ -54,6 +55,15 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
 	}
 	diags = append(diags, cfg.IsReachable()...)
+	client,err :=cfg.Client.Factory.KubernetesClientSet()
+	if err != nil {
+		panic("Couldn't get client")
+	}
+	version,err:= client.ServerVersion()
+	if err != nil {
+		panic("Couldn't get version")
+	}
+	cfg.Version = version.Major + "." + version.Minor
 
 	return cfg, diags
 }
@@ -360,7 +370,7 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 				Subject:  &resource.DeclRange,
 			})
 		}
-		factory, validatorDiags := syntaxvalidator.New()
+		factory, validatorDiags := syntaxvalidator.New(cfg.Version)
 		diags = append(diags, validatorDiags...)
 		err = syntaxvalidator.ValidateDocument(data, factory)
 
@@ -482,6 +492,7 @@ func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList, ku
 		currentList = append(currentList, current...)
 		diags = append(diags, buildDiags...)
 	}
+
 	// if len(wantedList) == 0 {
 	// 	panic("err")
 	// }

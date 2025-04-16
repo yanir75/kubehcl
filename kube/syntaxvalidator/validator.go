@@ -25,7 +25,7 @@ import (
 	"kubehcl.sh/kubehcl/kube/pkg/validator"
 )
 
-func New() (*validator.Validator, hcl.Diagnostics) {
+func New(version string) (*validator.Validator, hcl.Diagnostics) {
 	var schemaPatchesFs, localSchemasFs fs.FS
 
 	var localCRDsFileSystems []fs.FS
@@ -43,7 +43,7 @@ func New() (*validator.Validator, hcl.Diagnostics) {
 				openapiclient.NewLocalCRDFiles(localCRDsFileSystems...),
 				openapiclient.NewOverlay(
 					// Hand-written hardcoded patches.
-					openapiclient.HardcodedPatchLoader("1.30"),
+					openapiclient.HardcodedPatchLoader(version),
 					// try cluster for schemas first, if they are not available
 					// then fallback to hardcoded or builtin schemas
 					openapiclient.NewFallback(
@@ -53,11 +53,11 @@ func New() (*validator.Validator, hcl.Diagnostics) {
 						// fall back to GitHub builtins
 						openapiclient.NewFallback(
 							// schemas for known k8s versions are scraped from GH and placed here
-							openapiclient.NewHardcodedBuiltins("1.30"),
+							openapiclient.NewHardcodedBuiltins(version),
 							// check github for builtins not hardcoded.
 							// subject to rate limiting. should use a diskcache
 							// since etag requests are not limited
-							openapiclient.NewGitHubBuiltins("1.30"),
+							openapiclient.NewGitHubBuiltins(version),
 						)),
 				),
 			),
