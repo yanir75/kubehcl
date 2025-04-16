@@ -47,6 +47,9 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
+// Decode variable and verify the type of the variable matches the default value defined
+// If no type is defined each value will be accepted
+// Decode the value into a golang cty.value
 func (v *Variable) decode(ctx *hcl.EvalContext) (*decode.DecodedVariable, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	dV := &decode.DecodedVariable{
@@ -76,6 +79,7 @@ func (v *Variable) decode(ctx *hcl.EvalContext) (*decode.DecodedVariable, hcl.Di
 	return dV, diags
 }
 
+// Decode variable map
 func (v VariableMap) Decode(ctx *hcl.EvalContext) (decode.DecodedVariableList, hcl.Diagnostics) {
 	var dVars decode.DecodedVariableList
 	var diags hcl.Diagnostics
@@ -88,6 +92,7 @@ func (v VariableMap) Decode(ctx *hcl.EvalContext) (decode.DecodedVariableList, h
 	return dVars, diags
 }
 
+// Decode multiple variable blocks
 func DecodeVariableBlocks(blocks hcl.Blocks) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var variables VariableMap = make(map[string]*Variable)
@@ -112,6 +117,9 @@ func DecodeVariableBlocks(blocks hcl.Blocks) (VariableMap, hcl.Diagnostics) {
 	return variables, diags
 }
 
+// Each variable block can contain type,description and default value
+// Checks for those
+// None of those are required
 func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	var variable *Variable = &Variable{
 		Name:       block.Labels[0],
@@ -120,16 +128,6 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 	}
 
 	content, diags := block.Body.Content(inputVariableBlockSchema)
-
-	// if len(content.Blocks) > 0 {
-	// 	diags = append(diags,&hcl.Diagnostic{
-	// 		Severity: hcl.DiagError,
-	// 		Summary: "Too many blocks in variable it doesn't suppose to have blocks",
-	// 		Detail: fmt.Sprintf("Too many blocks in %s",block.Labels),
-	// 		Subject: &block.DefRange,
-	// 	})
-	// 	return nil, diags
-	// }
 
 	if attr, exists := content.Attributes["type"]; exists {
 		t, _, valDiags := typeexpr.TypeConstraintWithDefaults(attr.Expr)

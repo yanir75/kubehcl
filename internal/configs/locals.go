@@ -31,10 +31,10 @@ func (l *Local) addr() addrs.Local {
 	}
 }
 
-// var inputLocalsBlockSchema = &hcl.BodySchema{
-
-// }
-
+// Decode local into a decodedlocal structure each local has name, value and range
+// Name local name in string format
+// Value local cty.value after being decoded into go value
+// Range the defenition location in the file
 func (l *Local) decode(ctx *hcl.EvalContext) (*decode.DecodedLocal, hcl.Diagnostics) {
 	dL := &decode.DecodedLocal{
 		Name:      l.Name,
@@ -46,6 +46,7 @@ func (l *Local) decode(ctx *hcl.EvalContext) (*decode.DecodedLocal, hcl.Diagnost
 	return dL, diags
 }
 
+// Decode multiple locals
 func (v Locals) Decode(ctx *hcl.EvalContext) (decode.DecodedLocals, hcl.Diagnostics) {
 	var dVars decode.DecodedLocals
 	var diags hcl.Diagnostics
@@ -58,20 +59,8 @@ func (v Locals) Decode(ctx *hcl.EvalContext) (decode.DecodedLocals, hcl.Diagnost
 	return dVars, diags
 }
 
-// func (locals Locals) getMapValues(ctx *hcl.EvalContext) map[string]cty.Value {
-// 	vals := make(map[string]cty.Value)
-// 	vars := make(map[string]cty.Value)
-// 	var diags hcl.Diagnostics
-
-// 	for _, local := range locals {
-// 		value, valDiag := local.Value.Value(ctx)
-// 		diags = append(diags, valDiag...)
-// 		vals[local.Name] = value
-// 	}
-// 	vars["local"] = cty.ObjectVal(vals)
-// 	return vars
-// }
-
+// Decode local block each local block can contain multiple local attributes
+// Each attribute must have name and value
 func decodeLocalsBlock(block *hcl.Block) (Locals, hcl.Diagnostics) {
 	var locals Locals
 	attrs, diags := block.Body.JustAttributes()
@@ -87,6 +76,7 @@ func decodeLocalsBlock(block *hcl.Block) (Locals, hcl.Diagnostics) {
 	return locals, diags
 }
 
+// Decode multiple local blocks
 func DecodeLocalsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Locals, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var locals Locals
@@ -102,6 +92,7 @@ func DecodeLocalsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Locals, hc
 				Severity: hcl.DiagError,
 				Summary:  "Locals must have different names",
 				Detail:   fmt.Sprintf("Two locals have the same name: %s", local.Name),
+				Subject: &local.DeclRange,
 				// Context: names[variable.Name],
 			})
 		}

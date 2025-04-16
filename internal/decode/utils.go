@@ -23,6 +23,7 @@ const (
 	INVALID = hcl.DiagInvalid
 )
 
+// Creates hcl context with the variables and locals to decode all values within the blocks
 func CreateContext(variables DecodedVariableList, locals DecodedLocals) (*hcl.EvalContext, hcl.Diagnostics) {
 	variableMap, diags := variables.getMapValues()
 	localMap := locals.getMapValues()
@@ -34,6 +35,7 @@ func CreateContext(variables DecodedVariableList, locals DecodedLocals) (*hcl.Ev
 	}, diags
 }
 
+// Decode count expression into a cty.value with type number
 func decodeCountExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Diagnostics) {
 	val, diags := expr.Value(ctx)
 	if countVal, err := convert.Convert(val, cty.Number); err != nil {
@@ -54,6 +56,7 @@ func decodeCountExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.
 	return val, diags
 }
 
+// Decode for each expression into a set,object or map type
 func decodeForExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Diagnostics) {
 	val, diags := expr.Value(ctx)
 	ty := val.Type()
@@ -74,20 +77,3 @@ func decodeForExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Di
 	return val, diags
 }
 
-// func checkForBlocks (block *hcl.Block) *hcl.Diagnostic {
-// 	content,_,_ :=block.Body.PartialContent(&hcl.BodySchema{})
-// 	if len(content.Blocks) > 0 {
-// 		return &hcl.Diagnostic{
-// 			Severity: hcl.DiagError,
-// 			Summary:  "No blocks allowed in default_annotation block",
-// 			Detail:   fmt.Sprintf("Couldn't convert value to string, this is value of type: %s",content.Blocks[0].Type),
-// 			Subject:  &content.Blocks[0].DefRange,
-// 		}
-// 	}
-
-// 	return &hcl.Diagnostic{
-// 		Summary:  "No blocks are found",
-// 		Detail:   fmt.Sprintf("There are 0 blocks in  %s",block.Type),
-// 		Subject:  &block.DefRange,
-// 	}
-// }

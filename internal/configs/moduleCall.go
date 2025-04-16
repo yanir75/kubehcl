@@ -25,6 +25,7 @@ type ModuleCall struct {
 
 type ModuleCallList []*ModuleCall
 
+// Decode the source of a module, source means the folder which contains the module
 func (m *ModuleCall) DecodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	val, valDdiags := m.Source.Value(ctx)
@@ -42,11 +43,12 @@ func (m *ModuleCall) DecodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics
 	return val.AsString(), diags
 }
 
+// Decode the multiple module calls to the module
 func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallList, hcl.Diagnostics) {
 	var dR decode.DecodedModuleCallList
 	var diags hcl.Diagnostics
-	for _, variable := range r {
-		dV, varDiags := variable.decode(ctx)
+	for _, call := range r {
+		dV, varDiags := call.decode(ctx)
 		diags = append(diags, varDiags...)
 		dR = append(dR, dV)
 	}
@@ -54,6 +56,7 @@ func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallLi
 	return dR, diags
 }
 
+// Decode the module call which returns the source of the module and decoded deployable
 func (r *ModuleCall) decode(ctx *hcl.EvalContext) (*decode.DecodedModuleCall, hcl.Diagnostics) {
 	deployable, diags := r.Decode(ctx)
 	source, sourceDiags := r.DecodeSource(ctx)
@@ -85,6 +88,9 @@ var inputModuleBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 }
 
+// Decode module block 
+// Each block can contain for_each, count depends on and must contain source
+// Other is the remaining body of the module
 func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 	var Module = &ModuleCall{
 		// Name:      block.Labels[0],
@@ -97,18 +103,7 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 	content, remain, diags := block.Body.PartialContent(inputModuleBlockSchema)
 	Module.Config = remain
 	if attr, exists := content.Attributes["count"]; exists {
-		// val, varDiags := attr.Expr.Value(ctx)
-		// diags = append(diags, varDiags...)
-		// if count, err := convert.Convert(val, cty.Number); err != nil {
-		// diags = append(diags, &hcl.Diagnostic{
-		// Severity: hcl.DiagError,
-		// Summary:  `Cannot convert value to int`,
-		// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
-		// Subject:  &attr.NameRange,
-		// })
-		// } else {
-		// resource.Count = count
-		// }
+
 		Module.Count = attr.Expr
 	}
 	if attr, exists := content.Attributes["for_each"]; exists {
@@ -121,24 +116,7 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 				Context:  &content.Attributes["count"].NameRange,
 			})
 			Module.ForEach = attr.Expr
-			// val, varDiags := attr.Expr.Value(ctx)
-			// diags = append(diags, varDiags...)
-			// ty :=val.Type()
-			// var isAllowedType bool
-			// allowedTypesMessage := "map, or set of strings"
 
-			// isAllowedType = ty.IsMapType() || ty.IsSetType() || ty.IsObjectType()
-			// if val.IsKnown() && !isAllowedType {
-			// 	diags = diags.Append(&hcl.Diagnostic{
-			// 		Severity:    hcl.DiagError,
-			// 		Summary:     "Invalid for_each argument",
-			// 		Detail:      fmt.Sprintf(`The given "for_each" argument value is unsuitable: the "for_each" argument must be a %s, and you have provided a value of type %s.`, allowedTypesMessage, ty.FriendlyName()),
-			// 		Subject:     attr.Expr.Range().Ptr(),
-			// 		Expression:  attr.Expr,
-			// 		EvalContext: ctx,
-			// 	})
-			// }
-			// resource.ForEach = val
 		}
 	}
 
@@ -156,6 +134,8 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 }
 
+
+// Decode multiple blocks of a module call
 func DecodeModuleBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ModuleCallList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var moduleList ModuleCallList
@@ -183,77 +163,3 @@ func (r ModuleCall) addr() addrs.ModuleCall {
 	}
 }
 
-// func decodeUnknownBody(ctx *hcl.EvalContext,body *hclsyntax.Body) (cty.Value,hcl.Diagnostics){
-// 	var diags hcl.Diagnostics
-// 	attrMap := make(map[string]cty.Value)
-// 	if len(body.Blocks) > 0{
-// 		for _,block := range body.Blocks {
-// 			m,blockDiags :=decodeUnknownBody(ctx,block.Body)
-// 			diags = append(diags, blockDiags...)
-// 			attrMap[block.Type] = m
-// 		}
-// 	}
-// 	for _,attr := range body.Attributes {
-// 		val,attrDiags :=attr.Expr.Value(ctx)
-// 		diags = append(diags, attrDiags...)
-
-// 		attrMap[attr.Name] = val
-// 	}
-// 	return cty.ObjectVal(attrMap),diags
-// }
-
-// func (r *Module) decodeModule() hcl.Diagnostics{
-// 	var diags hcl.Diagnostics
-// 	body, ok := r.Config.(*hclsyntax.Body)
-
-// 	if !ok {
-// 		panic("should always be ok")
-// 	}
-// 	for _,attrS:= range inputModuleBlockSchema.Attributes{
-// 			delete(body.Attributes,attrS.Name)
-// 	}
-// 	if r.Count != cty.NilVal{
-// 		for i :=cty.NumberIntVal(1); i.LessThanOrEqualTo(r.Count) == cty.True; i=i.Add(cty.NumberIntVal(1)) {
-
-// 			ctx := createContext()
-// 			ctx.Variables["count"] = cty.ObjectVal(map[string]cty.Value{ "index" : i})
-// 			Attributes,countDiags := decodeUnknownBody(ctx,body)
-// 			diags = append(diags, countDiags...)
-// 			val, err := convert.Convert(i,cty.String)
-// 			if err != nil {
-// 				panic("Always can convert int")
-// 			}
-// 			deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),val.AsString())] = Attributes
-
-// 		}
-// 	} else if r.ForEach != cty.NilVal{
-// 		ty:= r.ForEach.Type()
-// 		if ty.IsMapType() || ty.IsObjectType(){
-// 			for key,val := range r.ForEach.AsValueMap(){
-
-// 				ctx := createContext()
-// 				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{ "key" : cty.StringVal(key),"value": val})
-// 				Attributes,forEachDiags := decodeUnknownBody(ctx,body)
-// 				diags = append(diags, forEachDiags...)
-// 				deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),key)] = Attributes
-// 			}
-// 		} else{
-// 			for _,val := range r.ForEach.AsValueSet().Values(){
-// 				ctx := createContext()
-// 				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{ "key" : val,"value": val})
-// 				Attributes,forEachDiags := decodeUnknownBody(ctx,body)
-// 				diags = append(diags, forEachDiags...)
-// 				deployMap[fmt.Sprintf("%s[%s]",r.addr().String(),val.AsString())] = Attributes
-// 			}
-// 		}
-// 	} else {
-// 		ctx := createContext()
-// 		Attributes,regDiags := decodeUnknownBody(ctx,body)
-// 		diags = append(diags, regDiags...)
-// 		deployMap[r.addr().String()] = Attributes
-// 	}
-// 	return diags
-// }
-// // for _,block := range body.Blocks {
-// // 	block.
-// // }

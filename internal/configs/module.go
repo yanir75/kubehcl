@@ -25,14 +25,13 @@ import (
 	"kubehcl.sh/kubehcl/internal/decode"
 )
 
-//TODO remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
+//TODO: remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
+//TODO: Seperate the decoding file and folder from module part
 // var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
 
-//	type Task struct {
-//		function func()
-//	}
+
 func Parser() *hclparse.Parser {
 	return parser
 }
@@ -79,6 +78,7 @@ type Module struct {
 
 type ModuleList []*Module
 
+// Merge multiple modules into one
 func (m *Module) merge(o *Module) {
 	if m.Inputs == nil {
 		m.Inputs = o.Inputs
@@ -91,6 +91,7 @@ func (m *Module) merge(o *Module) {
 	m.ModuleCalls = append(m.ModuleCalls, o.ModuleCalls...)
 }
 
+// Verify that each input has value
 func (m *Module) verify() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	for _, input := range m.Inputs {
@@ -106,6 +107,7 @@ func (m *Module) verify() hcl.Diagnostics {
 	return diags
 }
 
+// Decode tfvars file into variables
 func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var variables VariableMap = make(map[string]*Variable)
@@ -146,6 +148,13 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 
 }
 
+// Decode module into decoded module
+// This decodes module and also modules inside that module
+// There are few parameters
+// Depth of the module
+// Folder to decode
+// Namespace to add to each resource if not exists
+// previous module context all vars and locals to apply to the variables of the new module
 func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
@@ -334,6 +343,7 @@ func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *
 	return decodedModule, diags
 }
 
+// Decode a single file into a module format
 func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
 	// wg := sync.WaitGroup{}
 	// wg.Add(5)
@@ -427,6 +437,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	}, diags
 }
 
+// Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
@@ -466,6 +477,7 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	return deployable, diags
 }
 
+// Decode both folder and module into a decoded module
 func DecodeFolderAndModules(folderName string, name string, depth int, namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
 	dm, decodeDiags := mod.decode(0, folderName, namespace,&hcl.EvalContext{})

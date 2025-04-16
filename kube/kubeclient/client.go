@@ -40,6 +40,7 @@ type Config struct {
 	Timeout  time.Duration
 }
 
+// Applies the settings and creates a config to create,destroy and  validate all configuration files
 func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
@@ -57,9 +58,9 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	return cfg, diags
 }
 
-// func (cfg *Config) Create() hcl.Diagnostics{
-
-// }
+// Get the current state of applied resources
+// State is saved as a secret inside kubernetes in the given namespace
+// The secret type is kubehcl.sh/module.v1
 func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
@@ -78,6 +79,8 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 	}
 }
 
+// Delete current state meaning delete the secret that is responsible for the state
+// This occurs during destroy
 func (cfg *Config) deleteState() hcl.Diagnostics {
 	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
@@ -96,6 +99,8 @@ func (cfg *Config) deleteState() hcl.Diagnostics {
 	return diags
 }
 
+// Get all resources as bytes from the current state
+// All resources are saved as a json format
 func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostics) {
 	data, diags := cfg.getState()
 	resourceMap := make(map[string][]byte)
@@ -110,6 +115,10 @@ func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostic
 
 }
 
+// Get the current state of a specific resource
+// This gets all the attributes from the state and adds them to a the resource
+// If the resource is not found or got an error an empty list will be returned
+// This is to check if the resource matches the configuration in the state or not
 func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resList kube.ResourceList
@@ -143,11 +152,18 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 	return resList, diags
 }
 
+// Get current resource from state builds it in order to verify it and apply the resource later
+// Getting the resource verifies that the resource doesn't exist or is managed by kubehcl
+// Builds the resource from the state this is done to update the current configuration
+// This also verifies if the resource exists and was not saved in the kubehcl state in order to not update it
 func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
+	// Get current resource configuration
 	current, diags := cfg.getResourceCurrentState(wanted)
+	// Get the resource configuration from the state
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
 	savedResource, builderErr := cfg.Client.Build(reader, true)
+
 	if builderErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -158,6 +174,7 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string)
 	}
 	diags = append(diags, savedData...)
 
+	// We get and check one resource at a time
 	if len(current) > 1 || len(savedResource) > 1 || len(wanted) != 1 {
 		panic(fmt.Sprintf("Shouldn't get here\ncurrent:%d\nsavedResource:%d\nwanted:%d", len(current), len(savedResource), len(wanted)))
 	}
@@ -175,6 +192,8 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string)
 	return current, diags
 }
 
+// Compare states get the resource from the state and applies the changes
+// If the resource does not exist it will simply be created
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
 
 	current, diags := cfg.buildResourceFromState(wanted, name)
@@ -201,6 +220,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 	return res, diags
 }
 
+// Delete resources will delete all resources in the state
 func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 	var wanted kube.ResourceList = kube.ResourceList{}
 	saved, diags := cfg.getAllResourcesFromState()
@@ -242,6 +262,7 @@ func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 	return res, diags
 }
 
+// Update secret willl apply the new storage stored resources and update the secret accordingly
 func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
@@ -271,6 +292,8 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 
 	return diags
 }
+
+// Build resource build the resource from cty.value type into a json
 func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	data, err := ctyjson.Marshal(value, value.Type())
@@ -298,6 +321,7 @@ func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (ku
 	return kubeResourceList, diags
 }
 
+// Create updates the current state to fit the new configuration and updates the current state accordingly
 func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
@@ -323,6 +347,7 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 
 }
 
+// Validates the configuration yaml to verify it fits kubernetes
 func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	for key, value := range resource.Config {
@@ -351,6 +376,7 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 	return diags
 }
 
+// Format for diagnostic error
 func formatErr(err error) string {
 	errStr := strings.Join(strings.Split(err.Error(), ", "), "\n")
 	errStr = strings.ReplaceAll(errStr, "[", "")
@@ -372,6 +398,7 @@ func (cfg *Config) IsReachable() hcl.Diagnostics {
 	return diags
 }
 
+// Delete all resources from a given state
 func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 
 	var wanted kube.ResourceList = kube.ResourceList{}
@@ -418,6 +445,8 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 	return res, diags
 }
 
+// Lists all releases of a namespace
+// Does that through listing the secrets matching all secrets matching the type
 func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	client, err := cfg.Client.Factory.KubernetesClientSet()
@@ -440,6 +469,7 @@ func (cfg *Config) List() ([]string, hcl.Diagnostics) {
 	}
 }
 
+// Not implemented
 func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList, kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var wantedList, currentList kube.ResourceList

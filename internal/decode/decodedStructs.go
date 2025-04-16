@@ -90,6 +90,7 @@ type DecodedModuleList []*DecodedModule
 
 type DecodedModuleCallList []*DecodedModuleCall
 
+// Get variables as map[string]cty.value
 func (varList DecodedVariableList) getMapValues() (map[string]cty.Value, hcl.Diagnostics) {
 	vals := make(map[string]cty.Value)
 	vars := make(map[string]cty.Value)
@@ -100,6 +101,8 @@ func (varList DecodedVariableList) getMapValues() (map[string]cty.Value, hcl.Dia
 	vars["var"] = cty.ObjectVal(vals)
 	return vars, diags
 }
+
+// Get locals as map[string]cty.value
 
 func (locals DecodedLocals) getMapValues() map[string]cty.Value {
 	vals := make(map[string]cty.Value)

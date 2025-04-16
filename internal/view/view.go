@@ -222,6 +222,8 @@ func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
 }
 
+// Prints the diagnostic received with the arguments.
+// This will print them in the same format as opentofu format
 func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 	v := NewView(&terminal.Streams{
 		Stdout: &terminal.OutputStream{

@@ -17,6 +17,7 @@ import (
 	// "kubehcl.sh/kubehcl/internal/dag"
 )
 
+// Decode depends on into traverser list
 func decodeDependsOn(attr *hcl.Attribute) ([]hcl.Traversal, hcl.Diagnostics) {
 	var ret []hcl.Traversal
 	exprs, diags := hcl.ExprList(attr.Expr)
@@ -38,6 +39,7 @@ type Resource struct {
 
 type ResourceList []*Resource
 
+// Decode multiple resources into decoded resource list
 func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceList, hcl.Diagnostics) {
 	var dR decode.DecodedResourceList
 	var diags hcl.Diagnostics
@@ -49,7 +51,7 @@ func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceList, 
 
 	return dR, diags
 }
-
+// Decode the deployable of the resource
 func (r *Resource) decode(ctx *hcl.EvalContext) (*decode.DecodedResource, hcl.Diagnostics) {
 	deployable, diags := r.Decode(ctx)
 	res := &decode.DecodedResource{DecodedDeployable: *deployable}
@@ -72,6 +74,9 @@ var inputResourceBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 }
 
+// Decode resource block
+// Resource block can contain for_each or count and depends on
+// This language is used as a template language thus not limited to what you can put into a resource block
 func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 	var resource *Resource = &Resource{
 		// Name:      block.Labels[0],
@@ -85,18 +90,6 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 	content, remain, diags := block.Body.PartialContent(inputResourceBlockSchema)
 	resource.Config = remain
 	if attr, exists := content.Attributes["count"]; exists {
-		// val, varDiags := attr.Expr.Value(ctx)
-		// diags = append(diags, varDiags...)
-		// if count, err := convert.Convert(val, cty.Number); err != nil {
-		// diags = append(diags, &hcl.Diagnostic{
-		// Severity: hcl.DiagError,
-		// Summary:  `Cannot convert value to int`,
-		// Detail:   fmt.Sprintf("Cannot convert this value to int : %s", attr.Expr),
-		// Subject:  &attr.NameRange,
-		// })
-		// } else {
-		// resource.Count = count
-		// }
 		resource.Count = attr.Expr
 	}
 	if attr, exists := content.Attributes["for_each"]; exists {
@@ -110,24 +103,6 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 			})
 		}
 		resource.ForEach = attr.Expr
-		// val, varDiags := attr.Expr.Value(ctx)
-		// diags = append(diags, varDiags...)
-		// ty :=val.Type()
-		// var isAllowedType bool
-		// allowedTypesMessage := "map, or set of strings"
-
-		// isAllowedType = ty.IsMapType() || ty.IsSetType() || ty.IsObjectType()
-		// if val.IsKnown() && !isAllowedType {
-		// 	diags = diags.Append(&hcl.Diagnostic{
-		// 		Severity:    hcl.DiagError,
-		// 		Summary:     "Invalid for_each argument",
-		// 		Detail:      fmt.Sprintf(`The given "for_each" argument value is unsuitable: the "for_each" argument must be a %s, and you have provided a value of type %s.`, allowedTypesMessage, ty.FriendlyName()),
-		// 		Subject:     attr.Expr.Range().Ptr(),
-		// 		Expression:  attr.Expr,
-		// 		EvalContext: ctx,
-		// 	})
-		// }
-		// resource.ForEach = val
 
 	}
 
@@ -141,6 +116,7 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 
 }
 
+// Decode multiple resource blocks
 func DecodeResourceBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resourceList ResourceList

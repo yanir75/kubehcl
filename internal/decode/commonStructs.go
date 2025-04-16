@@ -57,6 +57,7 @@ type expandable struct {
 	ForEach cty.Value
 }
 
+// Expand dynamic blocks this is experimental and and would be defined as a list of maps not multiple maps
 func expandDynamicBlock(block *hclsyntax.Block, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var blocks hclsyntax.Blocks
@@ -156,20 +157,16 @@ func expandDynamicBlock(block *hclsyntax.Block, ctx *hcl.EvalContext) (cty.Value
 	return cty.ListVal(valList), diags
 }
 
+// Decode body with unknown attributes
+// This is a map/body inside a resource or module blocks
+// Return the attributes as map[string]cty.value
+// String represents the name of the attribute and cty.value the value of the attributes
 func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	attrMap := make(map[string]cty.Value)
 	if len(body.Blocks) > 0 {
 		for _, block := range body.Blocks {
-			// if len(block.Labels) > 0 {
-			// 	diags = append(diags, &hcl.Diagnostic{
-			// 		Severity: hcl.DiagError,
-			// 		Subject:  &block.TypeRange,
-			// 		Summary:  "Block shouldn't have labels",
-			// 		Detail:   fmt.Sprintf("Block has labels: %s and type: \"%s\"", strings.Join(block.Labels, ", "), block.Type),
-			// 		Context:  &block.LabelRanges[0],
-			// 	})
-			// }
+
 			if block.Type == "dynamic" {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
@@ -199,6 +196,9 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, h
 	return cty.ObjectVal(attrMap), diags
 }
 
+// Decode the deployable
+// Deployable can contain for each or count which will be decoded into multiple different resources
+// It will return a deployable with configmap which contains all the resources available to be deployed
 func (r Deployable) Decode(ctx *hcl.EvalContext) (*DecodedDeployable, hcl.Diagnostics) {
 	dR := &DecodedDeployable{
 		Name:      r.Name,
