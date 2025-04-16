@@ -14,7 +14,18 @@ Both licenses were copied from the reflective projects with copyrights within th
 **This project is not affiliated or endorsed by any of the projects/companies stated above or any other project/company at all.**
 
 ## Tool usage
-kubehcl renders HCL files and deploys them to kubernetes.  
+kubehcl renders HCL files and deploys them to kubernetes. 
+
+## Installation
+Mac  
+```
+brew tap yanir75/homebrew-apps https://github.com/yanir75/homebrew-apps  
+brew install kubehcl  
+```  
+Linux  
+```
+go install github.com/yanir75/kubehcl@latest
+```
 
 ## Functions
 HCL used by this tool contains all the **functions** which exist in opentofu, for example: merge, base64encode etc.
