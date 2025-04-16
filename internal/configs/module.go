@@ -31,7 +31,6 @@ import (
 
 var parser = hclparse.NewParser()
 
-
 func Parser() *hclparse.Parser {
 	return parser
 }
@@ -155,7 +154,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 // Folder to decode
 // Namespace to add to each resource if not exists
 // previous module context all vars and locals to apply to the variables of the new module
-func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(depth int, folderName string, namespace string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	decodedModule := &decode.DecodedModule{
@@ -219,7 +218,7 @@ func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *
 		// diags = append(diags, diag...)
 		for _, input := range module.Inputs {
 			if input.HasDefault {
-				_,diag :=input.Default.Value(nil)
+				_, diag := input.Default.Value(nil)
 				diags = append(diags, diag...)
 			}
 		}
@@ -295,7 +294,7 @@ func (m *Module) decode(depth int, folderName string, namespace string,prevCtx *
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(depth+1, module.Source, namespace,ctx)
+		dm, dmDiags := module.decode(depth+1, module.Source, namespace, ctx)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -480,7 +479,7 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 // Decode both folder and module into a decoded module
 func DecodeFolderAndModules(folderName string, name string, depth int, namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(0, folderName, namespace,&hcl.EvalContext{})
+	dm, decodeDiags := mod.decode(0, folderName, namespace, &hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

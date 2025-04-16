@@ -92,7 +92,7 @@ func DecodeLocalsBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (Locals, hc
 				Severity: hcl.DiagError,
 				Summary:  "Locals must have different names",
 				Detail:   fmt.Sprintf("Two locals have the same name: %s", local.Name),
-				Subject: &local.DeclRange,
+				Subject:  &local.DeclRange,
 				// Context: names[variable.Name],
 			})
 		}

@@ -88,7 +88,7 @@ var inputModuleBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 }
 
-// Decode module block 
+// Decode module block
 // Each block can contain for_each, count depends on and must contain source
 // Other is the remaining body of the module
 func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
@@ -134,7 +134,6 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 }
 
-
 // Decode multiple blocks of a module call
 func DecodeModuleBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ModuleCallList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -162,4 +161,3 @@ func (r ModuleCall) addr() addrs.ModuleCall {
 		Name: r.Name,
 	}
 }
-

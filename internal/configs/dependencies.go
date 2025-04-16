@@ -9,7 +9,6 @@ Licesne: https://www.mozilla.org/en-US/MPL/2.0/
 package configs
 
 import (
-
 	"fmt"
 	"strings"
 
@@ -32,7 +31,6 @@ type graphNodeRoot struct{}
 func (n graphNodeRoot) Name() string {
 	return rootNodeName
 }
-
 
 func addRootNodeToGraph(g *Graph) {
 	// We always add the root node. This is a singleton so if it's already

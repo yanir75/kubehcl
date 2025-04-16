@@ -76,4 +76,3 @@ func decodeForExpr(ctx *hcl.EvalContext, expr hcl.Expression) (cty.Value, hcl.Di
 	}
 	return val, diags
 }
-

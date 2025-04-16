@@ -38,7 +38,7 @@ type Config struct {
 	Storage  *storage.Storage
 	Name     string
 	Timeout  time.Duration
-	Version string
+	Version  string
 }
 
 // Applies the settings and creates a config to create,destroy and  validate all configuration files
@@ -55,11 +55,11 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
 	}
 	diags = append(diags, cfg.IsReachable()...)
-	client,err :=cfg.Client.Factory.KubernetesClientSet()
+	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		panic("Couldn't get client")
 	}
-	version,err:= client.ServerVersion()
+	version, err := client.ServerVersion()
 	if err != nil {
 		panic("Couldn't get version")
 	}

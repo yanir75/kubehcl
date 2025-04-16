@@ -24,50 +24,50 @@ func Test_Variable(t *testing.T) {
 		wantErrors bool
 	}{
 		{
-			d:[]*hcl.Block{
+			d: []*hcl.Block{
 				&hcl.Block{
-					Type: "variable",
+					Type:   "variable",
 					Labels: []string{"foo"},
 					Body: &hclsyntax.Body{
 						Attributes: hclsyntax.Attributes{
-							"default":&hclsyntax.Attribute{
+							"default": &hclsyntax.Attribute{
 								Name: "default",
 								Expr: &hclsyntax.LiteralValueExpr{Val: cty.StringVal("bar")},
 							},
-							"type":&hclsyntax.Attribute{
+							"type": &hclsyntax.Attribute{
 								Name: "type",
 								Expr: &hclsyntax.ScopeTraversalExpr{Traversal: hcl.Traversal{hcl.TraverseRoot{Name: "string"}}},
 							},
 						},
 					},
 				},
-					&hcl.Block{
-						Type: "variable",
-						Labels: []string{"bar"},
+				&hcl.Block{
+					Type:   "variable",
+					Labels: []string{"bar"},
 
-						Body: &hclsyntax.Body{
-							Attributes: hclsyntax.Attributes{
-								"default":&hclsyntax.Attribute{
-									Name: "default",
-									Expr: &hclsyntax.LiteralValueExpr{Val: cty.MapVal(map[string]cty.Value{"foo":cty.StringVal("bar")})},
-								},
+					Body: &hclsyntax.Body{
+						Attributes: hclsyntax.Attributes{
+							"default": &hclsyntax.Attribute{
+								Name: "default",
+								Expr: &hclsyntax.LiteralValueExpr{Val: cty.MapVal(map[string]cty.Value{"foo": cty.StringVal("bar")})},
 							},
 						},
+					},
 				},
 			},
-			want: VariableMap{"foo":&Variable{
-				Name: "foo",
-				Default: &hclsyntax.LiteralValueExpr{Val: cty.StringVal("bar")},
-				Type: cty.String,
+			want: VariableMap{"foo": &Variable{
+				Name:       "foo",
+				Default:    &hclsyntax.LiteralValueExpr{Val: cty.StringVal("bar")},
+				Type:       cty.String,
 				HasDefault: true,
 			},
-			"bar":&Variable{
-				Name: "bar",
-				Default: &hclsyntax.LiteralValueExpr{Val: cty.MapVal(map[string]cty.Value{"foo":cty.StringVal("bar")})},
-				HasDefault: true,
+				"bar": &Variable{
+					Name:       "bar",
+					Default:    &hclsyntax.LiteralValueExpr{Val: cty.MapVal(map[string]cty.Value{"foo": cty.StringVal("bar")})},
+					HasDefault: true,
+				},
 			},
-		},
-		wantErrors: false,
+			wantErrors: false,
 		},
 	}
 
@@ -78,9 +78,9 @@ func Test_Variable(t *testing.T) {
 		} else if !diags.HasErrors() && test.wantErrors {
 			t.Errorf("Want errors but did not receive any")
 		} else {
-			for _,variable := range test.want {
+			for _, variable := range test.want {
 				varWant := want[variable.Name]
-				if !reflect.DeepEqual(variable,varWant) {
+				if !reflect.DeepEqual(variable, varWant) {
 					t.Errorf("Values are not equal")
 				}
 			}

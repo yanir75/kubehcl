@@ -51,6 +51,7 @@ func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceList, 
 
 	return dR, diags
 }
+
 // Decode the deployable of the resource
 func (r *Resource) decode(ctx *hcl.EvalContext) (*decode.DecodedResource, hcl.Diagnostics) {
 	deployable, diags := r.Decode(ctx)

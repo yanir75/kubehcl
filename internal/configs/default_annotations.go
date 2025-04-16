@@ -28,8 +28,6 @@ type Annotation struct {
 
 type Annotations []*Annotation
 
-
-
 // Returns a unique address for the default annotation
 func (d *Annotation) addr() addrs.DefaultAnnotation {
 	return addrs.DefaultAnnotation{
@@ -75,11 +73,10 @@ func (v Annotations) Decode(ctx *hcl.EvalContext) (decode.DecodedAnnotations, hc
 // default annotation block turns into multiple annotations of name of annotation and the value of the annotation
 func decodeAnnotationsBlock(block *hcl.Block) (Annotations, hcl.Diagnostics) {
 	attrs, diags := block.Body.JustAttributes()
-	
+
 	var annotaions Annotations
 
 	for _, attr := range attrs {
-
 
 		annotaions = append(annotaions, &Annotation{
 			Name:      attr.Name,

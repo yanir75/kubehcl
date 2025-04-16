@@ -76,7 +76,7 @@ func Apply(args []string, conf *settings.EnvSettings, viewArguments *view.ViewAr
 	diags = append(diags, g.Walk(validateFunc)...)
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(createFunc)...)
-		_,delDiags :=cfg.DeleteResources()
+		_, delDiags := cfg.DeleteResources()
 		diags = append(diags, delDiags...)
 	}
 	diags = append(diags, cfg.UpdateSecret()...)
