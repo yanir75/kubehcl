@@ -22,6 +22,7 @@ Mac
 brew tap yanir75/homebrew-apps https://github.com/yanir75/homebrew-apps  
 brew install kubehcl  
 ```  
+  
 Linux  
 ```
 go install github.com/yanir75/kubehcl@latest
