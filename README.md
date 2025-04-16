@@ -29,7 +29,7 @@ go install github.com/yanir75/kubehcl@latest
 ```
 
 ## Functions
-HCL used by this tool contains all the **functions** which exist in opentofu, for example: merge, base64encode etc.
+All functions that exist in opentofu can be used here as well.  
 
 ## Blocks
 There are 5 kinds of blocks allowed in the configuration:   
