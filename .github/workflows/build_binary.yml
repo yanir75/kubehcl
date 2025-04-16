@@ -30,6 +30,10 @@ jobs:
       # You can test your matrix by printing the current Go version
       - name: Install dependencies
         run: go get .
+
+      - name: Install dependencies
+        run: go test ./...
+
       - name: Build
         run: go build .
       
