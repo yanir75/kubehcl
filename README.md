@@ -14,7 +14,9 @@ Both licenses were copied from the reflective projects with copyrights within th
 **This project is not affiliated or endorsed by any of the projects/companies stated above or any other project/company at all.**
 
 ## Tool usage
-kubehcl renders HCL files and deploys them to kubernetes. 
+kubehcl renders HCL files and deploys them to kubernetes.  
+This tool is used as a template engine, as a result, most of the resource definition is the user's responsibility.  
+Please take a look at the example folder [example](/example/) for kubehcl configuration files.  
 
 ## Installation
 Mac  
