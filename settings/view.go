@@ -10,6 +10,7 @@ import (
 func NewView() *view.ViewArgs {
 	view := &view.ViewArgs{
 		NoColor: envBoolOr("KUBEHCL_NOCOLOR", false),
+		ConsolidateErrors: true,
 	}
 
 	return view

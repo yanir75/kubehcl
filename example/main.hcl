@@ -37,6 +37,7 @@ resource "foo" {
 }
 
 module "test" {
+  
     source = "./modules/starter"
     foo = ["service1","service2"]
     ports = var.foo
@@ -57,6 +58,7 @@ resource "bar" {
       app = "shouldntbecreated"
     }
   }
+
   spec = {
     replicas = 3
     selector = {
@@ -72,11 +74,16 @@ resource "bar" {
       }
       spec = {
         containers = [{
-          name  = each.value
+          name  = "${count.index}"
           image = "nginx:1.14.2"
           ports = var.foo
         }]
       }
     }
   }
+}
+
+resource "test" {
+  for_each = {} 
+  test = each.bla["test"]
 }

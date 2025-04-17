@@ -147,7 +147,7 @@ func expandDynamicBlock(block *hclsyntax.Block, ctx *hcl.EvalContext) (cty.Value
 	}
 	valList := []cty.Value{}
 	for _, b := range blocks {
-		val, decodeDiags := decodeUnknownBody(ctx, b.Body)
+		val, decodeDiags := decodeUnknownBody(ctx, b.Body,false)
 		diags = append(diags, decodeDiags...)
 		valList = append(valList, val)
 	}
@@ -161,7 +161,22 @@ func expandDynamicBlock(block *hclsyntax.Block, ctx *hcl.EvalContext) (cty.Value
 // This is a map/body inside a resource or module blocks
 // Return the attributes as map[string]cty.value
 // String represents the name of the attribute and cty.value the value of the attributes
-func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, hcl.Diagnostics) {
+func checkIfExists(m map[string]cty.Value,key string,ran *hcl.Range) hcl.Diagnostics{
+	if  _,exists :=m[key]; exists {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Duplicate values are not allowed",
+				Detail: fmt.Sprintf("Attribute: \"%s\" is mentioned more than once",key),
+				Subject: ran,
+			},
+		}
+	}
+	return hcl.Diagnostics{}
+}
+
+
+func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body,check bool) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	attrMap := make(map[string]cty.Value)
 	if len(body.Blocks) > 0 {
@@ -179,19 +194,39 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body) (cty.Value, h
 				val, expandDiags := expandDynamicBlock(block, ctx)
 				diags = append(diags, expandDiags...)
 				if len(block.Labels) > 0 && val != cty.NilVal {
+					diags = append(diags,checkIfExists(attrMap,block.Labels[0],&block.LabelRanges[0])...)
 					attrMap[block.Labels[0]] = val
 				}
+			} else {
+				m, blockDiags := decodeUnknownBody(ctx, block.Body,false)
+				diags = append(diags, blockDiags...)
+				diags = append(diags,checkIfExists(attrMap,block.Type,&block.TypeRange)...)
+				attrMap[block.Type] = m
 			}
-			m, blockDiags := decodeUnknownBody(ctx, block.Body)
-			diags = append(diags, blockDiags...)
-			attrMap[block.Type] = m
 		}
 
 	}
 	for _, attr := range body.Attributes {
-		val, attrDiags := attr.Expr.Value(ctx)
-		diags = append(diags, attrDiags...)
-		attrMap[attr.Name] = val
+		if check {
+			travs :=attr.Expr.Variables()
+			for _,trav := range travs {
+				if len(trav)  > 1 {
+					root := trav[0].(hcl.TraverseRoot)
+					travAttr := trav[1].(hcl.TraverseAttr)
+					if !(root.Name == "each" && (travAttr.Name == "value" || travAttr.Name == "key")){
+						val, attrDiags := attr.Expr.Value(ctx)
+						diags = append(diags,checkIfExists(attrMap,attr.Name,&attr.NameRange)...)
+						diags = append(diags, attrDiags...)
+						attrMap[attr.Name] = val
+					}
+				}	
+			}
+		} else {
+			val, attrDiags := attr.Expr.Value(ctx)
+			diags = append(diags,checkIfExists(attrMap,attr.Name,&attr.NameRange)...)
+			diags = append(diags, attrDiags...)
+			attrMap[attr.Name] = val
+		}
 	}
 	return cty.ObjectVal(attrMap), diags
 }
@@ -219,9 +254,11 @@ func (r Deployable) Decode(ctx *hcl.EvalContext) (*DecodedDeployable, hcl.Diagno
 	if r.Count != nil {
 		count, countDiags := decodeCountExpr(ctx, r.Count)
 		diags = append(diags, countDiags...)
+		didOperate := false
 		for i := cty.NumberIntVal(1); i.LessThanOrEqualTo(count) == cty.True; i = i.Add(cty.NumberIntVal(1)) {
+			didOperate = true
 			ctx.Variables["count"] = cty.ObjectVal(map[string]cty.Value{"index": i})
-			Attributes, countDiags := decodeUnknownBody(ctx, body)
+			Attributes, countDiags := decodeUnknownBody(ctx, body,false)
 			diags = append(diags, countDiags...)
 			val, err := convert.Convert(i, cty.String)
 			if err != nil {
@@ -230,30 +267,48 @@ func (r Deployable) Decode(ctx *hcl.EvalContext) (*DecodedDeployable, hcl.Diagno
 			deployMap[fmt.Sprintf("%s[%s]", r.addr().String(), val.AsString())] = Attributes
 			delete(ctx.Variables, "count")
 		}
+		// check configuration of the resource
+		if !didOperate {
+			ctx.Variables["count"] = cty.ObjectVal(map[string]cty.Value{"index": cty.StringVal("1")})
+			_, countDiags := decodeUnknownBody(ctx, body,false)
+			diags = append(diags, countDiags...)
+			delete(ctx.Variables, "count")
+		}
 	} else if r.ForEach != nil {
 		forEach, forEachDiags := decodeForExpr(ctx, r.ForEach)
 		diags = append(diags, forEachDiags...)
 		ty := forEach.Type()
+		didOperate := false
 		if ty.IsMapType() || ty.IsObjectType() {
 			for key, val := range forEach.AsValueMap() {
 				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{"key": cty.StringVal(key), "value": val})
-				Attributes, forEachDiags := decodeUnknownBody(ctx, body)
+				Attributes, forEachDiags := decodeUnknownBody(ctx, body,false)
 				diags = append(diags, forEachDiags...)
 				deployMap[fmt.Sprintf("%s[%s]", r.addr().String(), key)] = Attributes
 				delete(ctx.Variables, "each")
+				didOperate = true
 			}
 		} else if ty.IsSetType() {
 			for _, val := range forEach.AsValueSet().Values() {
 				ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{"key": val, "value": val})
-				Attributes, forEachDiags := decodeUnknownBody(ctx, body)
+				Attributes, forEachDiags := decodeUnknownBody(ctx, body,false)
 				diags = append(diags, forEachDiags...)
 				deployMap[fmt.Sprintf("%s[%s]", r.addr().String(), val.AsString())] = Attributes
 				delete(ctx.Variables, "each")
-
+				didOperate = true
 			}
 		}
+		if !didOperate {
+	
+			
+			ctx.Variables["each"] = cty.ObjectVal(map[string]cty.Value{"key": cty.StringVal("foo"), "value":cty.StringVal("test")})
+			_, forEachDiags := decodeUnknownBody(ctx, body,true)
+			diags = append(diags, forEachDiags...)
+			delete(ctx.Variables, "each")
+
+		}
 	} else {
-		Attributes, regDiags := decodeUnknownBody(ctx, body)
+		Attributes, regDiags := decodeUnknownBody(ctx, body,false)
 		diags = append(diags, regDiags...)
 		deployMap[r.addr().String()] = Attributes
 	}
