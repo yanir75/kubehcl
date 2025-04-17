@@ -19,12 +19,12 @@ import (
 
 func Test_Variable(t *testing.T) {
 	tests := []struct {
-		d          []*hcl.Block
+		d          hcl.Blocks
 		want       VariableMap
 		wantErrors bool
 	}{
 		{
-			d: []*hcl.Block{
+			d: hcl.Blocks{
 				&hcl.Block{
 					Type:   "variable",
 					Labels: []string{"foo"},
