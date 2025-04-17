@@ -55,16 +55,17 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
 	}
 	diags = append(diags, cfg.IsReachable()...)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
-	if err != nil {
-		panic("Couldn't get client")
+	if !diags.HasErrors(){
+		client, err := cfg.Client.Factory.KubernetesClientSet()
+		if err != nil {
+			panic("Couldn't get client")
+		}
+		version, err := client.ServerVersion()
+		if err != nil {
+			panic("Couldn't get version")
+		}
+		cfg.Version = version.Major + "." + version.Minor
 	}
-	version, err := client.ServerVersion()
-	if err != nil {
-		panic("Couldn't get version")
-	}
-	cfg.Version = version.Major + "." + version.Minor
-
 	return cfg, diags
 }
 
