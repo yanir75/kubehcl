@@ -85,5 +85,5 @@ resource "bar" {
 
 resource "test" {
   for_each = {} 
-  test = each.bla["test"]
+  test = each.value["test"]
 }
