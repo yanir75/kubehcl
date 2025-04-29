@@ -16,6 +16,7 @@ package view
 import (
 	"os"
 
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
 
@@ -272,6 +273,7 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 // 	}
 // }
 
+
 // func determineAttr(attrName string ,current *resource.Info,wanted *resource.Info) string{
 // 	if current == nil {
 // 		return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName))
@@ -306,6 +308,20 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 
 // func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
 //     f := hclwrite.NewEmptyFile()
+
+// 	if current != nil {
+// 		switch tt:= current.Object.(type){
+// 		case *unstructured.Unstructured:
+// 			removeUnnecessaryFields(tt.Object)
+// 		}
+// 	}
+
+// 	if wanted != nil {
+// 		switch tt:= wanted.Object.(type){
+// 		case *unstructured.Unstructured:
+// 			removeUnnecessaryFields(tt.Object)
+// 		}
+// 	}
 // 	if wanted != nil {
 // 		switch tt:=wanted.Object.(type){
 // 		case *unstructured.Unstructured:
@@ -340,7 +356,6 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 // 				if attr:=determineAttr("apiVersion",current,wanted); attr!= "" {
 // 					body.SetAttributeValue(attr,inferType(tt.Object["apiVersion"]))
 // 				}
-
 // 				for key,value := range tt.Object{
 // 					if attr:=determineAttr(key,current,wanted); attr!= "" {
 // 						body.SetAttributeValue(attr,inferType(value))

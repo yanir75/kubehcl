@@ -47,3 +47,43 @@ module "test" {
 default_annotations {
   foo = "bar"
 }
+
+resource "bar" {
+  count = 0
+  apiVersion = "apps/v1"
+  kind       = "Deployment"
+  metadata = {
+    name = "shouldntbecreated"
+    labels = {
+      app = "shouldntbecreated"
+    }
+  }
+
+  spec = {
+    replicas = 3
+    selector = {
+      matchLabels = {
+        app = "shouldntbecreated"
+      }
+    }
+    template = {
+      metadata = {
+        labels = {
+          app = "shouldntbecreated"
+        }
+      }
+      spec = {
+        containers = [{
+          name  = "${count.index}"
+          image = "nginx:1.14.2"
+          ports = var.foo
+        }]
+      }
+    }
+  }
+}
+
+resource "test" {
+  for_each = {} 
+  test = each.value["test"]
+}

@@ -25,6 +25,7 @@ func CreateRootCMD() *cobra.Command {
 		destroyCmd(),
 		templateCmd(),
 		listCmd(),
+		createCmd(),
 		// planCmd(),
 	)
 	rootCmd.Root().CompletionOptions.DisableDefaultCmd = true

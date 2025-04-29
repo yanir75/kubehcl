@@ -263,20 +263,33 @@ func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-// func Plan(args []string) {
+func Create(args []string,viewArguments *view.ViewArgs) {
+	name, diags := parseTemplateArgs(args)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
+	cacheDir(name)
+
+
+
+
+}
+
+// func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
 // 	name, folderName, diags := parseApplyArgs(args)
 // 	if diags.HasErrors() {
 // 		view.DiagPrinter(diags,viewArguments)
 // 		return
 // 	}
 
-// 	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0)
+// 	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0,conf.Namespace())
 // 	diags = append(diags, decodeDiags...)
 // 	g := &configs.Graph{
 // 		DecodedModule: d,
 // 	}
 // 	diags = append(diags, g.Init()...)
-// 	cfg, cfgDiags := kubeclient.New(name)
+// 	cfg, cfgDiags := kubeclient.New(name,conf)
 // 	diags = append(diags, cfgDiags...)
 
 // 	if diags.HasErrors() {
