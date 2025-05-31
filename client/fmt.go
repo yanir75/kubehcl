@@ -343,6 +343,7 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics{
 						Detail: fmt.Sprintf("Couldn't write to File %s got error %s", name, err.Error()),
 					})
 				}
+				fmt.Printf("File %s was formated\n", name)
 			}
 
 
