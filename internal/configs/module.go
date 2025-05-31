@@ -129,7 +129,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-
+	
 	srcHCL, diagsParse := parser.ParseHCL(data, fileName)
 	diags = append(diags, diagsParse...)
 	attrs, attrDiags := srcHCL.Body.JustAttributes()

@@ -7,6 +7,8 @@ import (
 
 	"helm.sh/helm/v4/pkg/kube"
 
+	"slices"
+
 	"github.com/hashicorp/hcl/v2"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
@@ -16,7 +18,6 @@ import (
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/kube/kubeclient"
 	"kubehcl.sh/kubehcl/settings"
-	"slices"
 )
 
 // Install expects 2 arguments
@@ -270,10 +271,6 @@ func Create(args []string,viewArguments *view.ViewArgs) {
 		return
 	}
 	cacheDir(name)
-
-
-
-
 }
 
 // func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
@@ -341,3 +338,14 @@ func Create(args []string,viewArguments *view.ViewArgs) {
 // 	view.PlanPrinter(wantedMap,currentMap)
 
 // }
+
+
+
+func Fmt(args []string,viewArguments *view.ViewArgs, recurisve bool){
+	folder,diags := parseTemplateArgs(args)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
+	fmtDir(folder,recurisve)
+}
