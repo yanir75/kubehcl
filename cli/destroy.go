@@ -8,17 +8,17 @@ import (
 )
 
 // TODO: Use the same options as create and destroy in opposite option
-// Destroy will destroy the corresponding components of the given apply name
-func destroyCmd() *cobra.Command {
+// Uninstall will destroy the corresponding components of the given apply name
+func uninstallCmd() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
-		Short: "Destory all resources managed by kubehcl",
-		Long:  "Destroy will destroy existing resources managed by kubehcl",
+		Short: "Uninstall all resources managed by kubehcl",
+		Long:  "Uninstall will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
-			client.Destroy(args, conf, viewSettings)
+			client.Uninstall(args, conf, viewSettings)
 		},
 	}
 	addCommonToCommand(destroyCmd)

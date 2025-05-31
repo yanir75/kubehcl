@@ -19,13 +19,13 @@ import (
 	"slices"
 )
 
-// Apply expects 2 arguments
+// Install expects 2 arguments
 // 1. Release name, name of the release to be saved.
 // 2. Folder name which folder to decode
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
-// After parsing the variables apply will decode the folder, validate the configuration and create the components.
-func Apply(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
-	name, folderName, diags := parseApplyArgs(args)
+// After parsing the variables install will decode the folder, validate the configuration and create the components.
+func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
+	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
@@ -147,12 +147,12 @@ func Template(args []string, kind string, conf *settings.EnvSettings, viewArgume
 
 }
 
-// Destroy expects 1 argument
+// Uninstall expects 1 argument
 // 1. Release name, name of the release to be saved.
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
-// Destroy will destroy all resources registered to the given namespace and release name
-func Destroy(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
-	name, diags := parseDestroyArgs(args)
+// Uninstall will uninstall all resources registered to the given namespace and release name
+func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
+	name, diags := parseUninstallArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
@@ -224,8 +224,8 @@ func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 	return args[0], diags
 }
 
-// Parses arguments for destroy command
-func parseDestroyArgs(args []string) (string, hcl.Diagnostics) {
+// Parses arguments for uninstall command
+func parseUninstallArgs(args []string) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	if len(args) > 1 {
@@ -248,8 +248,8 @@ func parseDestroyArgs(args []string) (string, hcl.Diagnostics) {
 
 }
 
-// Parses arguemtns for apply command
-func parseApplyArgs(args []string) (string, string, hcl.Diagnostics) {
+// Parses arguemtns for install command
+func parseInstallArgs(args []string) (string, string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	if len(args) != 2 {
@@ -277,7 +277,7 @@ func Create(args []string,viewArguments *view.ViewArgs) {
 }
 
 // func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs) {
-// 	name, folderName, diags := parseApplyArgs(args)
+// 	name, folderName, diags := parseInstallArgs(args)
 // 	if diags.HasErrors() {
 // 		view.DiagPrinter(diags,viewArguments)
 // 		return

@@ -7,30 +7,30 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-// type apply struct {
+// type install struct {
 // 	FolderName string
 // 	Name string
 // }
 
-var applydesc string = `apply will create or update existing resources managed by kubehcl
+var installdesc string = `install will create or update existing resources managed by kubehcl
 automatically searches for files with ending of .hcl`
 
 // Apply command will validate then create the corresponding components written in the configuration files
-func applyCmd() *cobra.Command {
+func installCmd() *cobra.Command {
 
-	applyCmd := &cobra.Command{
-		Use:   "apply [name] [folder]",
+	installCmd := &cobra.Command{
+		Use:   "install [name] [folder]",
 		Short: "Create or update resources",
-		Long:  applydesc,
+		Long:  installdesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
-			client.Apply(args, conf, viewSettings)
+			client.Install(args, conf, viewSettings)
 		},
 	}
-	addCommonToCommand(applyCmd)
+	addCommonToCommand(installCmd)
 
-	return applyCmd
+	return installCmd
 
 }

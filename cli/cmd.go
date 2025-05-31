@@ -21,8 +21,8 @@ func CreateRootCMD() *cobra.Command {
 
 	rootCmd.AddCommand(
 		licenseCmd(),
-		applyCmd(),
-		destroyCmd(),
+		installCmd(),
+		uninstallCmd(),
 		templateCmd(),
 		listCmd(),
 		createCmd(),
