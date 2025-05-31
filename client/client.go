@@ -347,5 +347,10 @@ func Fmt(args []string,viewArguments *view.ViewArgs, recurisve bool){
 		view.DiagPrinter(diags, viewArguments)
 		return
 	}
-	fmtDir(folder,recurisve)
+	diags = fmtDir(folder,recurisve)
+
+	if diags.HasErrors() {
+		view.DiagPrinter(diags,viewArguments)
+		return
+	}
 }
