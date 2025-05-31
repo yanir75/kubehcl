@@ -329,7 +329,7 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics{
 				if err != nil {
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagError,
-						Summary: fmt.Sprintf("Couldn't overwrite file",name),
+						Summary: fmt.Sprintf("Couldn't overwrite file %s",name),
 						Detail: fmt.Sprintf("Couldn't overwrite File %s got error %s", name, err.Error()),
 					})
 				}
@@ -339,7 +339,7 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics{
 				if err != nil {
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagError,
-						Summary: fmt.Sprintf("Couldn't write to file",name),
+						Summary: fmt.Sprintf("Couldn't write to file %s",name),
 						Detail: fmt.Sprintf("Couldn't write to File %s got error %s", name, err.Error()),
 					})
 				}
