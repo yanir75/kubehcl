@@ -94,14 +94,17 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 					installRes.operation = "Deleted"
 				}
 				installRes.run = false
-				wg.Wait()
 				mutex.Lock()
 				defer mutex.Unlock()
 				results.Created = append(results.Created, res.Created...)
 				results.Updated = append(results.Updated, res.Updated...)
 				results.Deleted = append(results.Deleted, res.Deleted...)
 				// fmt.Printf("%s resource: %s\n",operation, tt.Name)
+			} else {
+				installRes.operation = "Failed to perform any action on"
 			}
+			wg.Wait()
+
 			return createDiags
 			// fmt.Printf("%s",asdf.Created[0])
 		}
