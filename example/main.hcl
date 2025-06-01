@@ -1,7 +1,7 @@
 resource "foo" {
   for_each = {
     "foo" = "bar",
-  "bar" = "foo"
+    "bar" = "foo"
   }
   apiVersion = "apps/v1"
   kind       = "Deployment"
@@ -37,11 +37,11 @@ resource "foo" {
 }
 
 module "test" {
-  
-    source = "./modules/starter"
-    foo = ["service1","service2"]
-    ports = var.foo
-    # depends_on = [resource.t,resource.a]
+
+  source = "./modules/starter"
+  foo    = ["service1", "service2"]
+  ports  = var.foo
+  # depends_on = [resource.t,resource.a]
 }
 
 default_annotations {
