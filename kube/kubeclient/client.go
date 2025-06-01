@@ -232,10 +232,11 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 }
 
 // Delete resources will delete all resources in the state
-func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
+func (cfg *Config) DeleteResources() (map[string]bool,*kube.Result, hcl.Diagnostics) {
 	var wanted kube.ResourceList = kube.ResourceList{}
 	saved, diags := cfg.getAllResourcesFromState()
 	var toDelete kube.ResourceList
+	deleteMap := make(map[string]bool)
 	for key, value := range saved {
 		if cfg.Storage.Get(key) == nil {
 			reader := bytes.NewReader(value)
@@ -246,9 +247,10 @@ func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 					Summary:  "Couldn't build and validate resources",
 					Detail:   fmt.Sprintf("Kind: %s", value),
 				})
-				return nil, diags
+				return deleteMap,nil, diags
 			}
 			toDelete = append(toDelete, savedResource...)
+			deleteMap[key] = true
 		}
 	}
 
@@ -270,7 +272,7 @@ func (cfg *Config) DeleteResources() (*kube.Result, hcl.Diagnostics) {
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
 		})
 	}
-	return res, diags
+	return deleteMap,res, diags
 }
 
 // Update secret willl apply the new storage stored resources and update the secret accordingly

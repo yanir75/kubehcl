@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"helm.sh/helm/v4/pkg/kube"
 
@@ -25,6 +26,24 @@ import (
 // 2. Folder name which folder to decode
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // After parsing the variables install will decode the folder, validate the configuration and create the components.
+type installResult struct {
+	run bool
+	name string
+	operation string
+
+}
+func printUpdateFunc(res *installResult, wg *sync.WaitGroup){
+	i := 0
+	for res.run{
+		fmt.Printf("Creating/Updating resource: %s (%d seconds has passed) \n", res.name,i*10)
+		i++
+		time.Sleep(time.Second*10)
+	}
+	fmt.Printf("%s resource: %s\n",res.operation, res.name)
+	wg.Done()
+
+}
+
 func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
@@ -58,15 +77,30 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	createFunc := func(v dag.Vertex) hcl.Diagnostics {
 		switch tt := v.(type) {
 		case *decode.DecodedResource:
-			fmt.Printf("Creating/Updating resource :%s\n", tt.Name)
+			// fmt.Printf("Creating/Updating resource: %s\n", tt.Name)
+			installRes := &installResult{}
+			installRes.name = tt.Name
+			installRes.run = true
+			installRes.operation = "Created"
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go printUpdateFunc(installRes,&wg)
 			res, createDiags := cfg.Create(tt)
 			if !createDiags.HasErrors() {
+				if len(res.Updated) > 0 {
+					installRes.operation = "Updated"
+				}
+				if len(res.Deleted) > 0 {
+					installRes.operation = "Deleted"
+				}
+				installRes.run = false
+				wg.Wait()
 				mutex.Lock()
 				defer mutex.Unlock()
 				results.Created = append(results.Created, res.Created...)
 				results.Updated = append(results.Updated, res.Updated...)
 				results.Deleted = append(results.Deleted, res.Deleted...)
-				fmt.Printf("Created/Updated resource :%s\n", tt.Name)
+				// fmt.Printf("%s resource: %s\n",operation, tt.Name)
 			}
 			return createDiags
 			// fmt.Printf("%s",asdf.Created[0])
@@ -78,8 +112,11 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(createFunc)...)
-		_, delDiags := cfg.DeleteResources()
+		saved,_, delDiags := cfg.DeleteResources()
 		diags = append(diags, delDiags...)
+		for key,_ := range saved {
+			fmt.Printf("Deleted resource: %s\n", key)
+		}
 	}
 	diags = append(diags, cfg.UpdateSecret()...)
 
