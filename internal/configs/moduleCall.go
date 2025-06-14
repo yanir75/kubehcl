@@ -18,11 +18,6 @@ import (
 	// "kubehcl.sh/kubehcl/internal/dag"
 )
 
-type ModuleCall struct {
-	decode.Deployable
-	Source hcl.Expression
-}
-
 type ModuleCallList []*ModuleCall
 
 // Decode the source of a module, source means the folder which contains the module

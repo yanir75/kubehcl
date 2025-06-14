@@ -16,28 +16,28 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
-	"kubehcl.sh/kubehcl/internal/addrs"
+	// "kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 // var variables VariableList
 
 type Variable struct {
-	Name        string
-	Description string
-	Default     hcl.Expression
-	Type        cty.Type
-	DeclRange   hcl.Range
-	HasDefault  bool // for checking if needed request from the user
+	Name        string // `json:"Name"`
+	Description string // `json:"Description"`
+	Default     hcl.Expression // `json:"Default"`
+	Type        cty.Type // `json:"Type"`
+	DeclRange   hcl.Range // `json:"DeclRange"`
+	HasDefault  bool // `json:"HasDefault"` // for checking if needed request from the user 
 }
 
-type VariableMap map[string]*Variable
+type VariableMap map[string]*Variable 
 
-func (v *Variable) addr() addrs.Variable {
-	return addrs.Variable{
-		Name: v.Name,
-	}
-}
+// func (v *Variable) addr() addrs.Variable {
+// 	return addrs.Variable{
+// 		Name: v.Name,
+// 	}
+// }
 
 var inputVariableBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{

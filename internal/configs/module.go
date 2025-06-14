@@ -64,18 +64,6 @@ var ext string = ".hcl"
 
 var varsFile string = "kubehcl.tfvars"
 
-type Module struct {
-	Name        string
-	Inputs      VariableMap
-	Locals      Locals
-	Annotations Annotations
-	Resources   ResourceList
-	ModuleCalls ModuleCallList
-	DependsOn   []hcl.Traversal
-	Source      string
-}
-
-type ModuleList []*Module
 
 // Merge multiple modules into one
 func (m *Module) merge(o *Module) {
@@ -439,7 +427,9 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-
+	// if mod := modMap.Get(folderName); mod != nil {
+		// return mod,diags
+	// }
 	var addrMap addrs.AddressMap = addrs.AddressMap{}
 	files, err := os.ReadDir(folderName)
 	var deployable *Module = &Module{}
