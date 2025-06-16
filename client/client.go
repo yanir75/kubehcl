@@ -249,7 +249,7 @@ func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 	if len(args) > 1 {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Insufficient number of arguments required arguments are: folder",
+			Summary:  "Too many arguments required arguments are: folder",
 		})
 		return "", diags
 	}
@@ -280,7 +280,7 @@ func parseUninstallArgs(args []string) (string, hcl.Diagnostics) {
 	if len(args) < 1 {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Too few arguments required arguments are: name",
+			Summary:  "Insufficient number of arguments required arguments are: name",
 		})
 		return "", diags
 	}
