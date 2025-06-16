@@ -117,7 +117,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		diags = append(diags, g.Walk(createFunc)...)
 		saved,_, delDiags := cfg.DeleteResources()
 		diags = append(diags, delDiags...)
-		for key,_ := range saved {
+		for key := range saved {
 			fmt.Printf("Deleted resource: %s\n", key)
 		}
 	}
