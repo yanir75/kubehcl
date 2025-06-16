@@ -14,7 +14,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Shows the current version of the tool",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Kuhbecl %s", version)
+			fmt.Printf("Kubehcl %s\n", version)
 		},
 	}
 
