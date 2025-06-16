@@ -30,7 +30,7 @@ func fmtCmd() *cobra.Command {
 		},
 	}
 	fmtCmd.Flags().BoolVar(&f.recursive, "recursive", false, "prints the template in yaml or json format")
-	// addCommonToCommand(fmtCmd)
+	addView(fmtCmd)
 
 	return fmtCmd
 

@@ -39,7 +39,7 @@ func templateCmd() *cobra.Command {
 	}
 
 	templateCmd.Flags().StringVar(&t.Kind, "kind", "yaml", "prints the template in yaml or json format")
-	// addCommonToCommand(templateCmd)
+	addView(templateCmd)
 
 	return templateCmd
 
