@@ -1,6 +1,6 @@
 /*
 // SPDX-License-Identifier: MPL-2.0
-This file was copied from https://github.com/opentofu/opentofu and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
+This file was copied from https://github.com/opentofu/opentofu was modified and retains its' original license: https://www.mozilla.org/en-US/MPL/2.0/
 */
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
@@ -387,7 +387,7 @@ func (w *Walker) walkVertex(v Vertex, info *walkerVertex) {
 	if depsSuccess {
 		diags = w.Callback(v)
 	} else {
-		log.Printf("[TRACE] dag/walk: upstream of %q errored, so skipping", VertexName(v))
+		// log.Printf("[TRACE] dag/walk: upstream of %q errored, so skipping", VertexName(v))
 		// This won't be displayed to the user because we'll set upstreamFailed,
 		// but we need to ensure there's at least one error in here so that
 		// the failures will cascade downstream.

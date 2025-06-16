@@ -129,26 +129,37 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 }
 
+//	func getFatherModule(call *ModuleCall,addrMap addrs.AddressMap) *ModuleCall{
+//		if len(strings.Split(call.addr().String(),".")) < 3 {
+//			return nil
+//		}
+//		return addrMap[strings.Join(strings.Split(call.addr().String(), ".")[:2],".")].(*ModuleCall)
+//	}
+//
 // Decode multiple blocks of a module call
 func DecodeModuleBlocks(blocks hcl.Blocks, addrMap addrs.AddressMap) (ModuleCallList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	var moduleList ModuleCallList
+	var callList ModuleCallList
 	for _, block := range blocks {
-		Module, rDiags := decodeModuleBlock(block)
+		call, rDiags := decodeModuleBlock(block)
 		diags = append(diags, rDiags...)
-		moduleList = append(moduleList, Module)
-		if addrMap.Add(Module.addr().String(), Module) {
+		callList = append(callList, call)
+		// fatherCall := getFatherModule(call,addrMap)
+		// if fatherCall != nil {
+		// 	call.DependsOn = append(call.DependsOn, fatherCall.DependsOn...)
+		// }
+		if addrMap.Add(call.addr().String(), call) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Modules must have different names",
-				Detail:   fmt.Sprintf("Two Modules have the same name: %s", Module.Name),
+				Detail:   fmt.Sprintf("Two Modules have the same name: %s", call.Name),
 				Subject:  &block.DefRange,
 				// Context: names[variable.Name],
 			})
 		}
 	}
 
-	return moduleList, diags
+	return callList, diags
 }
 
 func (r ModuleCall) addr() addrs.ModuleCall {

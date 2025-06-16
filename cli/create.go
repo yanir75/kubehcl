@@ -1,14 +1,10 @@
 package cli
 
 import (
-
-
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
 	"kubehcl.sh/kubehcl/internal/view"
 )
-
-
 
 // Template prints the template which will be applied in yaml form after being rendered
 func createCmd() *cobra.Command {
@@ -20,7 +16,7 @@ func createCmd() *cobra.Command {
 
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 
-			client.Create(args,viewSettings)
+			client.Create(args, viewSettings)
 		},
 	}
 

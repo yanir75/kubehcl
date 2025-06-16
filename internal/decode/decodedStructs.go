@@ -37,8 +37,9 @@ type DependsOn struct {
 }
 type DecodedResource struct {
 	DecodedDeployable
-	Depth        int
-	Dependencies []DependsOn
+	Depth                int
+	Dependencies         []DependsOn
+	DependenciesAppended []DependsOn
 }
 
 type DecodedResourceList []*DecodedResource
@@ -75,15 +76,16 @@ type DecodedModuleCall struct {
 }
 
 type DecodedModule struct {
-	Name        string
-	Inputs      DecodedVariableList
-	Locals      DecodedLocals
-	Annotations DecodedAnnotations
-	Resources   DecodedResourceList
-	ModuleCalls DecodedModuleCallList
-	Modules     DecodedModuleList
-	Depth       int
-	DependsOn   []hcl.Traversal
+	Name         string
+	Inputs       DecodedVariableList
+	Locals       DecodedLocals
+	Annotations  DecodedAnnotations
+	Resources    DecodedResourceList
+	ModuleCalls  DecodedModuleCallList
+	Modules      DecodedModuleList
+	Depth        int
+	DependsOn    []hcl.Traversal
+	Dependencies []DependsOn
 }
 
 type DecodedModuleList []*DecodedModule

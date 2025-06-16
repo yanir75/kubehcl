@@ -55,7 +55,7 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
 	}
 	diags = append(diags, cfg.IsReachable()...)
-	if !diags.HasErrors(){
+	if !diags.HasErrors() {
 		client, err := cfg.Client.Factory.KubernetesClientSet()
 		if err != nil {
 			panic("Couldn't get client")
@@ -219,6 +219,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 			Summary:  "Couldn't update resource",
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
 		})
+		return res, diags
 	}
 
 	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
@@ -232,7 +233,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 }
 
 // Delete resources will delete all resources in the state
-func (cfg *Config) DeleteResources() (map[string]bool,*kube.Result, hcl.Diagnostics) {
+func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnostics) {
 	var wanted kube.ResourceList = kube.ResourceList{}
 	saved, diags := cfg.getAllResourcesFromState()
 	var toDelete kube.ResourceList
@@ -247,7 +248,7 @@ func (cfg *Config) DeleteResources() (map[string]bool,*kube.Result, hcl.Diagnost
 					Summary:  "Couldn't build and validate resources",
 					Detail:   fmt.Sprintf("Kind: %s", value),
 				})
-				return deleteMap,nil, diags
+				return deleteMap, nil, diags
 			}
 			toDelete = append(toDelete, savedResource...)
 			deleteMap[key] = true
@@ -272,7 +273,7 @@ func (cfg *Config) DeleteResources() (map[string]bool,*kube.Result, hcl.Diagnost
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
 		})
 	}
-	return deleteMap,res, diags
+	return deleteMap, res, diags
 }
 
 // Update secret willl apply the new storage stored resources and update the secret accordingly

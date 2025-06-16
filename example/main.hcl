@@ -1,3 +1,14 @@
+resource "namespace" {
+  apiVersion = "v1"
+  kind= "Namespace"
+  metadata = {
+    name = "bla"
+    labels = {
+      name = "bla"
+    }
+  }
+
+}
 resource "foo" {
   for_each = {
     "foo" = "bar",
@@ -33,7 +44,7 @@ resource "foo" {
       }
     }
   }
-  depends_on = [module.test]
+  depends_on = [module.test,resource.namespace]
 }
 
 module "test" {
@@ -42,6 +53,7 @@ module "test" {
   foo    = ["service1", "service2"]
   ports  = var.foo
   # depends_on = [resource.t,resource.a]
+  depends_on = [resource.namespace]
 }
 
 default_annotations {

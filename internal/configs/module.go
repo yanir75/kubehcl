@@ -64,7 +64,6 @@ var ext string = ".hcl"
 
 var varsFile string = "kubehcl.tfvars"
 
-
 // Merge multiple modules into one
 func (m *Module) merge(o *Module) {
 	if m.Inputs == nil {
@@ -117,7 +116,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	
+
 	srcHCL, diagsParse := parser.ParseHCL(data, fileName)
 	diags = append(diags, diagsParse...)
 	attrs, attrDiags := srcHCL.Body.JustAttributes()
@@ -189,6 +188,7 @@ func (m *Module) decode(depth int, folderName string, namespace string, prevCtx 
 		diags = append(diags, attrDiags...)
 		diags = append(diags, sourceDiags...)
 		module, modDiags := decodeFolder(source)
+
 		module.Source = source
 		if folderName == source || folderName == source+"./" || folderName+"./" == source {
 			diags = append(diags, &hcl.Diagnostic{
@@ -428,7 +428,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	// if mod := modMap.Get(folderName); mod != nil {
-		// return mod,diags
+	// return mod,diags
 	// }
 	var addrMap addrs.AddressMap = addrs.AddressMap{}
 	files, err := os.ReadDir(folderName)

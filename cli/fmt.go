@@ -16,6 +16,7 @@ var fmtdesc string = `fmt will format all files in the folder`
 type fmtConf struct {
 	recursive bool
 }
+
 // Apply command will validate then create the corresponding components written in the configuration files
 func fmtCmd() *cobra.Command {
 	var f fmtConf
@@ -26,7 +27,7 @@ func fmtCmd() *cobra.Command {
 		Long:  fmtdesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
-			client.Fmt(args,viewSettings,f.recursive)
+			client.Fmt(args, viewSettings, f.recursive)
 		},
 	}
 	fmtCmd.Flags().BoolVar(&f.recursive, "recursive", false, "prints the template in yaml or json format")

@@ -27,19 +27,19 @@ import (
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // After parsing the variables install will decode the folder, validate the configuration and create the components.
 type installResult struct {
-	run bool
-	name string
+	run       bool
+	name      string
 	operation string
-
 }
-func printUpdateFunc(res *installResult, wg *sync.WaitGroup){
+
+func printUpdateFunc(res *installResult, wg *sync.WaitGroup) {
 	i := 0
-	for res.run{
-		fmt.Printf("Creating/Updating resource: %s (%d seconds has passed) \n", res.name,i*10)
+	for res.run {
+		fmt.Printf("Creating/Updating resource: %s (%d seconds has passed) \n", res.name, i*10)
 		i++
-		time.Sleep(time.Second*10)
+		time.Sleep(time.Second * 10)
 	}
-	fmt.Printf("%s resource: %s\n",res.operation, res.name)
+	fmt.Printf("%s resource: %s\n", res.operation, res.name)
 	wg.Done()
 
 }
@@ -84,7 +84,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 			installRes.operation = "Created"
 			var wg sync.WaitGroup
 			wg.Add(1)
-			go printUpdateFunc(installRes,&wg)
+			go printUpdateFunc(installRes, &wg)
 			res, createDiags := cfg.Create(tt)
 			if !createDiags.HasErrors() {
 				if len(res.Updated) > 0 {
@@ -93,7 +93,6 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 				if len(res.Deleted) > 0 {
 					installRes.operation = "Deleted"
 				}
-				installRes.run = false
 				mutex.Lock()
 				defer mutex.Unlock()
 				results.Created = append(results.Created, res.Created...)
@@ -103,6 +102,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 			} else {
 				installRes.operation = "Failed to perform any action on"
 			}
+			installRes.run = false
 			wg.Wait()
 
 			return createDiags
@@ -112,10 +112,10 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	}
 
 	diags = append(diags, g.Walk(validateFunc)...)
-	
+
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(createFunc)...)
-		saved,_, delDiags := cfg.DeleteResources()
+		saved, _, delDiags := cfg.DeleteResources()
 		diags = append(diags, delDiags...)
 		for key := range saved {
 			fmt.Printf("Deleted resource: %s\n", key)
@@ -304,7 +304,7 @@ func parseInstallArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-func Create(args []string,viewArguments *view.ViewArgs) {
+func Create(args []string, viewArguments *view.ViewArgs) {
 	name, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
@@ -379,18 +379,16 @@ func Create(args []string,viewArguments *view.ViewArgs) {
 
 // }
 
-
-
-func Fmt(args []string,viewArguments *view.ViewArgs, recurisve bool){
-	folder,diags := parseTemplateArgs(args)
+func Fmt(args []string, viewArguments *view.ViewArgs, recurisve bool) {
+	folder, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
 	}
-	diags = fmtDir(folder,recurisve)
+	diags = fmtDir(folder, recurisve)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		view.DiagPrinter(diags, viewArguments)
 		return
 	}
 }

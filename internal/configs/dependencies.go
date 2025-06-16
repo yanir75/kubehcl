@@ -66,11 +66,16 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 		r.Depth = m.Depth
 		rList = append(rList, r)
 		var dependencies []decode.DependsOn
+		var moduleDependencies []decode.DependsOn
 		if m.DependsOn != nil {
-			dependencies = append(dependencies, decode.DependsOn{
+			moduleDependencies = append(moduleDependencies, decode.DependsOn{
 				Depth: m.Depth - 1,
 				Trav:  m.DependsOn,
 			})
+
+			for _, module := range m.Modules {
+				module.Dependencies = append(module.Dependencies, moduleDependencies...)
+			}
 		}
 		if r.DependsOn != nil {
 			dependencies = append(dependencies, decode.DependsOn{
@@ -78,13 +83,70 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 				Trav:  r.DependsOn,
 			})
 		}
+		dependencies = append(dependencies, m.Dependencies...)
+		dependencies = append(dependencies, moduleDependencies...)
 		r.Dependencies = dependencies
 	}
+
+	// for _, module := range m.Modules {
+	// 	module.DependsOn = append(module.DependsOn, m.DependsOn...)
+	// }
 
 	for _, mod := range m.Modules {
 		rList = append(rList, getResourceName(mod, decode.DecodedResourceList{}, currentName+"module."+mod.Name+".")...)
 	}
 	return rList
+}
+
+func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decode.DecodedResource) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	var edges []rangeName
+	edges, diags = getName(r)
+	// if diags.HasErrors(){
+	// 	return diags
+	// }
+	for _, edge := range edges {
+		added := false
+
+		startName := strings.Split(r.Name, ".")
+		fullName := strings.Join(startName[:edge.Depth*2], ".")
+		if fullName != "" {
+			fullName = fullName + "." + edge.Type + "." + edge.Name
+		} else {
+			fullName = edge.Type + "." + edge.Name
+		}
+
+		if edge.Type == ResourceType {
+			if res, exists := resourceMap[fullName]; exists && res.Depth == edge.Depth {
+				g.Connect(dag.BasicEdge(r, res))
+				added = true
+			}
+		}
+
+		if edge.Type == ModuleType {
+			for _, vertex := range g.Vertices() {
+
+				res := vertex.(*decode.DecodedResource)
+				sName := strings.Split(res.Name, ".")
+				if edge.Depth < res.Depth {
+					fName := strings.Join(sName[:edge.Depth*2+2], ".")
+					if fullName == fName {
+						g.Connect(dag.BasicEdge(r, res))
+						added = true
+					}
+				}
+			}
+		}
+		if !added {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Couldn't find the depends on resource",
+				Detail:   fmt.Sprintf("Entered %s which does not exist", edge.Name),
+				Subject:  &edge.Range,
+			})
+		}
+	}
+	return diags
 }
 
 // Creates a DAG based on dependencies for later purposes such as walking over the graph and activating a function on each resource.
@@ -113,51 +175,7 @@ func (g *Graph) Init() hcl.Diagnostics {
 
 	for _, r := range rList {
 		if len(r.Dependencies) > 0 {
-			edges, edgeDiags := getName(r)
-			diags = append(diags, edgeDiags...)
-			// if diags.HasErrors(){
-			// 	return diags
-			// }
-			for _, edge := range edges {
-				added := false
-
-				startName := strings.Split(r.Name, ".")
-				fullName := strings.Join(startName[:edge.Depth*2], ".")
-				if fullName != "" {
-					fullName = fullName + "." + edge.Type + "." + edge.Name
-				} else {
-					fullName = edge.Type + "." + edge.Name
-				}
-
-				if edge.Type == ResourceType {
-					if res, exists := resourceMap[fullName]; exists && res.Depth == edge.Depth {
-						g.Connect(dag.BasicEdge(r, res))
-						added = true
-					}
-				}
-				if edge.Type == ModuleType {
-					for _, vertex := range g.Vertices() {
-
-						res := vertex.(*decode.DecodedResource)
-						sName := strings.Split(res.Name, ".")
-						if edge.Depth < res.Depth {
-							fName := strings.Join(sName[:edge.Depth*2+2], ".")
-							if fullName == fName {
-								g.Connect(dag.BasicEdge(r, res))
-								added = true
-							}
-						}
-					}
-				}
-				if !added {
-					diags = append(diags, &hcl.Diagnostic{
-						Severity: hcl.DiagError,
-						Summary:  "Couldn't find the depends on resource",
-						Detail:   fmt.Sprintf("Entered %s which does not exist", edge.Name),
-						Subject:  &edge.Range,
-					})
-				}
-			}
+			diags = append(diags, addEdges(g, r, resourceMap)...)
 		}
 
 	}

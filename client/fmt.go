@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-
 func formatTypeExpr(tokens hclwrite.Tokens) hclwrite.Tokens {
 	switch len(tokens) {
 	case 1:
@@ -272,7 +271,6 @@ func formatBody(body *hclwrite.Body, inBlocks []string) {
 	}
 }
 
-
 var (
 	fileExt = []string{
 		".hcl",
@@ -280,86 +278,84 @@ var (
 	}
 )
 
-func ignoreHiddenFiles(path string) bool{
-	return strings.HasPrefix(path,".")  || strings.HasPrefix(path,"~")
+func ignoreHiddenFiles(path string) bool {
+	return strings.HasPrefix(path, ".") || strings.HasPrefix(path, "~")
 }
 
 func checkFileEndings(path string) bool {
-	return slices.Contains(fileExt,filepath.Ext(path))
+	return slices.Contains(fileExt, filepath.Ext(path))
 }
 
-func validFile(path string) bool{
+func validFile(path string) bool {
 	return checkFileEndings(path) && !ignoreHiddenFiles(path)
-} 
+}
 
-func fmtDir(path string, recursive bool) hcl.Diagnostics{
+func fmtDir(path string, recursive bool) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: fmt.Sprintf("Directory is not valid %s",path),
-			Detail: fmt.Sprintf("Couldn't read directory %s got error %s", path, err.Error()),
+			Summary:  fmt.Sprintf("Directory is not valid %s", path),
+			Detail:   fmt.Sprintf("Couldn't read directory %s got error %s", path, err.Error()),
 		})
 		return diags
 	}
-	for _,entry := range entries {
+	for _, entry := range entries {
 		if entry.IsDir() {
 			if recursive {
-				fmtDir(filepath.Join(path,entry.Name()),recursive)
+				fmtDir(filepath.Join(path, entry.Name()), recursive)
 			}
 		} else {
-			if !validFile(entry.Name()){
+			if !validFile(entry.Name()) {
 				continue
 			}
-			name := filepath.Join(path,entry.Name())
+			name := filepath.Join(path, entry.Name())
 			input, err := os.Open(name)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary: fmt.Sprintf("File is not valid %s",name),
-					Detail: fmt.Sprintf("Couldn't read directory %s got error %s", name, err.Error()),
+					Summary:  fmt.Sprintf("File is not valid %s", name),
+					Detail:   fmt.Sprintf("Couldn't read directory %s got error %s", name, err.Error()),
 				})
 			}
 			defer input.Close()
-					
+
 			src, err := io.ReadAll(input)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary: fmt.Sprintf("File is not valid %s",name),
-					Detail: fmt.Sprintf("Couldn't read File %s got error %s", name, err.Error()),
+					Summary:  fmt.Sprintf("File is not valid %s", name),
+					Detail:   fmt.Sprintf("Couldn't read File %s got error %s", name, err.Error()),
 				})
 			}
-			f,parseDiags := hclwrite.ParseConfig(src,name,hcl.InitialPos)
+			f, parseDiags := hclwrite.ParseConfig(src, name, hcl.InitialPos)
 			diags = append(diags, parseDiags...)
 			if diags.HasErrors() {
 				return diags
 			}
-			formatBody(f.Body(),nil)
-			if !bytes.Equal(f.Bytes(),src) {
-				overwriteF,err := os.Create(name)
+			formatBody(f.Body(), nil)
+			if !bytes.Equal(f.Bytes(), src) {
+				overwriteF, err := os.Create(name)
 				if err != nil {
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagError,
-						Summary: fmt.Sprintf("Couldn't overwrite file %s",name),
-						Detail: fmt.Sprintf("Couldn't overwrite File %s got error %s", name, err.Error()),
+						Summary:  fmt.Sprintf("Couldn't overwrite file %s", name),
+						Detail:   fmt.Sprintf("Couldn't overwrite File %s got error %s", name, err.Error()),
 					})
 				}
 
-				_, err =overwriteF.Write(f.Bytes())
+				_, err = overwriteF.Write(f.Bytes())
 
 				if err != nil {
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagError,
-						Summary: fmt.Sprintf("Couldn't write to file %s",name),
-						Detail: fmt.Sprintf("Couldn't write to File %s got error %s", name, err.Error()),
+						Summary:  fmt.Sprintf("Couldn't write to file %s", name),
+						Detail:   fmt.Sprintf("Couldn't write to File %s got error %s", name, err.Error()),
 					})
 				}
 				fmt.Printf("File %s was formated\n", name)
 			}
-
-
 
 		}
 	}

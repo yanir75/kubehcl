@@ -23,15 +23,15 @@ import (
 // var variables VariableList
 
 type Variable struct {
-	Name        string // `json:"Name"`
-	Description string // `json:"Description"`
+	Name        string         // `json:"Name"`
+	Description string         // `json:"Description"`
 	Default     hcl.Expression // `json:"Default"`
-	Type        cty.Type // `json:"Type"`
-	DeclRange   hcl.Range // `json:"DeclRange"`
-	HasDefault  bool // `json:"HasDefault"` // for checking if needed request from the user 
+	Type        cty.Type       // `json:"Type"`
+	DeclRange   hcl.Range      // `json:"DeclRange"`
+	HasDefault  bool           // `json:"HasDefault"` // for checking if needed request from the user
 }
 
-type VariableMap map[string]*Variable 
+type VariableMap map[string]*Variable
 
 // func (v *Variable) addr() addrs.Variable {
 // 	return addrs.Variable{

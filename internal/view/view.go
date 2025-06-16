@@ -16,7 +16,6 @@ package view
 import (
 	"os"
 
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
 
@@ -272,7 +271,6 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 // 		panic("Unknown type")
 // 	}
 // }
-
 
 // func determineAttr(attrName string ,current *resource.Info,wanted *resource.Info) string{
 // 	if current == nil {

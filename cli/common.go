@@ -33,7 +33,7 @@ func addCommonToCommand(cmd *cobra.Command) {
 
 }
 
-func addView(cmd *cobra.Command){
+func addView(cmd *cobra.Command) {
 	viewSettings := settings.NewView()
 	settings.AddViewFlags(viewSettings, cmd.Flags())
 	ctx := context.WithValue(context.Background(), viewKey, viewSettings)
