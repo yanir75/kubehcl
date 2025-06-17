@@ -50,7 +50,7 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	cfg.Storage = storage.New()
 	cfg.Name = name
 	if conf.Timeout < 0 {
-		cfg.Timeout = time.Duration(100) * time.Second
+		cfg.Timeout = 100 * time.Second
 	} else {
 		cfg.Timeout = time.Duration(conf.Timeout) * time.Second
 	}
@@ -234,7 +234,6 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 
 // Delete resources will delete all resources in the state
 func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnostics) {
-	var wanted kube.ResourceList = kube.ResourceList{}
 	saved, diags := cfg.getAllResourcesFromState()
 	var toDelete kube.ResourceList
 	deleteMap := make(map[string]bool)
@@ -255,22 +254,27 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 		}
 	}
 
-	res, err := cfg.Client.Update(toDelete, wanted, false)
-	if err != nil {
-		for _, res := range toDelete {
+	if len(toDelete) < 1 {
+		return deleteMap,nil, diags
+	}
+
+
+	res, errs := cfg.Client.Delete(toDelete)
+	for i, err := range errs {
+		if err != nil && !apierrors.IsNotFound(err) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Couldn't delete resource",
-				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Mapping.GroupVersionKind.Kind, res.Name, err.Error()),
+				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Deleted[i].Mapping.GroupVersionKind.Kind, res.Deleted[i].Name, err.Error()),
 			})
 		}
 	}
 
-	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+	if err := cfg.Client.WaitForDelete(toDelete, cfg.Timeout); err != nil && !apierrors.IsNotFound(err) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't delete resource within the timeout",
-			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", toDelete[0].Mapping.GroupVersionKind.Kind, toDelete[0].Name, err.Error()),
 		})
 	}
 	return deleteMap, res, diags
@@ -415,7 +419,7 @@ func (cfg *Config) IsReachable() hcl.Diagnostics {
 // Delete all resources from a given state
 func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 
-	var wanted kube.ResourceList = kube.ResourceList{}
+	// var wanted kube.ResourceList = kube.ResourceList{}
 	// get saved secret which contains the state
 	saved, diags := cfg.getAllResourcesFromState()
 
@@ -437,25 +441,30 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 		// }
 	}
 	// delete all managed resources that don't appear in configuration
-	res, err := cfg.Client.Update(toDelete, wanted, false)
-	if err != nil {
-		for _, res := range toDelete {
+	if len(toDelete) < 1 {
+		return nil, diags
+	}
+
+	res, errs := cfg.Client.Delete(toDelete)
+	for i, err := range errs {
+		if err != nil && !apierrors.IsNotFound(err) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Couldn't delete resource",
-				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Mapping.GroupVersionKind.Kind, res.Name, err.Error()),
+				Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", res.Deleted[i].Mapping.GroupVersionKind.Kind, res.Deleted[i].Name, err.Error()),
 			})
 		}
 	}
 
-	if err := cfg.Client.Wait(wanted, cfg.Timeout); err != nil {
+	if err := cfg.Client.WaitForDelete(toDelete, cfg.Timeout); err != nil && !apierrors.IsNotFound(err) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't delete resource within the timeout",
-			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
+			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", toDelete[0].Mapping.GroupVersionKind.Kind, toDelete[0].Name, err.Error()),
 		})
 	}
-	cfg.deleteState()
+
+	diags = append(diags, cfg.deleteState()...)
 	return res, diags
 }
 

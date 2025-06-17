@@ -221,7 +221,8 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 			Detail:   fmt.Sprintf("The release you provided \"%s\" does not exist in the given namespace \"%s\"", cfg.Name, conf.Namespace()),
 		})
 	}
-	cfg.DeleteAllResources()
+	_,deleteDiags := cfg.DeleteAllResources()
+	diags = append(diags, deleteDiags...)
 	view.DiagPrinter(diags, viewArguments)
 
 }
