@@ -7,7 +7,7 @@ import (
 )
 
 // Template prints the template which will be applied in yaml form after being rendered
-var version = "v0.1.12"
+var version = "v0.1.15"
 
 func versionCmd() *cobra.Command {
 	versionCmd := &cobra.Command{
