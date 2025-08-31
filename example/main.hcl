@@ -2,9 +2,9 @@ resource "namespace" {
   apiVersion = "v1"
   kind       = "Namespace"
   metadata = {
-    name = "bla"
+    name = "foo"
     labels = {
-      name = "bla"
+      name = "bar"
     }
   }
 
