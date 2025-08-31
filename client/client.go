@@ -174,7 +174,7 @@ func Template(args []string, kind string, namespace string, viewArguments *view.
 						Subject:  &resource.DeclRange,
 					})
 				} else {
-					fmt.Printf("Resource: %s\n\n", key)
+					fmt.Printf("# Resource: %s\n\n", key)
 					fmt.Printf("%s______________________________________________\n", string(resourceOutput))
 				}
 			}
