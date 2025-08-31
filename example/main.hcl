@@ -1,6 +1,6 @@
 resource "namespace" {
   apiVersion = "v1"
-  kind= "Namespace"
+  kind       = "Namespace"
   metadata = {
     name = "bla"
     labels = {
@@ -44,7 +44,7 @@ resource "foo" {
       }
     }
   }
-  depends_on = [module.test,resource.namespace]
+  depends_on = [module.test, resource.namespace]
 }
 
 module "test" {

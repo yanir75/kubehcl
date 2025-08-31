@@ -78,7 +78,7 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Couldn't create or update state secret",
+			Summary:  "Couldn't get state secret",
 			Detail:   fmt.Sprintf("%s", err),
 		})
 	}

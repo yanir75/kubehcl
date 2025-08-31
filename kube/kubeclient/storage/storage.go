@@ -29,6 +29,8 @@ func New() *Storage {
 	return &Storage{make(map[string][]byte)}
 }
 
+
+
 // Generate secret from the current resource list in the storage
 func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
