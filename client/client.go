@@ -110,8 +110,10 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		}
 		return nil
 	}
-
-	diags = append(diags, g.Walk(validateFunc)...)
+	validateDiags := g.Walk(validateFunc)
+	if len(validateDiags) > 1 {
+		view.DiagPrinter(validateDiags[0:1], viewArguments)
+	}
 
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(createFunc)...)

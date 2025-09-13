@@ -10,7 +10,7 @@ package syntaxvalidator
 
 import (
 	"context"
-
+	"fmt"
 	"io/fs"
 
 	"github.com/hashicorp/hcl/v2"
@@ -57,7 +57,7 @@ func New(version string) (*validator.Validator, hcl.Diagnostics) {
 							// check github for builtins not hardcoded.
 							// subject to rate limiting. should use a diskcache
 							// since etag requests are not limited
-							openapiclient.NewGitHubBuiltins(version),
+							// openapiclient.NewGitHubBuiltins(version),
 						)),
 				),
 			),
@@ -65,8 +65,10 @@ func New(version string) (*validator.Validator, hcl.Diagnostics) {
 	)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
 			Summary: "Couldn't build validator",
-			Detail:  "Kubernetes syntax won't be validated",
+			Detail:  fmt.Sprintf("Kubernetes syntax won't be validated %s",err),
+			
 		})
 		return nil, diags
 	}

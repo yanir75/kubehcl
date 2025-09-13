@@ -405,8 +405,19 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 				Subject:  &resource.DeclRange,
 			})
 		}
+		if diags.HasErrors() {	
+			return diags
+		}
+
 		factory, validatorDiags := syntaxvalidator.New(cfg.Version)
 		diags = append(diags, validatorDiags...)
+		if diags.HasErrors() {
+			return hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary: "Couldn't build validator",
+				Detail:  fmt.Sprintf("Kubernetes syntax won't be validated %s",diags.Errs()[0]),
+			}}
+		}
 		err = syntaxvalidator.ValidateDocument(data, factory)
 
 		if err != nil {
