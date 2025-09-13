@@ -90,6 +90,30 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 	}
 }
 
+// Updates the previous releases data
+func (cfg *Config) updatePreviousReleaseData() hcl.Diagnostics {
+	data, diags := cfg.getState()
+	previousDataMap := make(map[string]map[string][]byte)
+	if len(data) > 0 {
+		err := json.Unmarshal(data["previous releases"], &previousDataMap)
+		if err != nil {
+			panic("should not get here: " + err.Error())
+		}
+	}
+
+	resourceMap := make(map[string][]byte)
+	if len(data) > 0 {
+		err := json.Unmarshal(data["release"], &resourceMap)
+		if err != nil {
+			panic("should not get here: " + err.Error())
+		}
+	}
+
+	cfg.Storage.InitPreviousData(previousDataMap)
+	cfg.Storage.AddPreviousData(resourceMap)
+	return diags
+}
+
 // Delete current state meaning delete the secret that is responsible for the state
 // This occurs during uninstall
 func (cfg *Config) deleteState() hcl.Diagnostics {
@@ -125,6 +149,7 @@ func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostic
 	return resourceMap, diags
 
 }
+
 
 // Get the current state of a specific resource
 // This gets all the attributes from the state and adds them to a the resource
@@ -281,7 +306,9 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 
 // Update secret willl apply the new storage stored resources and update the secret accordingly
 func (cfg *Config) UpdateSecret() hcl.Diagnostics {
-	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
+	diags := cfg.updatePreviousReleaseData()
+	secret, genSecretDiags := cfg.Storage.GenSecret(cfg.Name, nil)
+	diags = append(diags, genSecretDiags...)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -292,6 +319,7 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 	}
 
 	if _, createSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
+
 		if _, updateSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
