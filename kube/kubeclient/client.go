@@ -95,7 +95,7 @@ func (cfg *Config) updatePreviousReleaseData() hcl.Diagnostics {
 	data, diags := cfg.getState()
 	previousDataMap := make(map[string]map[string][]byte)
 	if len(data) > 0 {
-		err := json.Unmarshal(data["previous releases"], &previousDataMap)
+		err := json.Unmarshal(data["previous-releases"], &previousDataMap)
 		if err != nil {
 			panic("should not get here: " + err.Error())
 		}
