@@ -23,7 +23,7 @@ func listCmd() *cobra.Command {
 			client.List(conf, viewSettings)
 		},
 	}
-	addCommonToCommand(listCmd)
+	// addCommonToCommand(listCmd)
 
 	return listCmd
 

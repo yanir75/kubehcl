@@ -44,7 +44,9 @@ func printUpdateFunc(res *installResult, wg *sync.WaitGroup) {
 
 }
 
-func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
+
+
+func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs,createNamespace bool) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
@@ -60,6 +62,12 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	cfg, cfgDiags := kubeclient.New(name, conf)
 	diags = append(diags, cfgDiags...)
 
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		os.Exit(1)
+	}
+
+	diags = append(diags, cfg.VerifyInstall(createNamespace)...)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)

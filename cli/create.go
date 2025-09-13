@@ -20,7 +20,7 @@ func createCmd() *cobra.Command {
 		},
 	}
 
-	addCommonToCommand(createCmd)
+	// addCommonToCommand(createCmd)
 
 	return createCmd
 

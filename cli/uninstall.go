@@ -21,7 +21,7 @@ func uninstallCmd() *cobra.Command {
 			client.Uninstall(args, conf, viewSettings)
 		},
 	}
-	addCommonToCommand(destroyCmd)
+	// addCommonToCommand(destroyCmd)
 
 	return destroyCmd
 

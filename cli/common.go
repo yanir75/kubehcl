@@ -22,10 +22,10 @@ const (
 // Example of common flag is --namespace
 func addCommonToCommand(cmd *cobra.Command) {
 	definitions := settings.NewSettings()
-	definitions.AddFlags(cmd.Flags())
+	definitions.AddFlags(cmd.PersistentFlags())
 
 	viewSettings := settings.NewView()
-	settings.AddViewFlags(viewSettings, cmd.Flags())
+	settings.AddViewFlags(viewSettings, cmd.PersistentFlags())
 	ctx := context.WithValue(context.Background(), settingsKey, definitions)
 	ctx = context.WithValue(ctx, viewKey, viewSettings)
 
@@ -35,7 +35,7 @@ func addCommonToCommand(cmd *cobra.Command) {
 
 func addView(cmd *cobra.Command) {
 	viewSettings := settings.NewView()
-	settings.AddViewFlags(viewSettings, cmd.Flags())
+	settings.AddViewFlags(viewSettings, cmd.PersistentFlags())
 	ctx := context.WithValue(context.Background(), viewKey, viewSettings)
 
 	cmd.SetContext(ctx)

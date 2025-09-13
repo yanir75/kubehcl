@@ -22,6 +22,7 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,10 +66,63 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 			panic("Couldn't get version")
 		}
 		cfg.Version = version.Major + "." + version.Minor
+
+
 	}
+
 	return cfg, diags
 }
 
+func (cfg *Config) validateNamespace() hcl.Diagnostics{
+	client, err := cfg.Client.Factory.KubernetesClientSet()
+	if err != nil {
+		panic("Couldn't get client")
+	}
+
+	var diags hcl.Diagnostics
+	if _,err := client.CoreV1().Namespaces().Get(context.Background(),cfg.Settings.Namespace(),metav1.GetOptions{}); apierrors.IsNotFound(err){
+				diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: fmt.Sprintf("Namespace \"%s\" does not exist",cfg.Settings.Namespace()),
+				Detail: fmt.Sprintf("%s, in order to create it add --create-namespace",err.Error()),
+		})
+	}
+	return diags
+}
+
+func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics{
+	client, err := cfg.Client.Factory.KubernetesClientSet()
+	if err != nil {
+		panic("Couldn't get client")
+	}
+	var diags hcl.Diagnostics
+
+	if createNamespace {
+		ns := &v1.Namespace{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Namespace",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: cfg.Settings.Namespace(),
+				Labels: map[string]string{
+					"name": cfg.Settings.Namespace(),
+				},
+			},
+		}
+
+		if _,err :=client.CoreV1().Namespaces().Create(context.Background(),ns,metav1.CreateOptions{}); err !=nil {
+			diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: fmt.Sprintf("Couldn't create namepsace %s",cfg.Settings.Namespace()),
+			Detail: err.Error(),
+			})
+		}
+	} else {
+			return cfg.validateNamespace()
+	}
+	return diags
+}
 // Get the current state of applied resources
 // State is saved as a secret inside kubernetes in the given namespace
 // The secret type is kubehcl.sh/module.v1
@@ -319,7 +373,6 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 	}
 
 	if _, createSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
-
 		if _, updateSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -327,7 +380,7 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 				Detail:   fmt.Sprintf("%s", updateSecretErr),
 			})
 		}
-	} else if createSecretErr != nil {
+	}else if createSecretErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't create state secret",
