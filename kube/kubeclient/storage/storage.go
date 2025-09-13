@@ -54,6 +54,7 @@ func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics
 	}, diags
 }
 
+
 // Adda resource to the storage
 func (s *Storage) Add(name string, data []byte) {
 	mutex.Lock()

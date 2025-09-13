@@ -91,14 +91,14 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 }
 
 // Delete current state meaning delete the secret that is responsible for the state
-// This occurs during destroy
+// This occurs during uninstall
 func (cfg *Config) deleteState() hcl.Diagnostics {
 	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Couldn't create or update state secret",
+			Summary:  "Couldn't delete state secret",
 			Detail:   fmt.Sprintf("%s", err),
 		})
 	}
@@ -255,9 +255,8 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 	}
 
 	if len(toDelete) < 1 {
-		return deleteMap,nil, diags
+		return deleteMap, nil, diags
 	}
-
 
 	res, errs := cfg.Client.Delete(toDelete)
 	for i, err := range errs {
