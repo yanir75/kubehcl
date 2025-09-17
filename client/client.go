@@ -53,7 +53,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		return
 	}
 
-	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0, conf.Namespace())
+	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", 0)
 	diags = append(diags, decodeDiags...)
 	g := &configs.Graph{
 		DecodedModule: d,
@@ -147,7 +147,7 @@ func Template(args []string, kind string, namespace string, viewArguments *view.
 		return
 	}
 
-	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0, namespace)
+	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}

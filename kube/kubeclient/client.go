@@ -248,11 +248,13 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 // This also verifies if the resource exists and was not saved in the kubehcl state in order to not update it
 func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
 	// Get current resource configuration
-	current, diags := cfg.getResourceCurrentState(wanted)
 	// Get the resource configuration from the state
+	current, diags := cfg.getResourceCurrentState(wanted)
+
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
 	savedResource, builderErr := cfg.Client.Build(reader, true)
+
 
 	if builderErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -279,7 +281,7 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string)
 
 		return nil, diags
 	}
-	return current, diags
+	return savedResource, diags
 }
 
 // Compare states get the resource from the state and applies the changes

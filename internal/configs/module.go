@@ -141,7 +141,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 // Folder to decode
 // Namespace to add to each resource if not exists
 // previous module context all vars and locals to apply to the variables of the new module
-func (m *Module) decode(depth int, folderName string, namespace string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(depth int, folderName string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	decodedModule := &decode.DecodedModule{
@@ -282,7 +282,7 @@ func (m *Module) decode(depth int, folderName string, namespace string, prevCtx 
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(depth+1, module.Source, namespace, ctx)
+		dm, dmDiags := module.decode(depth+1, module.Source, ctx)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -296,9 +296,9 @@ func (m *Module) decode(depth int, folderName string, namespace string, prevCtx 
 				if val, exists := resInfoMap["metadata"]; exists {
 					if val.Type().IsObjectType() || val.Type().IsMapType() {
 						metadata := val.AsValueMap()
-						if _, exists := metadata["namespace"]; !exists && namespace != "" {
-							metadata["namespace"] = cty.StringVal(namespace)
-						}
+						// if _, exists := metadata["namespace"]; !exists && namespace != "" {
+						// 	metadata["namespace"] = cty.StringVal(namespace)
+						// }
 						if annotations, exists := metadata["annotations"]; exists {
 							if annotations.Type().IsObjectType() || annotations.Type().IsMapType() {
 								annotationsMap := val.AsValueMap()
@@ -467,9 +467,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 }
 
 // Decode both folder and module into a decoded module
-func DecodeFolderAndModules(folderName string, name string, depth int, namespace string) (*decode.DecodedModule, hcl.Diagnostics) {
+func DecodeFolderAndModules(folderName string, name string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(0, folderName, namespace, &hcl.EvalContext{})
+	dm, decodeDiags := mod.decode(0, folderName, &hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }
