@@ -28,9 +28,9 @@ func templateCmd() *cobra.Command {
 
 			switch t.Kind {
 			case "yaml":
-				client.Template(args, "yaml", t.Namespace, viewSettings)
+				client.Template(args, "yaml", viewSettings)
 			case "json":
-				client.Template(args, "json", t.Namespace, viewSettings)
+				client.Template(args, "json", viewSettings)
 			default:
 				fmt.Println("Valid arguments for kind are [yaml, json]")
 				os.Exit(1)
@@ -39,7 +39,7 @@ func templateCmd() *cobra.Command {
 	}
 
 	templateCmd.Flags().StringVar(&t.Kind, "kind", "yaml", "prints the template in yaml or json format")
-	templateCmd.Flags().StringVar(&t.Namespace, "namespace", "default", "prints the template in yaml or json format")
+	// templateCmd.Flags().StringVar(&t.Namespace, "namespace", "default", "prints the template in yaml or json format")
 
 	addView(templateCmd)
 
