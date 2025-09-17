@@ -1,4 +1,4 @@
-resource "secret" {
+kube_resource "secret" {
   apiVersion = "v1"
   kind       = "Secret"
   metadata = {

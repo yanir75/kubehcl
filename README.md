@@ -57,7 +57,7 @@ locals can be used in configuration files such as local.foo
 All annotations will be added to the resources in the same level of configuration
 
 ---
-**resource** block contains the configuration of the kubernetes resource further examples can be seen in [example](/example) folder.  
+**kube_resource** block contains the configuration of the kubernetes resource further examples can be seen in [example](/example) folder.  
 This block can contain for_each or count and depends_on attributes.
 ```
 for_each contains a map or set of strings which will create a resource for each key

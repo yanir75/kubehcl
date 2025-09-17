@@ -35,11 +35,11 @@ type installResult struct {
 func printUpdateFunc(res *installResult, wg *sync.WaitGroup) {
 	i := 0
 	for res.run {
-		fmt.Printf("Creating/Updating resource: %s (%d seconds has passed) \n", res.name, i*10)
+		fmt.Printf("Creating/Updating kube_resource: %s (%d seconds has passed) \n", res.name, i*10)
 		i++
 		time.Sleep(time.Second * 10)
 	}
-	fmt.Printf("%s resource: %s\n", res.operation, res.name)
+	fmt.Printf("%s kube_resource: %s\n", res.operation, res.name)
 	wg.Done()
 
 }

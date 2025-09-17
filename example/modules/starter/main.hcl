@@ -13,7 +13,7 @@ locals {
   }
 }
 
-resource "service" {
+kube_resource "service" {
   for_each   = local.service_ports
   apiVersion = "v1"
   kind       = "Service"
@@ -28,7 +28,7 @@ resource "service" {
   }
 }
 
-resource "foo" {
+kube_resource "foo" {
   for_each   = local.service_ports
   apiVersion = "apps/v1"
   kind       = "Deployment"
@@ -66,7 +66,7 @@ module "secret" {
   source = "./modules/secret"
 }
 
-resource "bar" {
+kube_resource "bar" {
   apiVersion = "apps/v1"
   kind       = "Deployment"
   metadata = {

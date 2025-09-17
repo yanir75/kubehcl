@@ -1,4 +1,4 @@
-resource "namespace" {
+kube_resource "namespace" {
   apiVersion = "v1"
   kind       = "Namespace"
   metadata = {
@@ -9,7 +9,7 @@ resource "namespace" {
   }
 
 }
-resource "foo" {
+kube_resource "foo" {
   for_each = {
     "foo" = "bar",
     "bar" = "foo"

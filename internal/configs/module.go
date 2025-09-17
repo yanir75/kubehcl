@@ -393,7 +393,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	var resources ResourceList
 
 	// tasks <- Task{func() {
-	resourcesList, resourceDiags := DecodeResourceBlocks(b.Blocks.OfType("resource"), addrMap)
+	resourcesList, resourceDiags := DecodeResourceBlocks(b.Blocks.OfType("kube_resource"), addrMap)
 	resources = resourcesList
 	// l.Lock()
 	// defer l.Unlock()
