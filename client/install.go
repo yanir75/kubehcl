@@ -55,7 +55,7 @@ func parseInstallArgs(args []string) (string, string, hcl.Diagnostics) {
 // 2. Folder name which folder to decode
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // After parsing the variables install will decode the folder, validate the configuration and create the components.
-func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs,createNamespace bool) {
+func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, createNamespace bool) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)

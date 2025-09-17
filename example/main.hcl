@@ -50,9 +50,9 @@ kube_resource "foo" {
 
 module "test" {
 
-  source = "./modules/starter"
-  foo    = ["service1", "service2"]
-  ports  = var.foo
+  source     = "./modules/starter"
+  foo        = ["service1", "service2"]
+  ports      = var.foo
   depends_on = [kube_resource.namespace]
 }
 

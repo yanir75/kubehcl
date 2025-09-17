@@ -65,4 +65,3 @@ package client
 // 	view.PlanPrinter(wantedMap,currentMap)
 
 // }
-

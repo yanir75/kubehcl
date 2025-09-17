@@ -5,8 +5,6 @@ import (
 	"os"
 	"sync"
 
-
-
 	"github.com/hashicorp/hcl/v2"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
@@ -14,9 +12,7 @@ import (
 	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/view"
-
 )
-
 
 // Parses arguments for template command
 

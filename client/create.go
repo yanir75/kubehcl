@@ -62,6 +62,7 @@ func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
 	return args[0], diags
 }
 
+// creates a basic module
 func Create(args []string, viewArguments *view.ViewArgs) {
 	name, diags := parseCreateArgs(args)
 	if diags.HasErrors() {

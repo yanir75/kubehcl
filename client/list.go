@@ -7,6 +7,7 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+// list the installations of kubehcl in the namespace
 func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 	cfg, diags := kubeclient.New("", conf)
 	if diags.HasErrors() {
@@ -16,7 +17,7 @@ func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
 			view.DiagPrinter(diags, viewArguments)
 		} else {
 			for _, secret := range secrets {
-				fmt.Printf("module: %s\n", secret)
+				fmt.Printf("Installation: %s\n", secret)
 			}
 		}
 	}

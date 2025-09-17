@@ -10,7 +10,7 @@ import (
 )
 
 type template struct {
-	Kind string
+	Kind      string
 	Namespace string
 }
 

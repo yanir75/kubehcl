@@ -15,10 +15,10 @@ import (
 var installdesc string = `install will create or update existing resources managed by kubehcl
 automatically searches for files with ending of .hcl`
 
-
 type install struct {
 	CreateNamespace bool
 }
+
 // Apply command will validate then create the corresponding components written in the configuration files
 func installCmd() *cobra.Command {
 
@@ -31,8 +31,8 @@ func installCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
-			
-			client.Install(args, conf, viewSettings,i.CreateNamespace)
+
+			client.Install(args, conf, viewSettings, i.CreateNamespace)
 		},
 	}
 	// addCommonToCommand(installCmd)

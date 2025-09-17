@@ -66,9 +66,8 @@ func New(version string) (*validator.Validator, hcl.Diagnostics) {
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't build validator",
-			Detail:  fmt.Sprintf("Kubernetes syntax won't be validated %s",err),
-			
+			Summary:  "Couldn't build validator",
+			Detail:   fmt.Sprintf("Kubernetes syntax won't be validated %s", err),
 		})
 		return nil, diags
 	}

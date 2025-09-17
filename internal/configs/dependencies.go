@@ -102,7 +102,7 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 	var diags hcl.Diagnostics
 	var edges []rangeName
 	edges, diags = getName(r)
-	if diags.HasErrors(){
+	if diags.HasErrors() {
 		return diags
 	}
 	for _, edge := range edges {
@@ -137,7 +137,7 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 				}
 			}
 		}
-		
+
 		if !added {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -180,7 +180,7 @@ func (g *Graph) Init() hcl.Diagnostics {
 		if len(r.Dependencies) > 0 {
 			rDiags := addEdges(g, r, resourceMap)
 			added := true
-			for _,diag := range diags {
+			for _, diag := range diags {
 				if rDiags[0].Subject.Start == diag.Subject.Start && rDiags[0].Subject.End == diag.Subject.End {
 					added = false
 					break
@@ -267,7 +267,7 @@ func getName(resource *decode.DecodedResource) ([]rangeName, hcl.Diagnostics) {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "This type is not supported",
-					Detail:   fmt.Sprintf("Allowed types are [%s,%s] got: %s",ResourceType,ModuleType, resourceType),
+					Detail:   fmt.Sprintf("Allowed types are [%s,%s] got: %s", ResourceType, ModuleType, resourceType),
 					Subject:  traversal[0].SourceRange().Ptr(),
 				})
 			}

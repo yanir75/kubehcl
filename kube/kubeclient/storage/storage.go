@@ -29,22 +29,22 @@ type Storage struct {
 }
 
 func New() *Storage {
-	return &Storage{make(map[string][]byte),make(map[string]map[string][]byte)}
+	return &Storage{make(map[string][]byte), make(map[string]map[string][]byte)}
 }
 
-
-func (s *Storage) marshalData()([]byte,[]byte){
+func (s *Storage) marshalData() ([]byte, []byte) {
 	data, err := json.Marshal(s.resourceList)
 	if err != nil {
 		panic("Should not get here: " + err.Error())
 	}
-	prevData,err := json.Marshal(s.previousData)
+	prevData, err := json.Marshal(s.previousData)
 	if err != nil {
 		panic("Should not get here: " + err.Error())
 	}
-	
-	return data,prevData
+
+	return data, prevData
 }
+
 // Generate secret from the current resource list in the storage
 func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -53,7 +53,7 @@ func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics
 	}
 	lbs.set("owner", "kubehcl")
 	releaseMap := make(map[string][]byte)
-	data,prevData :=s.marshalData()
+	data, prevData := s.marshalData()
 	releaseMap["release"] = data
 	releaseMap["previous-releases"] = prevData
 	return &v1.Secret{
@@ -66,12 +66,12 @@ func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics
 	}, diags
 }
 
-func (s *Storage) AddPreviousData(data map[string][]byte){
-	str := fmt.Sprintf("release-%d",len(s.previousData))
+func (s *Storage) AddPreviousData(data map[string][]byte) {
+	str := fmt.Sprintf("release-%d", len(s.previousData))
 	s.previousData[str] = data
 }
 
-func(s *Storage) InitPreviousData(data map[string]map[string][]byte){
+func (s *Storage) InitPreviousData(data map[string]map[string][]byte) {
 	s.previousData = data
 }
 

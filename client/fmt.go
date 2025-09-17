@@ -386,6 +386,7 @@ func parseFmtArgs(args []string) (string, hcl.Diagnostics) {
 	return args[0], diags
 }
 
+// formats the hcl code
 func Fmt(args []string, viewArguments *view.ViewArgs, recurisve bool) {
 	folder, diags := parseFmtArgs(args)
 	if diags.HasErrors() {

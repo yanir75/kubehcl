@@ -67,30 +67,29 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 		}
 		cfg.Version = version.Major + "." + version.Minor
 
-
 	}
 
 	return cfg, diags
 }
 
-func (cfg *Config) validateNamespace() hcl.Diagnostics{
+func (cfg *Config) validateNamespace() hcl.Diagnostics {
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		panic("Couldn't get client")
 	}
 
 	var diags hcl.Diagnostics
-	if _,err := client.CoreV1().Namespaces().Get(context.Background(),cfg.Settings.Namespace(),metav1.GetOptions{}); apierrors.IsNotFound(err){
-				diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary: fmt.Sprintf("Namespace \"%s\" does not exist",cfg.Settings.Namespace()),
-				Detail: fmt.Sprintf("%s, in order to create it add --create-namespace",err.Error()),
+	if _, err := client.CoreV1().Namespaces().Get(context.Background(), cfg.Settings.Namespace(), metav1.GetOptions{}); apierrors.IsNotFound(err) {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Namespace \"%s\" does not exist", cfg.Settings.Namespace()),
+			Detail:   fmt.Sprintf("%s, in order to create it add --create-namespace", err.Error()),
 		})
 	}
 	return diags
 }
 
-func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics{
+func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics {
 	client, err := cfg.Client.Factory.KubernetesClientSet()
 	if err != nil {
 		panic("Couldn't get client")
@@ -111,18 +110,19 @@ func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics{
 			},
 		}
 
-		if _,err :=client.CoreV1().Namespaces().Create(context.Background(),ns,metav1.CreateOptions{}); err !=nil {
+		if _, err := client.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{}); err != nil {
 			diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary: fmt.Sprintf("Couldn't create namepsace %s",cfg.Settings.Namespace()),
-			Detail: err.Error(),
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("Couldn't create namepsace %s", cfg.Settings.Namespace()),
+				Detail:   err.Error(),
 			})
 		}
 	} else {
-			return cfg.validateNamespace()
+		return cfg.validateNamespace()
 	}
 	return diags
 }
+
 // Get the current state of applied resources
 // State is saved as a secret inside kubernetes in the given namespace
 // The secret type is kubehcl.sh/module.v1
@@ -204,7 +204,6 @@ func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostic
 
 }
 
-
 // Get the current state of a specific resource
 // This gets all the attributes from the state and adds them to a the resource
 // If the resource is not found or got an error an empty list will be returned
@@ -254,7 +253,6 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string)
 	saved, savedData := cfg.getAllResourcesFromState()
 	reader := bytes.NewReader(saved[name])
 	savedResource, builderErr := cfg.Client.Build(reader, true)
-
 
 	if builderErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -382,7 +380,7 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 				Detail:   fmt.Sprintf("%s", updateSecretErr),
 			})
 		}
-	}else if createSecretErr != nil {
+	} else if createSecretErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't create state secret",
@@ -460,7 +458,7 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 				Subject:  &resource.DeclRange,
 			})
 		}
-		if diags.HasErrors() {	
+		if diags.HasErrors() {
 			return diags
 		}
 
@@ -469,8 +467,8 @@ func (cfg *Config) Validate(resource *decode.DecodedResource) hcl.Diagnostics {
 		if diags.HasErrors() {
 			return hcl.Diagnostics{&hcl.Diagnostic{
 				Severity: hcl.DiagWarning,
-				Summary: "Couldn't build validator",
-				Detail:  fmt.Sprintf("Kubernetes syntax won't be validated %s",diags.Errs()[0]),
+				Summary:  "Couldn't build validator",
+				Detail:   fmt.Sprintf("Kubernetes syntax won't be validated %s", diags.Errs()[0]),
 			}}
 		}
 		err = syntaxvalidator.ValidateDocument(data, factory)
