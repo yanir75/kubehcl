@@ -35,7 +35,7 @@ func TestValidatorFactory_TestPatcher(t *testing.T) {
 					"metadata": map[string]interface{}{
 						"name":              "myapp",
 						"finalizers":        []interface{}{"finalizers.compute.linkedin.com"},
-						"creationTimestamp": nil,
+						// "creationTimestamp": nil,
 					},
 					"data": map[string]interface{}{
 						"key": "value",
@@ -60,7 +60,7 @@ func TestValidatorFactory_TestPatcher(t *testing.T) {
 							"app.kubernetes.io/managed-by": "kustomize",
 							"app.kubernetes.io/created-by": "project",
 						},
-						"creationTimestamp": nil,
+						// "creationTimestamp": nil,
 					},
 					"spec": map[string]interface{}{
 						"schedule":                "*/1 * * * *",

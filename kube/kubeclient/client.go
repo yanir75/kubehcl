@@ -39,6 +39,7 @@ type Config struct {
 	Storage  *storage.Storage
 	Name     string
 	Timeout  time.Duration
+	// WaitStrategy kube.WaitStrategy
 	Version  string
 }
 
@@ -48,6 +49,8 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	cfg := &Config{}
 	cfg.Settings = conf
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
+	cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
+
 	cfg.Storage = storage.New()
 	cfg.Name = name
 	if conf.Timeout < 0 {
@@ -290,7 +293,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 	if diags.HasErrors() {
 		return &kube.Result{}, diags
 	}
-	res, err := cfg.Client.Update(current, wanted, false)
+	res, err := cfg.Client.Update(current, wanted)
 
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
