@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
+	"kubehcl.sh/kubehcl/internal/view"
 )
 
 func formatTypeExpr(tokens hclwrite.Tokens) hclwrite.Tokens {
@@ -361,4 +362,40 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics {
 	}
 
 	return nil
+}
+
+func parseFmtArgs(args []string) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) > 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Too many arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	if len(args) < 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Insufficient number of arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	return args[0], diags
+}
+
+func Fmt(args []string, viewArguments *view.ViewArgs, recurisve bool) {
+	folder, diags := parseFmtArgs(args)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
+	diags = fmtDir(folder, recurisve)
+
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
 }

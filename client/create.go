@@ -5,6 +5,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/view"
 )
 
 //go:embed files/*
@@ -35,4 +38,35 @@ func cacheDir(outputDir string) {
 
 		return err
 	})
+}
+
+func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) > 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Too many arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	if len(args) < 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Insufficient number of arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	return args[0], diags
+}
+
+func Create(args []string, viewArguments *view.ViewArgs) {
+	name, diags := parseCreateArgs(args)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
+	cacheDir(name)
 }
