@@ -40,7 +40,7 @@ type Config struct {
 	Name     string
 	Timeout  time.Duration
 	// WaitStrategy kube.WaitStrategy
-	Version  string
+	Version string
 }
 
 // Applies the settings and creates a config to create,destroy and  validate all configuration files

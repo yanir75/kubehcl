@@ -157,7 +157,7 @@ func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.Debug, "debug", s.Debug, "enable verbose output")
 	fs.IntVar(&s.BurstLimit, "burst-limit", s.BurstLimit, "client-side default throttling limit")
 	fs.Float32Var(&s.QPS, "qps", s.QPS, "queries per second used when communicating with the Kubernetes API, not including bursting")
-	fs.IntVar(&s.Timeout, "timeout", s.Timeout, "Timeout for resource creation")
+	fs.IntVar(&s.Timeout, "timeout", s.Timeout, "Timeout for each resource creation")
 
 }
 
