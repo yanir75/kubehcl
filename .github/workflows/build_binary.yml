@@ -23,22 +23,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: kubehcl 
 
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Checkout another repository
+        uses: actions/checkout@v4
+        with:
+          repository: kubernetes-sigs/kubectl-validate 
+          path: kubectl-validate
       - name: get-latest-versions
         run: |
-          git clone https://github.com/kubernetes-sigs/kubectl-validate.git
           cd kubectl-validate
-          rm -rf ../kube/pkg/openapiclient/builtins/*
-          go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins
+          rm -rf ../kubehcl/kube/pkg/openapiclient/builtins/*
+          go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins 
           ls ../kubehcl/kube/pkg/openapiclient/builtins
-          cd ..
-          rm -rf kubectl-validate
-
+          cd ../kubehcl
+        
       - name: Install dependencies
         run: go get .
 
