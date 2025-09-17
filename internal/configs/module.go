@@ -38,7 +38,7 @@ func Parser() *hclparse.Parser {
 var inputConfig = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "resource",
+			Type:       "kube_resource",
 			LabelNames: []string{"Name"},
 		},
 		{
