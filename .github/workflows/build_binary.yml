@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        go-version: [ '1.24.1' ]
+        go-version: [ '1.25.0' ]
         os: [macos-latest]
     
     runs-on: ${{ matrix.os }}
@@ -40,24 +40,29 @@ jobs:
         run: |
           cd kubectl-validate
           rm -rf ../kubehcl/kube/pkg/openapiclient/builtins/*
+          ls ../kubehcl/kube/pkg/openapiclient/builtins
           go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins 
           ls ../kubehcl/kube/pkg/openapiclient/builtins
           cd ../kubehcl
         
       - name: Install dependencies
+        working-directory: kubehcl
         run: go get .
 
       # - name: Test
       #   run: go test ./...
 
       - name: Build
+        working-directory: kubehcl
         run: go build .
       
       - name: tar
+        working-directory: kubehcl
         run:  tar -czf kubehcl.tar.gz kubehcl > /dev/null
 
       - name: kubehclsha
         id: kubehclsha
+        working-directory: kubehcl
         run: echo "kubehclsha=$(shasum -a 256 kubehcl.tar.gz | awk '{print $1}' | tr -d '\n')" >> $GITHUB_OUTPUT
 
       - name: Upload release assets
@@ -65,7 +70,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            kubehcl.tar.gz
+            kubehcl/kubehcl.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
