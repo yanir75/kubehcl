@@ -9,6 +9,7 @@ kube_resource "namespace" {
   }
 
 }
+
 kube_resource "foo" {
   for_each = {
     "foo" = "bar",
@@ -44,7 +45,7 @@ kube_resource "foo" {
       }
     }
   }
-  depends_on = [module.test, resource.namespace]
+  depends_on = [module.test, kube_resource.namespace]
 }
 
 module "test" {
@@ -52,8 +53,7 @@ module "test" {
   source = "./modules/starter"
   foo    = ["service1", "service2"]
   ports  = var.foo
-  # depends_on = [resource.t,resource.a]
-  depends_on = [resource.namespace]
+  depends_on = [kube_resource.namespace]
 }
 
 default_annotations {

@@ -29,7 +29,7 @@ func (r Resource) String() string {
 	case InModule:
 		return "module." + r.Name
 	case RMode:
-		return "resource." + r.Name
+		return "kube_resource." + r.Name
 
 	default:
 		panic("Can't reach here")

@@ -26,6 +26,7 @@ kube_resource "service" {
     }
     ports = [merge(each.value, { port = 9367 })]
   }
+  depends_on = [kube_resource.foo]
 }
 
 kube_resource "foo" {
@@ -64,6 +65,7 @@ kube_resource "foo" {
 
 module "secret" {
   source = "./modules/secret"
+  depends_on = [kube_resource.bar]
 }
 
 kube_resource "bar" {

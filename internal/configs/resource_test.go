@@ -28,7 +28,7 @@ func Test_Resource(t *testing.T) {
 		{
 			d: hcl.Blocks{
 				&hcl.Block{
-					Type:   "resource",
+					Type:   "kube_resource",
 					Labels: []string{"foo"},
 					Body: &hclsyntax.Body{
 						Attributes: hclsyntax.Attributes{
@@ -54,7 +54,7 @@ func Test_Resource(t *testing.T) {
 					},
 				},
 				&hcl.Block{
-					Type:   "resource",
+					Type:   "kube_resource",
 					Labels: []string{"bar"},
 
 					Body: &hclsyntax.Body{

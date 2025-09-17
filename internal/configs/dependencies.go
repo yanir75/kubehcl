@@ -93,7 +93,7 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 	// }
 
 	for _, mod := range m.Modules {
-		rList = append(rList, getResourceName(mod, decode.DecodedResourceList{}, currentName+"module."+mod.Name+".")...)
+		rList = append(rList, getResourceName(mod, decode.DecodedResourceList{}, currentName+ModuleType+"."+mod.Name+".")...)
 	}
 	return rList
 }
@@ -102,9 +102,9 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 	var diags hcl.Diagnostics
 	var edges []rangeName
 	edges, diags = getName(r)
-	// if diags.HasErrors(){
-	// 	return diags
-	// }
+	if diags.HasErrors(){
+		return diags
+	}
 	for _, edge := range edges {
 		added := false
 
@@ -137,6 +137,7 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 				}
 			}
 		}
+		
 		if !added {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -146,6 +147,7 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 			})
 		}
 	}
+
 	return diags
 }
 
@@ -173,9 +175,20 @@ func (g *Graph) Init() hcl.Diagnostics {
 		)
 	}
 
+	// TODO: fix this diags to a much better suited solution
 	for _, r := range rList {
 		if len(r.Dependencies) > 0 {
-			diags = append(diags, addEdges(g, r, resourceMap)...)
+			rDiags := addEdges(g, r, resourceMap)
+			added := true
+			for _,diag := range diags {
+				if rDiags[0].Subject.Start == diag.Subject.Start && rDiags[0].Subject.End == diag.Subject.End {
+					added = false
+					break
+				}
+			}
+			if added {
+				diags = append(diags, rDiags...)
+			}
 		}
 
 	}
@@ -254,7 +267,7 @@ func getName(resource *decode.DecodedResource) ([]rangeName, hcl.Diagnostics) {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "This type is not supported",
-					Detail:   fmt.Sprintf("Allowed types are [resource,module] got: %s", resourceType),
+					Detail:   fmt.Sprintf("Allowed types are [%s,%s] got: %s",ResourceType,ModuleType, resourceType),
 					Subject:  traversal[0].SourceRange().Ptr(),
 				})
 			}
@@ -272,6 +285,6 @@ func getName(resource *decode.DecodedResource) ([]rangeName, hcl.Diagnostics) {
 }
 
 const (
-	ResourceType = "resource"
+	ResourceType = "kube_resource"
 	ModuleType   = "module"
 )

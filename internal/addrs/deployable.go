@@ -27,7 +27,7 @@ func (d Deployable) uniqueKeySigil() {
 func (d Deployable) String() string {
 	switch d.Type {
 	case RType:
-		return "resource." + d.Name
+		return "kube_resource." + d.Name
 	case MType:
 		return "module." + d.Name
 	default:

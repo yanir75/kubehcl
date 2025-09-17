@@ -44,7 +44,7 @@ func Test_commonStruct(t *testing.T) {
 				Name: "test",
 				Type: addrs.RType,
 				Config: map[string]cty.Value{
-					"resource.test": cty.ObjectVal(map[string]cty.Value{
+					"kube_resource.test": cty.ObjectVal(map[string]cty.Value{
 						"key": cty.StringVal("testing"),
 					},
 					),
@@ -85,7 +85,7 @@ func Test_commonStruct(t *testing.T) {
 				Name: "test",
 				Type: addrs.RType,
 				Config: map[string]cty.Value{
-					"resource.test": cty.ObjectVal(map[string]cty.Value{
+					"kube_resource.test": cty.ObjectVal(map[string]cty.Value{
 						"key": cty.StringVal("testing"),
 						"red": cty.ObjectVal(map[string]cty.Value{"key": cty.StringVal("testing")}),
 					},
