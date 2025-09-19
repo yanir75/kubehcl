@@ -56,6 +56,7 @@ func (s *Storage) GenSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics
 	data, prevData := s.marshalData()
 	releaseMap["release"] = data
 	releaseMap["previous-releases"] = prevData
+
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "kubehcl." + key,
