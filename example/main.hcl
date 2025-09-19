@@ -59,3 +59,7 @@ module "test" {
 default_annotations {
   foo = "bar"
 }
+
+default_annotations {
+  bar = "foo"
+}

@@ -69,7 +69,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		return
 	}
 
-	d, decodeDiags := configs.DecodeFolderAndModules(folderName, "root", varsF, vals, 0)
+	d, decodeDiags := configs.DecodeFolderAndModules(name,folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
 	g := &configs.Graph{
 		DecodedModule: d,

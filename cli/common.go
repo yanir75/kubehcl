@@ -19,18 +19,6 @@ const (
 	cmdSettingsKey = key("cmdSettings")
 )
 
-// Adds he common flags to the command
-// Example of common flag is --namespace
-func addCommonToCommand(cmd *cobra.Command) {
-
-	definitions := settings.NewSettings()
-	definitions.AddFlags(cmd.PersistentFlags())
-
-	ctx := context.WithValue(context.Background(), settingsKey, definitions)
-
-	cmd.SetContext(ctx)
-
-}
 
 func addView(cmd *cobra.Command) {
 	viewSettings := settings.NewView()
@@ -39,10 +27,25 @@ func addView(cmd *cobra.Command) {
 	cmd.SetContext(ctx)
 }
 
+// Adds he common flags to the command
+// Example of common flag is --namespace
+func addCommonToCommand(cmd *cobra.Command) {
+	addView(cmd)
+
+	definitions := settings.NewSettings()
+	definitions.AddFlags(cmd.PersistentFlags())
+
+	ctx := context.WithValue(cmd.Context(), settingsKey, definitions)
+
+	cmd.SetContext(ctx)
+
+
+}
+
 func AddCmdSettings(cmd *cobra.Command) {
 	cmdSettings := settings.NewCmdSettings()
 	settings.AddCmdSettings(cmdSettings, cmd.Flags())
-	ctx := context.WithValue(cmd.Context(), cmdSettingsKey, cmdSettings)
+	ctx := context.WithValue(context.Background(), cmdSettingsKey, cmdSettings)
 
 	cmd.SetContext(ctx)
 }

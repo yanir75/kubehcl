@@ -55,7 +55,7 @@ func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSetti
 		return
 	}
 
-	d, diags := configs.DecodeFolderAndModules(folderName, "root", varF, vars, 0)
+	d, diags := configs.DecodeFolderAndModules("",folderName, "root", varF, vars, 0)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}

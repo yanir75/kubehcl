@@ -30,7 +30,7 @@ func installCmd() *cobra.Command {
 		Long:  installdesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
 			client.Install(args, conf, viewSettings, cmdSettings, i.CreateNamespace)
@@ -38,7 +38,7 @@ func installCmd() *cobra.Command {
 	}
 	// addCommonToCommand(installCmd)
 	installCmd.Flags().BoolVar(&i.CreateNamespace, "create-namespace", false, "automatically create namespace")
-	addView(installCmd)
+	// addView(installCmd)
 	AddCmdSettings(installCmd)
 
 	return installCmd

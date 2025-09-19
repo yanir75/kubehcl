@@ -17,8 +17,8 @@ func listCmd() *cobra.Command {
 		Short: "list all modules",
 		Long:  listDesc,
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 
 			client.List(conf, viewSettings)
 		},

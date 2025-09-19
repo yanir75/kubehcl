@@ -15,13 +15,14 @@ func uninstallCmd() *cobra.Command {
 		Short: "Uninstall all resources managed by kubehcl",
 		Long:  "Uninstall will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 
 			client.Uninstall(args, conf, viewSettings)
 		},
 	}
 	// addCommonToCommand(destroyCmd)
+	addView(destroyCmd)
 
 	return destroyCmd
 

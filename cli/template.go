@@ -25,7 +25,7 @@ func templateCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
 			switch t.Kind {
@@ -43,7 +43,7 @@ func templateCmd() *cobra.Command {
 	templateCmd.Flags().StringVar(&t.Kind, "kind", "yaml", "prints the template in yaml or json format")
 	// templateCmd.Flags().StringVar(&t.Namespace, "namespace", "default", "prints the template in yaml or json format")
 
-	addView(templateCmd)
+	// addView(templateCmd)
 	AddCmdSettings(templateCmd)
 
 	return templateCmd

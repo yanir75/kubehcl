@@ -14,7 +14,7 @@ func createCmd() *cobra.Command {
 		Long:  "Create command will create multiple files to show you how to create an example configuration, this will allow a better start than writing from zero",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 
 			client.Create(args, viewSettings)
 		},

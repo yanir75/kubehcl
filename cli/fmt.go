@@ -26,7 +26,7 @@ func fmtCmd() *cobra.Command {
 		Short: "format all files in the folder",
 		Long:  fmtdesc,
 		Run: func(cmd *cobra.Command, args []string) {
-			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			client.Fmt(args, viewSettings, f.recursive)
 		},
 	}
