@@ -93,6 +93,27 @@ func (m *Module) verify() hcl.Diagnostics {
 	return diags
 }
 
+func decodeVars(vals []string) (VariableMap, hcl.Diagnostics){
+	var diags hcl.Diagnostics
+	var variables VariableMap = make(map[string]*Variable)
+
+	for _,val := range vals {
+		srcHCL, diagsParse := parser.ParseHCL([]byte(val), "commandline arguments")
+		diags = append(diags, diagsParse...)
+		attrs, attrDiags := srcHCL.Body.JustAttributes()
+		diags = append(diags, attrDiags...)
+		for _, attr := range attrs {
+			variables[attr.Name] = &Variable{
+				Name:       attr.Name,
+				Default:    attr.Expr,
+				HasDefault: true,
+				DeclRange:  attr.NameRange,
+			}
+		}	
+	}
+
+	return variables,diags
+}
 // Decode tfvars file into variables
 func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
@@ -116,7 +137,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-
+	
 	srcHCL, diagsParse := parser.ParseHCL(data, fileName)
 	diags = append(diags, diagsParse...)
 	attrs, attrDiags := srcHCL.Body.JustAttributes()
@@ -141,7 +162,7 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 // Folder to decode
 // Namespace to add to each resource if not exists
 // previous module context all vars and locals to apply to the variables of the new module
-func (m *Module) decode(depth int, folderName string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(depth int, folderName string,varsF string, vals []string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	decodedModule := &decode.DecodedModule{
@@ -149,11 +170,25 @@ func (m *Module) decode(depth int, folderName string, prevCtx *hcl.EvalContext) 
 		Name:      m.Name,
 		DependsOn: m.DependsOn,
 	}
-
+	
 	if depth == 0 {
-		vars, varFileDiags := decodeVarsFile(folderName, "")
+		varsFromFile, varFileDiags := decodeVarsFile(folderName, varsF)
 		diags = append(diags, varFileDiags...)
-		for key, variable := range vars {
+		vars,varsDiags := decodeVars(vals)
+		diags = append(diags, varsDiags...)
+		for key,variable := range vars {
+			if varFromFile,exists := varsFromFile[key] ;exists{
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Variable declared in vars file and commandline",
+					Detail:   fmt.Sprintf("Declare the variable in the file or at commandline not both: %s", variable.Name),
+					Subject:  &varFromFile.DeclRange,
+				})
+			}
+			varsFromFile[key] = variable
+		}
+
+		for key, variable := range varsFromFile {
 			if input, exists := m.Inputs[key]; exists {
 				input.Default = variable.Default
 				input.HasDefault = true
@@ -282,7 +317,7 @@ func (m *Module) decode(depth int, folderName string, prevCtx *hcl.EvalContext) 
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(depth+1, module.Source, ctx)
+		dm, dmDiags := module.decode(depth+1, module.Source,"",make([]string,0), ctx)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -467,9 +502,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 }
 
 // Decode both folder and module into a decoded module
-func DecodeFolderAndModules(folderName string, name string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
+func DecodeFolderAndModules(folderName string, name string,varF string,vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(0, folderName, &hcl.EvalContext{})
+	dm, decodeDiags := mod.decode(0, folderName,varF, vals, &hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

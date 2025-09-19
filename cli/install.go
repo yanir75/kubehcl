@@ -29,14 +29,17 @@ func installCmd() *cobra.Command {
 		Short: "Create or update resources",
 		Long:  installdesc,
 		Run: func(cmd *cobra.Command, args []string) {
-			conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
+			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
-			client.Install(args, conf, viewSettings, i.CreateNamespace)
+			client.Install(args, conf, viewSettings,cmdSettings, i.CreateNamespace)
 		},
 	}
 	// addCommonToCommand(installCmd)
 	installCmd.Flags().BoolVar(&i.CreateNamespace, "create-namespace", false, "automatically create namespace")
+	addView(installCmd)
+	AddCmdSettings(installCmd)
 
 	return installCmd
 

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
 	"kubehcl.sh/kubehcl/internal/view"
+	"kubehcl.sh/kubehcl/settings"
 )
 
 type template struct {
@@ -25,12 +26,14 @@ func templateCmd() *cobra.Command {
 
 			// conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
+			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
+
 
 			switch t.Kind {
 			case "yaml":
-				client.Template(args, "yaml", viewSettings)
+				client.Template(args, "yaml", viewSettings,cmdSettings)
 			case "json":
-				client.Template(args, "json", viewSettings)
+				client.Template(args, "json", viewSettings,cmdSettings)
 			default:
 				fmt.Println("Valid arguments for kind are [yaml, json]")
 				os.Exit(1)
@@ -42,7 +45,8 @@ func templateCmd() *cobra.Command {
 	// templateCmd.Flags().StringVar(&t.Namespace, "namespace", "default", "prints the template in yaml or json format")
 
 	addView(templateCmd)
-
+	AddCmdSettings(templateCmd)
+	
 	return templateCmd
 
 }

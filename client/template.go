@@ -12,6 +12,7 @@ import (
 	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/view"
+	"kubehcl.sh/kubehcl/settings"
 )
 
 // Parses arguments for template command
@@ -41,14 +42,20 @@ func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values
-func Template(args []string, kind string, viewArguments *view.ViewArgs) {
+func Template(args []string, kind string, viewArguments *view.ViewArgs,cmdSettings *settings.CmdSettings) {
 	folderName, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
 	}
 
-	d, diags := configs.DecodeFolderAndModules(folderName, "root", 0)
+	varF,vars, diags := parseCmdSettings(cmdSettings)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		return
+	}
+
+	d, diags := configs.DecodeFolderAndModules(folderName, "root",varF,vars, 0)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
