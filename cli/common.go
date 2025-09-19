@@ -14,22 +14,19 @@ func (c key) String() string {
 }
 
 const (
-	settingsKey = key("settings")
-	viewKey     = key("viewSettings")
-	cmdSettingsKey     = key("cmdSettings")
+	settingsKey    = key("settings")
+	viewKey        = key("viewSettings")
+	cmdSettingsKey = key("cmdSettings")
 )
 
 // Adds he common flags to the command
 // Example of common flag is --namespace
 func addCommonToCommand(cmd *cobra.Command) {
-	
+
 	definitions := settings.NewSettings()
 	definitions.AddFlags(cmd.PersistentFlags())
 
-
 	ctx := context.WithValue(context.Background(), settingsKey, definitions)
-
-	
 
 	cmd.SetContext(ctx)
 

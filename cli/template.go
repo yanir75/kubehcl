@@ -28,12 +28,11 @@ func templateCmd() *cobra.Command {
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
-
 			switch t.Kind {
 			case "yaml":
-				client.Template(args, "yaml", viewSettings,cmdSettings)
+				client.Template(args, "yaml", viewSettings, cmdSettings)
 			case "json":
-				client.Template(args, "json", viewSettings,cmdSettings)
+				client.Template(args, "json", viewSettings, cmdSettings)
 			default:
 				fmt.Println("Valid arguments for kind are [yaml, json]")
 				os.Exit(1)
@@ -46,7 +45,7 @@ func templateCmd() *cobra.Command {
 
 	addView(templateCmd)
 	AddCmdSettings(templateCmd)
-	
+
 	return templateCmd
 
 }

@@ -33,7 +33,7 @@ func installCmd() *cobra.Command {
 			viewSettings := cmd.Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
-			client.Install(args, conf, viewSettings,cmdSettings, i.CreateNamespace)
+			client.Install(args, conf, viewSettings, cmdSettings, i.CreateNamespace)
 		},
 	}
 	// addCommonToCommand(installCmd)

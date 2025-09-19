@@ -42,20 +42,20 @@ func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values
-func Template(args []string, kind string, viewArguments *view.ViewArgs,cmdSettings *settings.CmdSettings) {
+func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
 	folderName, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
 	}
 
-	varF,vars, diags := parseCmdSettings(cmdSettings)
+	varF, vars, diags := parseCmdSettings(cmdSettings)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
 	}
 
-	d, diags := configs.DecodeFolderAndModules(folderName, "root",varF,vars, 0)
+	d, diags := configs.DecodeFolderAndModules(folderName, "root", varF, vars, 0)
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
