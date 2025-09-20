@@ -148,7 +148,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 			fmt.Printf("Deleted resource: %s\n", key)
 		}
 	}
-	diags = append(diags, cfg.UpdateSecret()...)
+	diags = append(diags, cfg.Storage.UpdateState()...)
 
 	view.DiagPrinter(diags, viewArguments)
 

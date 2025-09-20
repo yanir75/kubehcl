@@ -29,7 +29,7 @@ import (
 type Config struct {
 	Settings *settings.EnvSettings
 	Client   *kube.Client
-	Storage  *storage.Storage
+	Storage  storage.Storage
 	Name     string
 	Timeout  time.Duration
 	// WaitStrategy kube.WaitStrategy
@@ -44,7 +44,7 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
 	cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 
-	cfg.Storage = storage.New()
+	cfg.Storage = storage.New(cfg.Client,name,conf.Namespace())
 	cfg.Name = name
 	if conf.Timeout < 0 {
 		cfg.Timeout = 100 * time.Second
@@ -136,4 +136,3 @@ func (cfg *Config) IsReachable() hcl.Diagnostics {
 	}
 	return diags
 }
-

@@ -16,7 +16,7 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 
 	// var wanted kube.ResourceList = kube.ResourceList{}
 	// get saved secret which contains the state
-	saved, diags := cfg.getAllResourcesFromState()
+	saved, diags := cfg.Storage.GetAllStateResources()
 
 	var toDelete kube.ResourceList
 	for _, value := range saved {
@@ -59,6 +59,6 @@ func (cfg *Config) DeleteAllResources() (*kube.Result, hcl.Diagnostics) {
 		})
 	}
 
-	diags = append(diags, cfg.deleteState()...)
+	diags = append(diags, cfg.Storage.DeleteState()...)
 	return res, diags
 }
