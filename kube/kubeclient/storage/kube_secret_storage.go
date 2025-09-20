@@ -1,9 +1,10 @@
-package kubeclient
+package storage
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 
 	"encoding/json"
 
@@ -11,16 +12,109 @@ import (
 	"helm.sh/helm/v4/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
+var mutex sync.Mutex
+
+var SecretType = "kubehcl.sh/module.v1"
+
+type KubeSecretStorage struct {
+	resourceMap ResourceMap
+	previousData map[string]ResourceMap
+	client *kube.Client
+	name string
+	namespace string
+}
+
+func New(client *kube.Client, name string, namespace string) Storage {
+	return &KubeSecretStorage{
+		resourceMap: make(map[string][]byte),
+		previousData: make(map[string]ResourceMap),
+		client: client,
+		name: name,
+		namespace: namespace,
+	}
+}
+
+
+
+func (s *KubeSecretStorage) marshalData() ([]byte, []byte) {
+	data, err := json.Marshal(s.resourceMap)
+	if err != nil {
+		panic("Should not get here: " + err.Error())
+	}
+	prevData, err := json.Marshal(s.previousData)
+	if err != nil {
+		panic("Should not get here: " + err.Error())
+	}
+
+	return data, prevData
+}
+
+// Generate secret from the current resource list in the storage
+func (s *KubeSecretStorage) genSecret(key string, lbs labels) (*v1.Secret, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	if lbs == nil {
+		lbs.init()
+	}
+	lbs.set("owner", "kubehcl")
+	releaseMap := make(map[string][]byte)
+	data, prevData := s.marshalData()
+	releaseMap["release"] = data
+	releaseMap["previous-releases"] = prevData
+
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "kubehcl." + key,
+			Labels: lbs.toMap(),
+		},
+		Type: v1.SecretType(SecretType),
+		Data: releaseMap,
+	}, diags
+}
+
+func (s *KubeSecretStorage) AddPreviousData(data map[string][]byte) {
+	str := fmt.Sprintf("release-%d", len(s.previousData))
+	s.previousData[str] = data
+}
+
+func (s *KubeSecretStorage) InitPreviousData(data map[string]ResourceMap) {
+	s.previousData = data
+}
+
+// // Adda resource to the storage
+func (s *KubeSecretStorage) Add(name string, data []byte) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	s.resourceMap[name] = data
+}
+
+// // Delete a resource from the storage
+func (s *KubeSecretStorage) Delete(name string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	delete(s.resourceMap, name)
+}
+
+// Get a resource from the storage
+func (s *KubeSecretStorage) Get(name string) []byte {
+	if data, exists := s.resourceMap[name]; exists {
+		return data
+	}
+	return nil
+}
+
+
+
 // Get the current state of applied resources
 // State is saved as a secret inside kubernetes in the given namespace
 // The secret type is kubehcl.sh/module.v1
-func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
-	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
+func (s *KubeSecretStorage) getState() (map[string][]byte, hcl.Diagnostics) {
+	secret, diags := s.genSecret(s.name, nil)
+	client, err := s.client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -29,7 +123,7 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 		})
 	}
 
-	if getSecret, getSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Get(context.Background(), secret.Name, metav1.GetOptions{}); apierrors.IsNotFound(getSecretErr) {
+	if getSecret, getSecretErr := client.CoreV1().Secrets(s.namespace).Get(context.Background(), secret.Name, metav1.GetOptions{}); apierrors.IsNotFound(getSecretErr) {
 		return nil, diags
 	} else if getSecretErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -44,11 +138,12 @@ func (cfg *Config) getState() (map[string][]byte, hcl.Diagnostics) {
 
 }
 
+
 // Delete current state meaning delete the secret that is responsible for the state
 // This occurs during uninstall
-func (cfg *Config) deleteState() hcl.Diagnostics {
-	secret, diags := cfg.Storage.GenSecret(cfg.Name, nil)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
+func (s *KubeSecretStorage) DeleteState() hcl.Diagnostics {
+	secret, diags := s.genSecret(s.name, nil)
+	client, err := s.client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -57,17 +152,18 @@ func (cfg *Config) deleteState() hcl.Diagnostics {
 		})
 	}
 
-	if deleteSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Delete(context.Background(), secret.Name, metav1.DeleteOptions{}); apierrors.IsNotFound(deleteSecretErr) {
+	if deleteSecretErr := client.CoreV1().Secrets(s.namespace).Delete(context.Background(), secret.Name, metav1.DeleteOptions{}); apierrors.IsNotFound(deleteSecretErr) {
 		return diags
 	}
 
 	return diags
 }
 
+
 // Get all resources as bytes from the current state
 // All resources are saved as a json format
-func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostics) {
-	data, diags := cfg.getState()
+func (s *KubeSecretStorage) GetAllStateResources() (ResourceMap, hcl.Diagnostics) {
+	data, diags := s.getState()
 	resourceMap := make(map[string][]byte)
 	if len(data) > 0 {
 		err := json.Unmarshal(data["release"], &resourceMap)
@@ -80,12 +176,40 @@ func (cfg *Config) getAllResourcesFromState() (map[string][]byte, hcl.Diagnostic
 
 }
 
+
+// Updates the previous releases data
+func (s *KubeSecretStorage) updatePreviousReleaseData() hcl.Diagnostics {
+	data, diags := s.getState()
+	var previousDataMap map[string]ResourceMap = make(map[string]ResourceMap)
+
+	if len(data) > 0 {
+		err := json.Unmarshal(data["previous-releases"], &previousDataMap)
+		if err != nil {
+			panic("should not get here: " + err.Error())
+		}
+	}
+
+	resourceMap := make(map[string][]byte)
+	if len(data) > 0 {
+		err := json.Unmarshal(data["release"], &resourceMap)
+		if err != nil {
+			panic("should not get here: " + err.Error())
+		}
+	}
+
+	s.InitPreviousData(previousDataMap)
+	s.AddPreviousData(resourceMap)
+	return diags
+}
+
+
 // Update secret willl apply the new storage stored resources and update the secret accordingly
-func (cfg *Config) UpdateSecret() hcl.Diagnostics {
-	diags := cfg.updatePreviousReleaseData()
-	secret, genSecretDiags := cfg.Storage.GenSecret(cfg.Name, nil)
+func (s *KubeSecretStorage) UpdateState() hcl.Diagnostics {
+
+	diags := s.updatePreviousReleaseData()
+	secret, genSecretDiags := s.genSecret(s.name, nil)
 	diags = append(diags, genSecretDiags...)
-	client, err := cfg.Client.Factory.KubernetesClientSet()
+	client, err := s.client.Factory.KubernetesClientSet()
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -94,8 +218,8 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 		})
 	}
 
-	if _, createSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
-		if _, updateSecretErr := client.CoreV1().Secrets(cfg.Settings.Namespace()).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
+	if _, createSecretErr := client.CoreV1().Secrets(s.namespace).Create(context.Background(), secret, metav1.CreateOptions{}); apierrors.IsAlreadyExists(createSecretErr) {
+		if _, updateSecretErr := client.CoreV1().Secrets(s.namespace).Update(context.Background(), secret, metav1.UpdateOptions{}); updateSecretErr != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Couldn't update state secret",
@@ -117,11 +241,11 @@ func (cfg *Config) UpdateSecret() hcl.Diagnostics {
 // This gets all the attributes from the state and adds them to a the resource
 // If the resource is not found or got an error an empty list will be returned
 // This is to check if the resource matches the configuration in the state or not
-func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
+func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var resList kube.ResourceList
 
-	if res, err := cfg.Client.Get(resources, false); apierrors.IsNotFound(err) {
+	if res, err := s.client.Get(resources, false); apierrors.IsNotFound(err) {
 		return resList, diags
 	} else if err != nil {
 		for key := range res {
@@ -150,23 +274,24 @@ func (cfg *Config) getResourceCurrentState(resources kube.ResourceList) (kube.Re
 	return resList, diags
 }
 
+
 // Get current resource from state builds it in order to verify it and apply the resource later
 // Getting the resource verifies that the resource doesn't exist or is managed by kubehcl
 // Builds the resource from the state this is done to update the current configuration
 // This also verifies if the resource exists and was not saved in the kubehcl state in order to not update it
-func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
+func (s *KubeSecretStorage) BuildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
 	// Get current resource configuration
 	// Get the resource configuration from the state
-	current, diags := cfg.getResourceCurrentState(wanted)
+	current, diags := s.GetResourceCurrentState(wanted)
 
-	saved, savedData := cfg.getAllResourcesFromState()
+	saved, savedData := s.GetAllStateResources()
 	diags = append(diags, savedData...)
 	if diags.HasErrors() {
 		return nil,diags
 	}
 
 	reader := bytes.NewReader(saved[name])
-	savedResource, builderErr := cfg.Client.Build(reader, true)
+	savedResource, builderErr := s.client.Build(reader, true)
 
 	if builderErr != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -188,33 +313,10 @@ func (cfg *Config) buildResourceFromState(wanted kube.ResourceList, name string)
 			Summary:  "Resource already exists but not managed by Kubehcl",
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s", current[0].Mapping.GroupVersionKind.Kind, current[0].Name),
 		})
-		cfg.Storage.Delete(current[0].Name)
+		s.Delete(current[0].Name)
 
 		return nil, diags
 	}
 	return savedResource, diags
 }
 
-// Updates the previous releases data
-func (cfg *Config) updatePreviousReleaseData() hcl.Diagnostics {
-	data, diags := cfg.getState()
-	previousDataMap := make(map[string]map[string][]byte)
-	if len(data) > 0 {
-		err := json.Unmarshal(data["previous-releases"], &previousDataMap)
-		if err != nil {
-			panic("should not get here: " + err.Error())
-		}
-	}
-
-	resourceMap := make(map[string][]byte)
-	if len(data) > 0 {
-		err := json.Unmarshal(data["release"], &resourceMap)
-		if err != nil {
-			panic("should not get here: " + err.Error())
-		}
-	}
-
-	cfg.Storage.InitPreviousData(previousDataMap)
-	cfg.Storage.AddPreviousData(resourceMap)
-	return diags
-}

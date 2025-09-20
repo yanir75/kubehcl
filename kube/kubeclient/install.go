@@ -50,7 +50,7 @@ func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics {
 
 // Delete resources will delete all resources in the state that are not in the configuration files
 func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnostics) {
-	saved, diags := cfg.getAllResourcesFromState()
+	saved, diags := cfg.Storage.GetAllStateResources()
 	var toDelete kube.ResourceList
 	deleteMap := make(map[string]bool)
 	for key, value := range saved {
@@ -99,7 +99,7 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 // If the resource does not exist it will simply be created
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
 
-	current, diags := cfg.buildResourceFromState(wanted, name)
+	current, diags := cfg.Storage.BuildResourceFromState(wanted, name)
 	if diags.HasErrors() {
 		return &kube.Result{}, diags
 	}

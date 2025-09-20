@@ -16,7 +16,7 @@ func (cfg *Config) Plan(resource *decode.DecodedResource) (kube.ResourceList, ku
 		wanted, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)
 		wantedList = append(wantedList, wanted...)
 		diags = append(diags, buildDiags...)
-		current, buildDiags := cfg.buildResourceFromState(wanted, key)
+		current, buildDiags := cfg.Storage.BuildResourceFromState(wanted, key)
 		currentList = append(currentList, current...)
 		diags = append(diags, buildDiags...)
 	}
