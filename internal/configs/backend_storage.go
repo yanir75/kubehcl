@@ -29,13 +29,7 @@ type BackendStorage struct {
 	DeclRange hcl.Range // `json:"DeclRange"`
 }
 
-// type VariableMap map[string]*Variable
 
-// func (v *Variable) addr() addrs.Variable {
-// 	return addrs.Variable{
-// 		Name: v.Name,
-// 	}
-// }
 
 var storageCounter = 0
 
@@ -50,10 +44,8 @@ var inputStorageBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// Decode variable and verify the type of the variable matches the default value defined
-// If no type is defined each value will be accepted
-// Decode the value into a golang cty.value
-func (v *BackendStorage) decode(ctx *hcl.EvalContext) (*decode.DecodedBackendStorage, hcl.Diagnostics) {
+// Decode storage block, features will be added
+func (v *BackendStorage) decode(_ *hcl.EvalContext) (*decode.DecodedBackendStorage, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	dS := &decode.DecodedBackendStorage{
 		Kind:      v.Kind,
@@ -67,9 +59,7 @@ func isValidStorageOption(block *hcl.Block) bool {
 	return block.Type == stateless || block.Type == secretKind
 }
 
-// Each variable block can contain type,description and default value
-// Checks for those
-// None of those are required
+// Decode storage block, available blocks within that block are stateless and kube_secret
 func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
 	var storage *BackendStorage = &BackendStorage{
 		Kind: secretKind,
@@ -113,6 +103,8 @@ func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
 	return storage, diags
 }
 
+
+// Decode multiple storage blocks
 func DecodeBackendStorageBlocks(blocks hcl.Blocks) (*BackendStorage, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	if len(blocks) == 0 {
