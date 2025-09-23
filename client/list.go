@@ -8,8 +8,8 @@ import (
 )
 
 // list the installations of kubehcl in the namespace
-func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs) {
-	cfg, diags := kubeclient.New("", conf)
+func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs, storageKind string) {
+	cfg, diags := kubeclient.New("", conf, storageKind)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 	} else {

@@ -69,21 +69,26 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		return
 	}
 
-	d, decodeDiags := configs.DecodeFolderAndModules(name,folderName, "root", varsF, vals, 0)
+	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
+	if diags.HasErrors() {
+		view.DiagPrinter(diags, viewArguments)
+		os.Exit(1)
+	}
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
-	cfg, cfgDiags := kubeclient.New(name, conf)
+	cfg, cfgDiags := kubeclient.New(name, conf, d.BackendStorage.Kind)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
+	view.DiagPrinter(diags, viewArguments)
 
-	diags = append(diags, cfg.VerifyInstall(createNamespace)...)
+	diags = cfg.VerifyInstall(createNamespace)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
@@ -142,11 +147,13 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(createFunc)...)
+		// if cfg.StorageKind != "stateless" {
 		saved, _, delDiags := cfg.DeleteResources()
 		diags = append(diags, delDiags...)
 		for key := range saved {
 			fmt.Printf("Deleted resource: %s\n", key)
 		}
+		// }
 	}
 	diags = append(diags, cfg.Storage.UpdateState()...)
 

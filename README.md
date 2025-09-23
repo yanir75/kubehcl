@@ -50,7 +50,12 @@ variables can be used in configuration files such as var.foo
 
 ---
 **locals** block contains attribute names and their values.  
-locals can be used in configuration files such as local.foo
+locals can be used in configuration files such as local.foo  
+
+---  
+**backend_storage** block contains the definitions for the state storage valid options are: ["stateless", "kube_secret"].  
+This block is optional, if not defined kube_secret will be the default option.  
+Stateless option will apply the configuration to all the resources mentioned in the configuration files, whether they are managed by kubehcl or not.  
 
 ---
 **default_annotations** block contains only attributes and string values  

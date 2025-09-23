@@ -100,3 +100,4 @@ kube_resource "bar" {
     }
   }
 }
+

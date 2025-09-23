@@ -19,7 +19,6 @@ const (
 	cmdSettingsKey = key("cmdSettings")
 )
 
-
 func addView(cmd *cobra.Command) {
 	viewSettings := settings.NewView()
 	settings.AddViewFlags(viewSettings, cmd.PersistentFlags())
@@ -38,7 +37,6 @@ func addCommonToCommand(cmd *cobra.Command) {
 	ctx := context.WithValue(cmd.Context(), settingsKey, definitions)
 
 	cmd.SetContext(ctx)
-
 
 }
 

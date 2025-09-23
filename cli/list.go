@@ -20,7 +20,7 @@ func listCmd() *cobra.Command {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 
-			client.List(conf, viewSettings)
+			client.List(conf, viewSettings, "kube_secret")
 		},
 	}
 	// addCommonToCommand(listCmd)

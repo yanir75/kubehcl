@@ -47,7 +47,6 @@ func (cfg *Config) VerifyInstall(createNamespace bool) hcl.Diagnostics {
 	return diags
 }
 
-
 // Delete resources will delete all resources in the state that are not in the configuration files
 func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnostics) {
 	saved, diags := cfg.Storage.GetAllStateResources()
@@ -98,7 +97,7 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 // Compare states get the resource from the state and applies the changes
 // If the resource does not exist it will simply be created
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
-
+	// if cfg.StorageKind == "stateless"
 	current, diags := cfg.Storage.BuildResourceFromState(wanted, name)
 	if diags.HasErrors() {
 		return &kube.Result{}, diags
@@ -121,7 +120,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 			Detail:   fmt.Sprintf("Kind: %s,\nResource:%s\nerr: %s", wanted[0].Mapping.GroupVersionKind.Kind, wanted[0].Name, err.Error()),
 		})
 	}
-	
+
 	return res, diags
 }
 
@@ -150,5 +149,3 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.D
 	return results, diags
 
 }
-
-
