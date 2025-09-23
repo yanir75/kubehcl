@@ -141,8 +141,8 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 		if !added {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  "Couldn't find the depends on resource",
-				Detail:   fmt.Sprintf("Entered %s which does not exist", edge.Name),
+				Summary:  "Dependency does not exist",
+				Detail:   fmt.Sprintf("Entered %s which does not exist, please make sure resources in depends_on list exist", edge.Name),
 				Subject:  &edge.Range,
 			})
 		}

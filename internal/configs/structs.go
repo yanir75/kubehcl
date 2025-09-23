@@ -14,6 +14,7 @@ type ModuleCall struct {
 
 type Module struct {
 	Name        string          `json:"Name"`
+	BackendStorage *BackendStorage `json:"BackendStorage"`
 	Inputs      VariableMap     `json:"Inputs"`
 	Locals      Locals          `json:"Locals"`
 	Annotations Annotations     `json:"Annotations"`

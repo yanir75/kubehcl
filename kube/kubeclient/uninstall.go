@@ -7,8 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"helm.sh/helm/v4/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-
 )
 
 // Delete all resources from a given state

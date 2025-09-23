@@ -57,6 +57,10 @@ var inputConfig = &hcl.BodySchema{
 			Type: "default_annotations",
 			// LabelNames: []string{"Kind","Name"},
 		},
+		{
+			Type: "backend_storage",
+			// LabelNames: []string{"Kind","Name"},
+		},
 	},
 }
 
@@ -75,6 +79,13 @@ func (m *Module) merge(o *Module) {
 	m.Annotations = append(m.Annotations, o.Annotations...)
 	m.Resources = append(m.Resources, o.Resources...)
 	m.ModuleCalls = append(m.ModuleCalls, o.ModuleCalls...)
+	if m.BackendStorage != nil {
+		if !m.BackendStorage.Used {
+			m.BackendStorage = o.BackendStorage
+		}
+	} else {
+		m.BackendStorage = o.BackendStorage
+	}
 }
 
 // Verify that each input has value
@@ -172,6 +183,20 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 		DependsOn: m.DependsOn,
 	}
 
+	if depth != 0 {
+		if m.BackendStorage.Used {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "backend_storage block is not allowed a module",
+				Subject:  &m.BackendStorage.DeclRange,
+			})
+		}
+	}
+
+	if diags.HasErrors() {
+		return &decode.DecodedModule{}, diags
+	}
+
 	if depth == 0 {
 		varsFromFile, varFileDiags := decodeVarsFile(folderName, varsF)
 		diags = append(diags, varFileDiags...)
@@ -203,10 +228,6 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 			}
 		}
 		diags = append(diags, m.verify()...)
-	}
-
-	if diags.HasErrors() {
-		return &decode.DecodedModule{}, diags
 	}
 
 	var modules ModuleList
@@ -309,14 +330,12 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	diags = append(diags, decodeAnnotationsDiags...)
 	if releaseName != "" {
 		DecodedAnnotations = append(DecodedAnnotations, &decode.DecodedAnnotation{
-			Name: "kubehcl.sh/managed",
+			Name:  "kubehcl.sh/managed",
 			Value: cty.StringVal("This resource is managed by kubehcl"),
-			
 		})
 		DecodedAnnotations = append(DecodedAnnotations, &decode.DecodedAnnotation{
-			Name: "kubehcl.sh/release",
+			Name:  "kubehcl.sh/release",
 			Value: cty.StringVal(releaseName),
-		
 		})
 	}
 	decodedModule.Annotations = DecodedAnnotations
@@ -330,7 +349,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(releaseName,depth+1, module.Source, "", make([]string, 0), ctx)
+		dm, dmDiags := module.decode(releaseName, depth+1, module.Source, "", make([]string, 0), ctx)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -373,6 +392,12 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 				resource.Config[res] = cty.ObjectVal(resInfoMap)
 			}
 		}
+	}
+
+	if depth == 0 {
+		storage, storageDiags := m.BackendStorage.decode(ctx)
+		diags = append(diags, storageDiags...)
+		decodedModule.BackendStorage = storage
 	}
 
 	return decodedModule, diags
@@ -449,6 +474,8 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	// wg.Done()
 
 	// }}
+	storageBlock, storageDiags := DecodeBackendStorageBlocks(b.Blocks.OfType("backend_storage"))
+	diags = append(diags, storageDiags...)
 
 	var modules ModuleCallList
 
@@ -462,13 +489,13 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	// }}
 
 	// wg.Wait()
-
 	return Module{
-		Inputs:      vars,
-		Locals:      locals,
-		Annotations: defaultAnnotaions,
-		Resources:   resources,
-		ModuleCalls: modules,
+		BackendStorage: storageBlock,
+		Inputs:         vars,
+		Locals:         locals,
+		Annotations:    defaultAnnotaions,
+		Resources:      resources,
+		ModuleCalls:    modules,
 	}, diags
 }
 
@@ -515,9 +542,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 }
 
 // Decode both folder and module into a decoded module
-func DecodeFolderAndModules(releaseName string,folderName string, name string, varF string, vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
+func DecodeFolderAndModules(releaseName string, folderName string, name string, varF string, vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(releaseName,0, folderName, varF, vals, &hcl.EvalContext{})
+	dm, decodeDiags := mod.decode(releaseName, 0, folderName, varF, vals, &hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

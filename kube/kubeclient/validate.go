@@ -2,7 +2,7 @@ package kubeclient
 
 import (
 	"fmt"
-	
+
 	"github.com/hashicorp/hcl/v2"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 	"kubehcl.sh/kubehcl/internal/decode"

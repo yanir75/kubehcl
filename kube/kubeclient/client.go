@@ -44,7 +44,7 @@ func New(name string, conf *settings.EnvSettings) (*Config, hcl.Diagnostics) {
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
 	cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 
-	cfg.Storage = storage.New(cfg.Client,name,conf.Namespace())
+	cfg.Storage = storage.New(cfg.Client, name, conf.Namespace())
 	cfg.Name = name
 	if conf.Timeout < 0 {
 		cfg.Timeout = 100 * time.Second
@@ -84,8 +84,6 @@ func (cfg *Config) validateNamespace() hcl.Diagnostics {
 	}
 	return diags
 }
-
-
 
 // Build resource build the resource from cty.value type into a json
 func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (kube.ResourceList, hcl.Diagnostics) {
