@@ -45,10 +45,9 @@ type DecodedResource struct {
 type DecodedResourceList []*DecodedResource
 
 type DecodedBackendStorage struct {
-	Kind string
+	Kind      string
 	DeclRange hcl.Range
 }
-
 
 type DecodedLocal struct {
 	Name      string
@@ -82,17 +81,17 @@ type DecodedModuleCall struct {
 }
 
 type DecodedModule struct {
-	Name         string
-	Inputs       DecodedVariableList
-	Locals       DecodedLocals
-	Annotations  DecodedAnnotations
-	Resources    DecodedResourceList
-	ModuleCalls  DecodedModuleCallList
-	Modules      DecodedModuleList
+	Name           string
+	Inputs         DecodedVariableList
+	Locals         DecodedLocals
+	Annotations    DecodedAnnotations
+	Resources      DecodedResourceList
+	ModuleCalls    DecodedModuleCallList
+	Modules        DecodedModuleList
 	BackendStorage *DecodedBackendStorage
-	Depth        int
-	DependsOn    []hcl.Traversal
-	Dependencies []DependsOn
+	Depth          int
+	DependsOn      []hcl.Traversal
+	Dependencies   []DependsOn
 }
 
 type DecodedModuleList []*DecodedModule

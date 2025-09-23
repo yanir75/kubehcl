@@ -19,7 +19,7 @@ func uninstallCmd() *cobra.Command {
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 
-			client.Uninstall(args, conf, viewSettings,cmdSettings)
+			client.Uninstall(args, conf, viewSettings, cmdSettings)
 		},
 	}
 	// addCommonToCommand(destroyCmd)

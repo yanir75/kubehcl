@@ -38,7 +38,7 @@ type Config struct {
 }
 
 // Applies the settings and creates a config to create,destroy and  validate all configuration files
-func New(name string, conf *settings.EnvSettings,storageKind string) (*Config, hcl.Diagnostics) {
+func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &Config{}
 	// cfg.StorageKind = storageKind
@@ -46,7 +46,7 @@ func New(name string, conf *settings.EnvSettings,storageKind string) (*Config, h
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
 	cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 
-	cfg.Storage,diags = storage.New(cfg.Client, name, conf.Namespace(),storageKind)
+	cfg.Storage, diags = storage.New(cfg.Client, name, conf.Namespace(), storageKind)
 	cfg.Name = name
 	if conf.Timeout < 0 {
 		cfg.Timeout = 100 * time.Second

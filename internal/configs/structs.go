@@ -13,15 +13,15 @@ type ModuleCall struct {
 }
 
 type Module struct {
-	Name        string          `json:"Name"`
+	Name           string          `json:"Name"`
 	BackendStorage *BackendStorage `json:"BackendStorage"`
-	Inputs      VariableMap     `json:"Inputs"`
-	Locals      Locals          `json:"Locals"`
-	Annotations Annotations     `json:"Annotations"`
-	Resources   ResourceList    `json:"Resources"`
-	ModuleCalls ModuleCallList  `json:"ModuleCalls"`
-	DependsOn   []hcl.Traversal `json:"DependsOn"`
-	Source      string          `json:"Source"`
+	Inputs         VariableMap     `json:"Inputs"`
+	Locals         Locals          `json:"Locals"`
+	Annotations    Annotations     `json:"Annotations"`
+	Resources      ResourceList    `json:"Resources"`
+	ModuleCalls    ModuleCallList  `json:"ModuleCalls"`
+	DependsOn      []hcl.Traversal `json:"DependsOn"`
+	Source         string          `json:"Source"`
 }
 
 type ModuleList []*Module

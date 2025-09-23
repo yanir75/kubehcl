@@ -14,7 +14,7 @@ import (
 )
 
 // Parses arguments for uninstall command
-func parseUninstallArgs(args []string) (string,string, hcl.Diagnostics) {
+func parseUninstallArgs(args []string) (string, string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	if len(args) > 2 {
@@ -22,7 +22,7 @@ func parseUninstallArgs(args []string) (string,string, hcl.Diagnostics) {
 			Severity: hcl.DiagError,
 			Summary:  "Too many arguments required arguments are: name",
 		})
-		return "","", diags
+		return "", "", diags
 	}
 
 	if len(args) < 2 {
@@ -30,10 +30,10 @@ func parseUninstallArgs(args []string) (string,string, hcl.Diagnostics) {
 			Severity: hcl.DiagError,
 			Summary:  "Required arguments are :[name, folder name]",
 		})
-		return "","", diags
+		return "", "", diags
 	}
 
-	return args[0],args[1], diags
+	return args[0], args[1], diags
 
 }
 
@@ -41,8 +41,8 @@ func parseUninstallArgs(args []string) (string,string, hcl.Diagnostics) {
 // 1. Release name, name of the release to be saved.
 // The rest is environment variables and flags of the settings for example namespace otherwise it will use the default settings
 // Uninstall will uninstall all resources registered to the given namespace and release name
-func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs,cmdSettings *settings.CmdSettings) {
-	name,folderName, diags := parseUninstallArgs(args)
+func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
+	name, folderName, diags := parseUninstallArgs(args)
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		return
@@ -56,7 +56,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 		os.Exit(1)
 	}
 
-	cfg, cfgDiags := kubeclient.New(name, conf,d.BackendStorage.Kind)
+	cfg, cfgDiags := kubeclient.New(name, conf, d.BackendStorage.Kind)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
@@ -79,7 +79,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 			Detail:   fmt.Sprintf("The release you provided \"%s\" does not exist in the given namespace \"%s\"", cfg.Name, conf.Namespace()),
 		})
 	}
-	
+
 	if diags.HasErrors() {
 		view.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
@@ -88,8 +88,8 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 	if d.BackendStorage.Kind == "stateless" {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagWarning,
-			Summary: "Storage kind is stateless no resource will be deleted",
-			Subject: &d.BackendStorage.DeclRange,
+			Summary:  "Storage kind is stateless no resource will be deleted",
+			Subject:  &d.BackendStorage.DeclRange,
 		})
 		diags = append(diags, cfg.Storage.DeleteState()...)
 		if diags.HasErrors() {
