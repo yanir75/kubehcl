@@ -14,4 +14,3 @@ variable "ports" {
   # type = string
   description = "Ports of the container"
 }
-

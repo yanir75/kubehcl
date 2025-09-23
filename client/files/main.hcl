@@ -1,4 +1,16 @@
-resource "foo" {
+kube_resource "namespace" {
+  apiVersion = "v1"
+  kind       = "Namespace"
+  metadata = {
+    name = "foo"
+    labels = {
+      name = "bar"
+    }
+  }
+
+}
+
+kube_resource "foo" {
   for_each = {
     "foo" = "bar",
     "bar" = "foo"
@@ -33,57 +45,26 @@ resource "foo" {
       }
     }
   }
-  depends_on = [module.test]
+  depends_on = [module.test, kube_resource.namespace]
 }
 
 module "test" {
 
-  source = "./modules/starter"
-  foo    = ["service1", "service2"]
-  ports  = var.foo
-  # depends_on = [resource.t,resource.a]
+  source     = "./modules/starter"
+  foo        = ["service1", "service2"]
+  ports      = var.foo
+  depends_on = [kube_resource.namespace]
 }
 
 default_annotations {
   foo = "bar"
 }
 
-resource "bar" {
-  count      = 0
-  apiVersion = "apps/v1"
-  kind       = "Deployment"
-  metadata = {
-    name = "shouldntbecreated"
-    labels = {
-      app = "shouldntbecreated"
-    }
-  }
-
-  spec = {
-    replicas = 3
-    selector = {
-      matchLabels = {
-        app = "shouldntbecreated"
-      }
-    }
-    template = {
-      metadata = {
-        labels = {
-          app = "shouldntbecreated"
-        }
-      }
-      spec = {
-        containers = [{
-          name  = "${count.index}"
-          image = "nginx:1.14.2"
-          ports = var.foo
-        }]
-      }
-    }
-  }
+default_annotations {
+  bar = "foo"
 }
 
-resource "test" {
-  for_each = {}
-  test     = each.value["test"]
-}
+# backend_storage {
+##   stateless {}
+#   kube_secret {}
+# }

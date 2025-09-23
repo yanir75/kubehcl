@@ -13,7 +13,7 @@ locals {
   }
 }
 
-resource "service" {
+kube_resource "service" {
   for_each   = local.service_ports
   apiVersion = "v1"
   kind       = "Service"
@@ -26,9 +26,10 @@ resource "service" {
     }
     ports = [merge(each.value, { port = 9367 })]
   }
+  depends_on = [kube_resource.foo]
 }
 
-resource "foo" {
+kube_resource "foo" {
   for_each   = local.service_ports
   apiVersion = "apps/v1"
   kind       = "Deployment"
@@ -64,9 +65,10 @@ resource "foo" {
 
 module "secret" {
   source = "./modules/secret"
+  depends_on = [kube_resource.bar]
 }
 
-resource "bar" {
+kube_resource "bar" {
   apiVersion = "apps/v1"
   kind       = "Deployment"
   metadata = {
@@ -98,3 +100,4 @@ resource "bar" {
     }
   }
 }
+
