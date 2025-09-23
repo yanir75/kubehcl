@@ -64,6 +64,7 @@ default_annotations {
   bar = "foo"
 }
 
-backend_storage {
-  kube_secret {}
-}
+# backend_storage {
+##   stateless {}
+#   kube_secret {}
+# }

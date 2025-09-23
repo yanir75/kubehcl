@@ -6,7 +6,3 @@ variable "foo" {
   }]
   description = "Ports of the container"
 }
-
-backend_storage {
-  kube_secret {}
-}

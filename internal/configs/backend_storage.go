@@ -87,7 +87,7 @@ func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
 	if len(content.Blocks) < 1 {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Storage block must have at least one block within it",
+			Summary:  "backend_storage block must have at least one block within it",
 			Detail:   fmt.Sprintf("Block %s has no definition within it, valid options are [\"stateless\", \"kube_secret\"]", block.Type),
 			Subject:  &block.DefRange,
 		})
@@ -97,7 +97,7 @@ func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
 	if len(content.Blocks) > 1 {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Storage block must have at only one block within it",
+			Summary:  "backend_storage block must have at only one block within it",
 			Detail:   fmt.Sprintf("Block %s has 2 or more blocks within it.", block.Type),
 			Subject:  &block.DefRange,
 		})

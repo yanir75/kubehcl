@@ -97,7 +97,7 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 // Compare states get the resource from the state and applies the changes
 // If the resource does not exist it will simply be created
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
-
+	// if cfg.StorageKind == "stateless" 
 	current, diags := cfg.Storage.BuildResourceFromState(wanted, name)
 	if diags.HasErrors() {
 		return &kube.Result{}, diags

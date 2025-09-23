@@ -27,16 +27,30 @@ type KubeSecretStorage struct {
 	client       *kube.Client
 	name         string
 	namespace    string
+	storageKind string
 }
 
-func New(client *kube.Client, name string, namespace string) Storage {
-	return &KubeSecretStorage{
+func New(client *kube.Client, name string, namespace string,storageKind string) (Storage,hcl.Diagnostics) {
+	kubeStorage := &KubeSecretStorage{
 		resourceMap:  make(map[string][]byte),
 		previousData: make(map[string]ResourceMap),
 		client:       client,
 		name:         name,
 		namespace:    namespace,
+		storageKind: storageKind,
 	}
+	prevStorageKind,diags  := kubeStorage.getStorageKind()
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	if prevStorageKind != "" && storageKind != prevStorageKind {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagWarning,
+			Summary: fmt.Sprintf("Storage kind has changed from %s to %s",prevStorageKind,storageKind),
+		})
+	}
+	return kubeStorage,diags
 }
 
 func (s *KubeSecretStorage) marshalData() ([]byte, []byte) {
@@ -63,6 +77,7 @@ func (s *KubeSecretStorage) genSecret(key string, lbs labels) (*v1.Secret, hcl.D
 	data, prevData := s.marshalData()
 	releaseMap["release"] = data
 	releaseMap["previous-releases"] = prevData
+	releaseMap["storage-kind"] = []byte(s.storageKind)
 
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -157,6 +172,9 @@ func (s *KubeSecretStorage) DeleteState() hcl.Diagnostics {
 // Get all resources as bytes from the current state
 // All resources are saved as a json format
 func (s *KubeSecretStorage) GetAllStateResources() (ResourceMap, hcl.Diagnostics) {
+	if s.storageKind == "stateless" {
+		return make(map[string][]byte),hcl.Diagnostics{}
+	}
 	data, diags := s.getState()
 	resourceMap := make(map[string][]byte)
 	if len(data) > 0 {
@@ -169,6 +187,18 @@ func (s *KubeSecretStorage) GetAllStateResources() (ResourceMap, hcl.Diagnostics
 	return resourceMap, diags
 
 }
+
+func (s *KubeSecretStorage) getStorageKind() (string, hcl.Diagnostics) {
+	data, diags := s.getState()
+	storageKind := ""
+	if len(data) > 0 {
+		storageKind = string(data["storage-kind"])
+	}
+
+	return storageKind, diags
+
+}
+
 
 // Updates the previous releases data
 func (s *KubeSecretStorage) updatePreviousReleaseData() hcl.Diagnostics {
@@ -234,6 +264,9 @@ func (s *KubeSecretStorage) UpdateState() hcl.Diagnostics {
 // If the resource is not found or got an error an empty list will be returned
 // This is to check if the resource matches the configuration in the state or not
 func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics) {
+	if s.storageKind == "stateless" {
+		return kube.ResourceList{},hcl.Diagnostics{}
+	}
 	var diags hcl.Diagnostics
 	var resList kube.ResourceList
 
@@ -273,6 +306,9 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 func (s *KubeSecretStorage) BuildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
 	// Get current resource configuration
 	// Get the resource configuration from the state
+	if s.storageKind == "stateless" {
+		return wanted,hcl.Diagnostics{}
+	}
 	current, diags := s.GetResourceCurrentState(wanted)
 
 	saved, savedData := s.GetAllStateResources()
