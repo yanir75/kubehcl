@@ -28,6 +28,7 @@ type KubeSecretStorage struct {
 	name         string
 	namespace    string
 	storageKind  string
+	stateData map[string][]byte
 }
 
 func New(client *kube.Client, name string, namespace string, storageKind string) (Storage, hcl.Diagnostics) {
@@ -124,6 +125,10 @@ func (s *KubeSecretStorage) Get(name string) []byte {
 // State is saved as a secret inside kubernetes in the given namespace
 // The secret type is kubehcl.sh/module.v1
 func (s *KubeSecretStorage) getState() (map[string][]byte, hcl.Diagnostics) {
+	if s.stateData != nil {
+
+		return s.stateData,hcl.Diagnostics{}
+	}
 	secret, diags := s.genSecret(s.name, nil)
 	client, err := s.client.Factory.KubernetesClientSet()
 	if err != nil {
@@ -144,6 +149,7 @@ func (s *KubeSecretStorage) getState() (map[string][]byte, hcl.Diagnostics) {
 		})
 		return nil, diags
 	} else {
+		s.stateData = getSecret.Data
 		return getSecret.Data, diags
 	}
 
