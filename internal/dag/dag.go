@@ -108,7 +108,7 @@ func (g *AcyclicGraph) TransitiveReduction() {
 	for _, u := range g.Vertices() {
 		uTargets := g.downEdgesNoCopy(u)
 
-		g.DepthFirstWalk(g.downEdgesNoCopy(u), func(v Vertex, d int) error {
+		_ = g.DepthFirstWalk(g.downEdgesNoCopy(u), func(v Vertex, d int) error {
 			shared := uTargets.Intersection(g.downEdgesNoCopy(v))
 			for _, vPrime := range shared {
 				g.RemoveEdge(BasicEdge(u, vPrime))
@@ -137,7 +137,7 @@ func (g *AcyclicGraph) Validate() error {
 			}
 
 			err = multierror.Append(err, fmt.Errorf(
-				"Cycle: %s", strings.Join(cycleStr, ", ")))
+				"cycle: %s", strings.Join(cycleStr, ", ")))
 		}
 	}
 
@@ -145,7 +145,7 @@ func (g *AcyclicGraph) Validate() error {
 	for _, e := range g.Edges() {
 		if e.Source() == e.Target() {
 			err = multierror.Append(err, fmt.Errorf(
-				"Self reference: %s", VertexName(e.Source())))
+				"self reference: %s", VertexName(e.Source())))
 		}
 	}
 

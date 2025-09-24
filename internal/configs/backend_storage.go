@@ -59,7 +59,7 @@ func isValidStorageOption(block *hcl.Block) bool {
 
 // Decode storage block, available blocks within that block are stateless and kube_secret
 func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
-	var storage *BackendStorage = &BackendStorage{
+	var storage = &BackendStorage{
 		Kind: secretKind,
 	}
 

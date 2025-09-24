@@ -305,7 +305,7 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			if recursive {
-				fmtDir(filepath.Join(path, entry.Name()), recursive)
+				diags = append(diags,fmtDir(filepath.Join(path, entry.Name()), recursive)...)
 			}
 		} else {
 			if !validFile(entry.Name()) {
@@ -320,7 +320,12 @@ func fmtDir(path string, recursive bool) hcl.Diagnostics {
 					Detail:   fmt.Sprintf("Couldn't read directory %s got error %s", name, err.Error()),
 				})
 			}
-			defer input.Close()
+			defer func() {
+				err = input.Close()
+				if err != nil {
+					panic("Couldn't close the file")
+				}
+			} ()
 
 			src, err := io.ReadAll(input)
 			if err != nil {

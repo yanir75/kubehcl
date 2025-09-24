@@ -411,7 +411,14 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	defer input.Close()
+
+	defer func() {
+		err = input.Close()
+		if err != nil {
+			panic("Couldn't close the file")
+		}
+	} ()
+
 	var diags hcl.Diagnostics
 
 	src, err := io.ReadAll(input)
@@ -505,9 +512,9 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	// if mod := modMap.Get(folderName); mod != nil {
 	// return mod,diags
 	// }
-	var addrMap addrs.AddressMap = addrs.AddressMap{}
+	var addrMap = addrs.AddressMap{}
 	files, err := os.ReadDir(folderName)
-	var deployable *Module = &Module{}
+	var deployable = &Module{}
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

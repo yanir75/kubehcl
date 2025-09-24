@@ -125,10 +125,10 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 }
 
 // Create updates the current state to fit the new configuration and updates the current state accordingly
-func (cfg *Config) Create(resource *decode.DecodedResource) (*kube.Result, hcl.Diagnostics) {
+func (cfg *Config) Create(resource *decode.DecodedResource) (kube.Result, hcl.Diagnostics) {
 
 	var diags hcl.Diagnostics
-	var results *kube.Result = &kube.Result{}
+	var results = kube.Result{}
 	for key, value := range resource.Config {
 
 		kubeResourceList, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)

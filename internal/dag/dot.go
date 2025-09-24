@@ -61,15 +61,15 @@ func (g *marshalGraph) Dot(opts *DotOpts) []byte {
 	}
 
 	var w indentWriter
-	w.WriteString("digraph {\n")
+	_,_ = w.WriteString("digraph {\n")
 	w.Indent()
 
 	// some dot defaults
-	w.WriteString(`compound = "true"` + "\n")
-	w.WriteString(`newrank = "true"` + "\n")
+	_,_ = w.WriteString(`compound = "true"` + "\n")
+	_,_ = w.WriteString(`newrank = "true"` + "\n")
 
 	// the top level graph is written as the first subgraph
-	w.WriteString(`subgraph "root" {` + "\n")
+	_,_ = w.WriteString(`subgraph "root" {` + "\n")
 	g.writeBody(opts, &w)
 
 	// cluster isn't really used other than for naming purposes in some graphs
@@ -84,7 +84,7 @@ func (g *marshalGraph) Dot(opts *DotOpts) []byte {
 	}
 
 	w.Unindent()
-	w.WriteString("}\n")
+	_,_ = w.WriteString("}\n")
 	return w.Bytes()
 }
 
@@ -156,7 +156,7 @@ func (g *marshalGraph) writeSubgraph(sg *marshalGraph, opts *DotOpts, depth int,
 		name = "cluster_" + name
 		sg.Attrs["label"] = sg.Name
 	}
-	w.WriteString(fmt.Sprintf("subgraph %q {\n", name))
+	_,_ = w.WriteString(fmt.Sprintf("subgraph %q {\n", name))
 	sg.writeBody(opts, w)
 
 	for _, sg := range sg.Subgraphs {
@@ -168,7 +168,7 @@ func (g *marshalGraph) writeBody(opts *DotOpts, w *indentWriter) {
 	w.Indent()
 
 	for _, as := range attrStrings(g.Attrs) {
-		w.WriteString(as + "\n")
+		_,_ = w.WriteString(as + "\n")
 	}
 
 	// list of Vertices that aren't to be included in the dot output
@@ -180,7 +180,7 @@ func (g *marshalGraph) writeBody(opts *DotOpts, w *indentWriter) {
 			continue
 		}
 
-		w.Write(v.dot(g, opts))
+		_,_ = w.Write(v.dot(g, opts))
 	}
 
 	var dotEdges []string

@@ -212,7 +212,7 @@ func decodeUnknownBody(ctx *hcl.EvalContext, body *hclsyntax.Body, check bool) (
 				if len(trav) > 1 {
 					root := trav[0].(hcl.TraverseRoot)
 					travAttr := trav[1].(hcl.TraverseAttr)
-					if !(root.Name == "each" && (travAttr.Name == "value" || travAttr.Name == "key")) {
+					if root.Name != "each" || (travAttr.Name != "value" && travAttr.Name != "key") {
 						val, attrDiags := attr.Expr.Value(ctx)
 						diags = append(diags, checkIfExists(attrMap, attr.Name, &attr.NameRange)...)
 						diags = append(diags, attrDiags...)

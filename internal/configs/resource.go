@@ -79,7 +79,7 @@ var inputResourceBlockSchema = &hcl.BodySchema{
 // Resource block can contain for_each or count and depends on
 // This language is used as a template language thus not limited to what you can put into a resource block
 func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
-	var resource *Resource = &Resource{
+	var resource = &Resource{
 		// Name:      block.Labels[0],
 		// DeclRange: block.DefRange,
 

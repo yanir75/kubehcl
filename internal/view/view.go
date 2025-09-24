@@ -158,7 +158,7 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 		if useCompact {
 			msg := format.DiagnosticWarningsCompact(diags, v.colorize)
 			msg = "\n" + msg + "\nTo see the full warning notes, run kubehcl without -compact-warnings.\n"
-			v.streams.Print(msg)
+			_,_ = v.streams.Print(msg)
 			return
 		}
 	}
@@ -172,9 +172,9 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 		}
 
 		if diag.Severity() == tfdiags.Error {
-			v.streams.Eprint(msg)
+			_,_ = v.streams.Eprint(msg)
 		} else {
-			v.streams.Print(msg)
+			_,_ = v.streams.Print(msg)
 		}
 	}
 }
@@ -183,7 +183,7 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 // of their CLI arguments successfully. It refers users to the full help output
 // rather than rendering it directly, which can be overwhelming and confusing.
 func (v *View) HelpPrompt(command string) {
-	v.streams.Eprintf(helpPrompt, command)
+	_,_ = v.streams.Eprintf(helpPrompt, command)
 }
 
 const helpPrompt = `
@@ -196,27 +196,27 @@ For more help on using this command, run:
 //
 // This is the number of columns to use if you are calling v.streams.Print or
 // related functions.
-func (v *View) outputColumns() int {
-	return v.streams.Stdout.Columns()
-}
+// func (v *View) outputColumns() int {
+// 	return v.streams.Stdout.Columns()
+// }
 
 // errorColumns returns the number of text character cells any error
 // output should be wrapped to.
 //
 // This is the number of columns to use if you are calling v.streams.Eprint
 // or related functions.
-func (v *View) errorColumns() int {
-	return v.streams.Stderr.Columns()
-}
+// func (v *View) errorColumns() int {
+// 	return v.streams.Stderr.Columns()
+// }
 
 // outputHorizRule will call v.streams.Println with enough horizontal line
 // characters to fill an entire row of output.
 //
 // If UI color is enabled, the rule will get a dark grey coloring to try to
 // visually de-emphasize it.
-func (v *View) outputHorizRule() {
-	v.streams.Println(format.HorizontalRule(v.colorize, v.outputColumns()))
-}
+// func (v *View) outputHorizRule() {
+// 	v.streams.Println(format.HorizontalRule(v.colorize, v.outputColumns()))
+// }
 
 func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive

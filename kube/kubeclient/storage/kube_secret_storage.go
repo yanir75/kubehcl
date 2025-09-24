@@ -202,7 +202,7 @@ func (s *KubeSecretStorage) getStorageKind() (string, hcl.Diagnostics) {
 // Updates the previous releases data
 func (s *KubeSecretStorage) updatePreviousReleaseData() hcl.Diagnostics {
 	data, diags := s.getState()
-	var previousDataMap map[string]ResourceMap = make(map[string]ResourceMap)
+	var previousDataMap = make(map[string]ResourceMap)
 
 	if len(data) > 0 {
 		err := json.Unmarshal(data["previous-releases"], &previousDataMap)
@@ -282,7 +282,7 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 	} else {
 		for _, value := range res {
 			for _, val := range value {
-				var resourceInfo *resource.Info = &resource.Info{}
+				var resourceInfo = &resource.Info{}
 				refreshErr := resourceInfo.Refresh(val, false)
 				resourceInfo.Mapping = &meta.RESTMapping{}
 				resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")

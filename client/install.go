@@ -94,7 +94,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 		os.Exit(1)
 	}
 
-	var results *kube.Result = &kube.Result{}
+	var results = kube.Result{}
 	var mutex sync.Mutex
 	validateFunc := func(v dag.Vertex) hcl.Diagnostics {
 		switch tt := v.(type) {

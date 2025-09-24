@@ -15,7 +15,7 @@ var files embed.FS
 
 func cacheDir(outputDir string) {
 
-	fs.WalkDir(files, "files", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(files, "files", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -38,6 +38,9 @@ func cacheDir(outputDir string) {
 
 		return err
 	})
+	if err != nil {
+		panic("Should not get here")
+	}
 }
 
 func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
@@ -58,7 +61,7 @@ func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
 		})
 		return "", diags
 	}
-
+	
 	return args[0], diags
 }
 

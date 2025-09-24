@@ -468,7 +468,7 @@ func TestAcyclicGraphWalkOrder(t *testing.T) {
 
 	t.Run("DepthFirst", func(t *testing.T) {
 		var visits []vertexAtDepth
-		g.walk(depthFirst|downOrder, true, start, func(v Vertex, d int) error {
+		_ = g.walk(depthFirst|downOrder, true, start, func(v Vertex, d int) error {
 			visits = append(visits, vertexAtDepth{v, d})
 			return nil
 
@@ -482,7 +482,7 @@ func TestAcyclicGraphWalkOrder(t *testing.T) {
 	})
 	t.Run("ReverseDepthFirst", func(t *testing.T) {
 		var visits []vertexAtDepth
-		g.walk(depthFirst|upOrder, true, reverse, func(v Vertex, d int) error {
+		_ = g.walk(depthFirst|upOrder, true, reverse, func(v Vertex, d int) error {
 			visits = append(visits, vertexAtDepth{v, d})
 			return nil
 
@@ -496,7 +496,7 @@ func TestAcyclicGraphWalkOrder(t *testing.T) {
 	})
 	t.Run("BreadthFirst", func(t *testing.T) {
 		var visits []vertexAtDepth
-		g.walk(breadthFirst|downOrder, true, start, func(v Vertex, d int) error {
+		_ = g.walk(breadthFirst|downOrder, true, start, func(v Vertex, d int) error {
 			visits = append(visits, vertexAtDepth{v, d})
 			return nil
 
@@ -510,7 +510,7 @@ func TestAcyclicGraphWalkOrder(t *testing.T) {
 	})
 	t.Run("ReverseBreadthFirst", func(t *testing.T) {
 		var visits []vertexAtDepth
-		g.walk(breadthFirst|upOrder, true, reverse, func(v Vertex, d int) error {
+		_ = g.walk(breadthFirst|upOrder, true, reverse, func(v Vertex, d int) error {
 			visits = append(visits, vertexAtDepth{v, d})
 			return nil
 

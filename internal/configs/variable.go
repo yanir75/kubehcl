@@ -121,7 +121,7 @@ func DecodeVariableBlocks(blocks hcl.Blocks) (VariableMap, hcl.Diagnostics) {
 // Checks for those
 // None of those are required
 func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
-	var variable *Variable = &Variable{
+	var variable = &Variable{
 		Name:       block.Labels[0],
 		DeclRange:  block.DefRange,
 		HasDefault: false,
