@@ -75,7 +75,7 @@ func Test_Storage(t *testing.T) {
 		} else if !diags.HasErrors() && test.wantErrors {
 			t.Errorf("Want errors but did not receive any")
 		} else {
-			if !reflect.DeepEqual(want,test.want) {
+			if !reflect.DeepEqual(want, test.want) {
 				t.Errorf("Values are not equal")
 			}
 		}
