@@ -156,7 +156,7 @@ func (g *marshalGraph) writeSubgraph(sg *marshalGraph, opts *DotOpts, depth int,
 		name = "cluster_" + name
 		sg.Attrs["label"] = sg.Name
 	}
-	_,_ = w.WriteString(fmt.Sprintf("subgraph %q {\n", name))
+	_,_ = fmt.Fprintf(w, "subgraph %q {\n", name)
 	sg.writeBody(opts, w)
 
 	for _, sg := range sg.Subgraphs {
@@ -223,11 +223,11 @@ func (g *marshalGraph) writeBody(opts *DotOpts, w *indentWriter) {
 	sort.Strings(dotEdges)
 
 	for _, e := range dotEdges {
-		w.WriteString(e + "\n")
+		_,_ = w.WriteString(e + "\n")
 	}
 
 	w.Unindent()
-	w.WriteString("}\n")
+	_,_ = w.WriteString("}\n")
 }
 
 func writeAttrs(buf *bytes.Buffer, attrs map[string]string) {

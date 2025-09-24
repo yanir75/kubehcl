@@ -264,7 +264,7 @@ func Test_templateMaxRecursionDepth(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("templateMaxRecursion(%s)", test.Input), func(t *testing.T) {
-			os.Setenv("TF_TEMPLATE_RECURSION_DEPTH", test.Input)
+			_ = os.Setenv("TF_TEMPLATE_RECURSION_DEPTH", test.Input)
 			got, err := templateMaxRecursionDepth()
 			if test.Err != "" {
 				if err == nil {
@@ -328,9 +328,9 @@ func TestFileExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Chmod("testdata/unreadable", 0000)
+	_ = os.Chmod("testdata/unreadable", 0000)
 	defer func(mode os.FileMode) {
-		os.Chmod("testdata/unreadable", mode)
+		_ = os.Chmod("testdata/unreadable", mode)
 	}(fi.Mode())
 
 	for _, test := range tests {

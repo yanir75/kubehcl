@@ -29,7 +29,7 @@ func (gv *httpGroupVersion) Schema(contentType string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func(){_ = resp.Body.Close()}()
 	return io.ReadAll(resp.Body)
 }
 
