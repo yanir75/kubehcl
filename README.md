@@ -35,7 +35,7 @@ go install github.com/yanir75/kubehcl@latest
 All functions that exist in opentofu can be used here as well.  
 
 ## Blocks
-There are 5 kinds of blocks allowed in the configuration:   
+There are 6 kinds of blocks allowed in the configuration:   
 **variable** block contains three attributes description, type and default.  
 ```
 description: explaination of the variable usage, optional
