@@ -29,8 +29,6 @@ type BackendStorage struct {
 	DeclRange hcl.Range // `json:"DeclRange"`
 }
 
-
-
 var storageCounter = 0
 
 var inputStorageBlockSchema = &hcl.BodySchema{
@@ -102,7 +100,6 @@ func decodeStorageBlock(block *hcl.Block) (*BackendStorage, hcl.Diagnostics) {
 
 	return storage, diags
 }
-
 
 // Decode multiple storage blocks
 func DecodeBackendStorageBlocks(blocks hcl.Blocks) (*BackendStorage, hcl.Diagnostics) {
