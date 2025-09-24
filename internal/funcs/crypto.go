@@ -263,7 +263,7 @@ func makeFileHashFunction(baseDir string, hf func() hash.Hash, enc func([]byte) 
 			if err != nil {
 				return cty.UnknownVal(cty.String), err
 			}
-			defer func(){_ = f.Close()}()
+			defer func() { _ = f.Close() }()
 
 			h := hf()
 			_, err = io.Copy(h, f)

@@ -158,7 +158,7 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 		if useCompact {
 			msg := format.DiagnosticWarningsCompact(diags, v.colorize)
 			msg = "\n" + msg + "\nTo see the full warning notes, run kubehcl without -compact-warnings.\n"
-			_,_ = v.streams.Print(msg)
+			_, _ = v.streams.Print(msg)
 			return
 		}
 	}
@@ -172,9 +172,9 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 		}
 
 		if diag.Severity() == tfdiags.Error {
-			_,_ = v.streams.Eprint(msg)
+			_, _ = v.streams.Eprint(msg)
 		} else {
-			_,_ = v.streams.Print(msg)
+			_, _ = v.streams.Print(msg)
 		}
 	}
 }
@@ -183,7 +183,7 @@ func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 // of their CLI arguments successfully. It refers users to the full help output
 // rather than rendering it directly, which can be overwhelming and confusing.
 func (v *View) HelpPrompt(command string) {
-	_,_ = v.streams.Eprintf(helpPrompt, command)
+	_, _ = v.streams.Eprintf(helpPrompt, command)
 }
 
 const helpPrompt = `

@@ -417,7 +417,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		if err != nil {
 			panic("Couldn't close the file")
 		}
-	} ()
+	}()
 
 	var diags hcl.Diagnostics
 

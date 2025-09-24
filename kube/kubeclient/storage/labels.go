@@ -23,9 +23,10 @@ package storage
 // labels is a map of key value pairs to be included as metadata in a configmap object.
 type labels map[string]string
 
-func (lbs *labels) init()                { *lbs = labels(make(map[string]string)) }
+func (lbs *labels) init() { *lbs = labels(make(map[string]string)) }
+
 // func (lbs labels) get(key string) string { return lbs[key] }
-func (lbs labels) set(key, val string)   { lbs[key] = val }
+func (lbs labels) set(key, val string) { lbs[key] = val }
 
 // func (lbs labels) keys() (ls []string) {
 // 	for key := range lbs {

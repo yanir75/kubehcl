@@ -447,7 +447,7 @@ func readFileBytes(baseDir, path string, marks cty.ValueMarks) ([]byte, error) {
 		}
 		return nil, err
 	}
-	defer func(){_ = f.Close()}()
+	defer func() { _ = f.Close() }()
 
 	src, err := io.ReadAll(f)
 	if err != nil {

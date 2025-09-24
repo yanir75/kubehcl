@@ -61,7 +61,7 @@ func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
 		})
 		return "", diags
 	}
-	
+
 	return args[0], diags
 }
 

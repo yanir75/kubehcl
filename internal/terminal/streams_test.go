@@ -18,12 +18,12 @@ import (
 func TestStreamsFmtHelpers(t *testing.T) {
 	streams, close := StreamsForTesting(t)
 
-	_,_ = streams.Print("stdout print ", 5, "\n")
-	_,_ = streams.Eprint("stderr print ", 6, "\n")
-	_,_ = streams.Println("stdout println", 7)
-	_,_ = streams.Eprintln("stderr println", 8)
-	_,_ = streams.Printf("stdout printf %d\n", 9)
-	_,_ = streams.Eprintf("stderr printf %d\n", 10)
+	_, _ = streams.Print("stdout print ", 5, "\n")
+	_, _ = streams.Eprint("stderr print ", 6, "\n")
+	_, _ = streams.Println("stdout println", 7)
+	_, _ = streams.Eprintln("stderr println", 8)
+	_, _ = streams.Printf("stdout printf %d\n", 9)
+	_, _ = streams.Eprintf("stderr printf %d\n", 10)
 
 	outp := close(t)
 
