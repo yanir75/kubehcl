@@ -14,7 +14,7 @@ import (
 	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
 )
 
-
+//go:embed builtins
 var hardcodedBuiltins embed.FS
 
 var HardcodedBuiltinVersions []string = func() []string {
