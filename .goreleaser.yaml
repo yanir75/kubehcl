@@ -1,4 +1,5 @@
 project_name: kubehcl
+version: 2
 
 before:
   hooks:

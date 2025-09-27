@@ -44,10 +44,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           workdir: kubehcl
-          version: 2
           distribution: goreleaser
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAP_GITHUB_TOKEN: ${{ secrets.PAT }}
-          
+          GITHUB_TOKEN: ${{ secrets.PAT }}          
