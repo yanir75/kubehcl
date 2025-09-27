@@ -38,7 +38,7 @@ homebrew_casks:
     binary: kubehcl
     repository:
       owner: yanir75
-      name: homebrew-tap
+      name: homebrew-apps
     hooks:
       post:
         # replace foo with the actual binary name
