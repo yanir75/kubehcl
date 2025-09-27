@@ -203,7 +203,7 @@ func (g *Graph) Init() hcl.Diagnostics {
 	}
 
 	addRootNodeToGraph(g)
-	if diags.HasErrors(){
+	if diags.HasErrors() {
 		return diags
 	}
 

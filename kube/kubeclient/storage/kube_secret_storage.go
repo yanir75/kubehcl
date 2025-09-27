@@ -28,7 +28,7 @@ type KubeSecretStorage struct {
 	name         string
 	namespace    string
 	storageKind  string
-	stateData map[string][]byte
+	stateData    map[string][]byte
 }
 
 func New(client *kube.Client, name string, namespace string, storageKind string) (Storage, hcl.Diagnostics) {
@@ -127,7 +127,7 @@ func (s *KubeSecretStorage) Get(name string) []byte {
 func (s *KubeSecretStorage) getState() (map[string][]byte, hcl.Diagnostics) {
 	if s.stateData != nil {
 
-		return s.stateData,hcl.Diagnostics{}
+		return s.stateData, hcl.Diagnostics{}
 	}
 	secret, diags := s.genSecret(s.name, nil)
 	client, err := s.client.Factory.KubernetesClientSet()
