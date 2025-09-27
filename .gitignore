@@ -10,3 +10,5 @@ _dist/
 _dist_versions/
 bin/
 vendor/
+kube/pkg/openapiclient/builtins/*
+kube/pkg/openapiclient/builtins/

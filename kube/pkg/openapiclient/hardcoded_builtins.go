@@ -14,9 +14,7 @@ import (
 	"kubehcl.sh/kubehcl/kube/pkg/openapiclient/groupversion"
 )
 
-//go:generate go run sigs.k8s.io/kubectl-validate/cmd/download-builtin-schemas builtins
 
-//go:embed builtins
 var hardcodedBuiltins embed.FS
 
 var HardcodedBuiltinVersions []string = func() []string {

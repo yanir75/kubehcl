@@ -1,0 +1,52 @@
+# .github/workflows/release.yml
+name: goreleaser
+
+on:
+  push:
+    # run only against tags
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+  # packages: write
+  # issues: write
+  # id-token: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: kubehcl
+
+      - name: Checkout another repository
+        uses: actions/checkout@v4
+        with:
+          repository: kubernetes-sigs/kubectl-validate 
+          path: kubectl-validate
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.0
+      - name: get-latest-versions
+        working-directory: kubectl-validate
+        run: |
+          go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins 
+          ls ../kubehcl/kube/pkg/openapiclient/builtins
+
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          workdir: kubehcl
+          distribution: goreleaser
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAP_GITHUB_TOKEN: ${{ secrets.PAT }}
+          
