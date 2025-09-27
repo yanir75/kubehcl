@@ -44,6 +44,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           workdir: kubehcl
+          version: 2
           distribution: goreleaser
           args: release --clean
         env:
