@@ -1,0 +1,35 @@
+project_name: tofu
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+
+    main: ./main.go
+
+    goos:
+      - linux
+      - windows
+      - darwin
+
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
+
+
+homebrew_casks:  
+  - name: kubehcl  
+    binary: kubehcl
+    hooks:
+      post:
+        # replace foo with the actual binary name
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/kubehcl"]
+          end

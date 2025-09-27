@@ -1,105 +1,40 @@
-name: Release
-# Maintainer Yanir75
+# .github/workflows/release.yml
+name: goreleaser
+
 on:
   push:
+    # run only against tags
     tags:
-      - 'v*' # Trigger release on version tag push (e.g., v1.0.0)
-      
+      - "*"
+
 permissions:
   contents: write
+  # packages: write
+  # issues: write
+  # id-token: write
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        go-version: [ '1.25.0' ]
-        os: [macos-latest]
-    
-    runs-on: ${{ matrix.os }}
-
-    outputs:
-      link: ${{ fromJSON(steps.upload.outputs.assets)[0].browser_download_url }}
-      kubehclsha: ${{ steps.kubehclsha.outputs.kubehclsha }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: kubehcl 
-
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Checkout another repository
-        uses: actions/checkout@v4
-        with:
-          repository: kubernetes-sigs/kubectl-validate 
-          path: kubectl-validate
-      - name: get-latest-versions
-        run: |
-          cd kubectl-validate
-          rm -rf ../kubehcl/kube/pkg/openapiclient/builtins/*
-          ls ../kubehcl/kube/pkg/openapiclient/builtins
-          go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins 
-          ls ../kubehcl/kube/pkg/openapiclient/builtins
-          cd ../kubehcl
-        
-      - name: Install dependencies
-        working-directory: kubehcl
-        run: go get .
-
-      # - name: Test
-      #   run: go test ./...
-
-      - name: Build
-        working-directory: kubehcl
-        run: go build .
-      
-      - name: tar
-        working-directory: kubehcl
-        run:  tar -czf kubehcl.tar.gz kubehcl > /dev/null
-
-      - name: kubehclsha
-        id: kubehclsha
-        working-directory: kubehcl
-        run: echo "kubehclsha=$(shasum -a 256 kubehcl.tar.gz | awk '{print $1}' | tr -d '\n')" >> $GITHUB_OUTPUT
-
-      - name: Upload release assets
-        id: upload
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            kubehcl/kubehcl.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-  updateBrew:
-    needs: build
-
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Output version,link and sha
-        run: |
-          echo "${{ needs.build.outputs.link }}"
-          echo "${{ github.ref_name }}"
-          echo "${{ needs.build.outputs.kubehclsha }}"
-
-      - name: Trigger Update brew workflow
-        run: |
-          # Set the required variables
-          repo_owner="yanir75" 
-          repo_name="homebrew-apps"  
-          event_type="update-brew" 
-          asset="${{ needs.build.outputs.link }}"
-          version="${{ github.ref_name }}"
-          kubehclsha="${{ needs.build.outputs.kubehclsha }}"
-
-          curl -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.PAT }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/$repo_owner/$repo_name/dispatches \
-            -d "{\"event_type\": \"$event_type\", \"client_payload\": {\"asset\": \"$asset\", \"version\": \"$version\", \"kubehclsha\": \"$kubehclsha\"}}"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      # More assembly might be required: Docker logins, GPG, etc.
+      # It all depends on your needs.
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          # either 'goreleaser' (default) or 'goreleaser-pro'
+          distribution: goreleaser
+          # 'latest', 'nightly', or a semver
+          # version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAP_GITHUB_TOKEN: ${{ secrets.PAT }}
