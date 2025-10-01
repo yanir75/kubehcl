@@ -46,3 +46,24 @@ homebrew_casks:
           if OS.mac?
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/kubehcl"]
           end
+
+
+nfpms:
+  - file_name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}'
+    maintainer: 'yanir75'
+    # homepage: ''
+    description: >-
+      kubehcl provides the option to deploy to kubernetes using hcl
+    license: "MPL-2.0,Apache-2.0"
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    section: default
+    rpm:
+      signature:
+        key_file: "{{ if index .Env \"GPG_KEY_FILE\"  }}{{.Env.GPG_KEY_FILE}}{{ end }}"
+    deb:
+      signature:
+        key_file: "{{ if index .Env \"GPG_KEY_FILE\"  }}{{.Env.GPG_KEY_FILE}}{{ end }}"

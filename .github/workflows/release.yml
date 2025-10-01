@@ -39,6 +39,18 @@ jobs:
           go run cmd/download-builtin-schemas/main.go ../kubehcl/kube/pkg/openapiclient/builtins 
           ls ../kubehcl/kube/pkg/openapiclient/builtins
 
+      - name: Import GPG key
+        run: |
+          GPG_KEY_FILE=/tmp/signing-key.gpg
+          echo "${{ secrets.GPG_KEY }}"  > "${GPG_KEY_FILE}"
+          
+          echo "${{ secrets.GPG_KEY }}" | gpg --import
+          GPG_FINGERPRINT=$(gpg --list-secret-keys --keyid-format LONG | awk '/^sec/{sub(/.*\//, "", $2); print $2; exit}')
+          
+          echo "GPG_FINGERPRINT=${GPG_FINGERPRINT}" >>"${GITHUB_ENV}"
+          echo "GPG_KEY_FILE=${GPG_KEY_FILE}" >> "${GITHUB_ENV}"
+        env:
+          GPG_TTY: /dev/ttys000  # Set the GPG_TTY to avoid issues with pinentry
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -48,3 +60,11 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}          
+
+      - name: Remove GPG key
+        if: always()
+        run: |
+          rm -rf ~/.gnupg
+          if [ -n "${GPG_KEY_FILE}" ]; then
+            rm -rf "${GPG_KEY_FILE}"
+          fi
