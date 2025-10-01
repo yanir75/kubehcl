@@ -45,10 +45,9 @@ jobs:
           GPG_KEY_FILE=/tmp/signing-key.gpg
           echo "${{ secrets.GPG_KEY }}"  > "${GPG_KEY_FILE}"
           
-          echo "${{ secrets.GPG_KEY }}" | gpg --import
+          gpg --batch --import ${GPG_KEY_FILE}
           GPG_FINGERPRINT=$(gpg --list-secret-keys --keyid-format LONG | awk '/^sec/{sub(/.*\//, "", $2); print $2; exit}')
           
-          echo ${GPG_FINGERPRINT}
           echo "GPG_FINGERPRINT=${GPG_FINGERPRINT}" >> "${GITHUB_ENV}"
           echo "GPG_KEY_FILE=${GPG_KEY_FILE}" >> "${GITHUB_ENV}"
         env:
