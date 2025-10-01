@@ -60,7 +60,8 @@ jobs:
           distribution: goreleaser
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}          
+          GITHUB_TOKEN: ${{ secrets.PAT }}  
+          NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}        
 
       - name: Remove GPG key
         if: always()
