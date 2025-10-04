@@ -18,16 +18,18 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
-
+	"k8s.io/apimachinery/pkg/runtime"
 	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/format"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/tfdiags"
-	// "github.com/mitchellh/colorstring"
-	// "github.com/opentofu/opentofu/internal/command/arguments"
-	// "github.com/opentofu/opentofu/internal/command/format"
-	// "github.com/opentofu/opentofu/internal/terminal"
 )
+
+
+type CompareResources struct{
+	Current runtime.Object
+	Wanted runtime.Object
+}
 
 type ViewArgs struct {
 	// NoColor is used to disable the use of terminal color codes in all
@@ -304,9 +306,17 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 // 	panic("Didn't return any value")
 // }
 
+
+
+
 // func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
 //     f := hclwrite.NewEmptyFile()
-
+// 	if wanted != nil  && current != nil {
+// 		cur := current.Object.(*unstructured.Unstructured)
+// 		// wan := wanted.Object.(*unstructured.Unstructured)
+// 		fmt.Printf("%s",cur.man)
+// 	}
+	
 // 	if current != nil {
 // 		switch tt:= current.Object.(type){
 // 		case *unstructured.Unstructured:
@@ -393,3 +403,7 @@ func DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 // 		}
 // 	}
 // }
+
+func PlanPrinter(map[string]*CompareResources) {
+	
+}

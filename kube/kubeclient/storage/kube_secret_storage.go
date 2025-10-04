@@ -12,9 +12,8 @@ import (
 	"helm.sh/helm/v4/pkg/kube"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var mutex sync.Mutex
@@ -22,13 +21,14 @@ var mutex sync.Mutex
 var SecretType = "kubehcl.sh/module.v1"
 
 type KubeSecretStorage struct {
-	resourceMap  ResourceMap
-	previousData map[string]ResourceMap
-	client       *kube.Client
-	name         string
-	namespace    string
-	storageKind  string
-	stateData    map[string][]byte
+	resourceMap             ResourceMap
+	previousData            map[string]ResourceMap
+	client                  *kube.Client
+	name                    string
+	namespace               string
+	storageKind             string
+	stateData               map[string][]byte
+	currentStateResourceMap ResourceMap
 }
 
 func New(client *kube.Client, name string, namespace string, storageKind string) (Storage, hcl.Diagnostics) {
@@ -126,9 +126,9 @@ func (s *KubeSecretStorage) Get(name string) []byte {
 // The secret type is kubehcl.sh/module.v1
 func (s *KubeSecretStorage) getState() (map[string][]byte, hcl.Diagnostics) {
 	if s.stateData != nil {
-
 		return s.stateData, hcl.Diagnostics{}
 	}
+
 	secret, diags := s.genSecret(s.name, nil)
 	client, err := s.client.Factory.KubernetesClientSet()
 	if err != nil {
@@ -181,16 +181,18 @@ func (s *KubeSecretStorage) GetAllStateResources() (ResourceMap, hcl.Diagnostics
 	if s.storageKind == "stateless" {
 		return make(map[string][]byte), hcl.Diagnostics{}
 	}
+	if s.currentStateResourceMap != nil {
+		return s.currentStateResourceMap, hcl.Diagnostics{}
+	}
 	data, diags := s.getState()
-	resourceMap := make(map[string][]byte)
 	if len(data) > 0 {
-		err := json.Unmarshal(data["release"], &resourceMap)
+		err := json.Unmarshal(data["release"], &s.currentStateResourceMap)
 		if err != nil {
 			panic("should not get here: " + err.Error())
 		}
 	}
 
-	return resourceMap, diags
+	return s.currentStateResourceMap, diags
 
 }
 
@@ -274,7 +276,6 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 	}
 	var diags hcl.Diagnostics
 	var resList kube.ResourceList
-
 	if res, err := s.client.Get(resources, false); apierrors.IsNotFound(err) {
 		return resList, diags
 	} else if err != nil {
@@ -288,15 +289,31 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 	} else {
 		for _, value := range res {
 			for _, val := range value {
-				var resourceInfo = &resource.Info{}
-				refreshErr := resourceInfo.Refresh(val, false)
-				resourceInfo.Mapping = &meta.RESTMapping{}
-				resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")
-				resourceInfo.Mapping.GroupVersionKind = val.GetObjectKind().GroupVersionKind()
-				if refreshErr != nil {
-					panic("should not get here: " + refreshErr.Error())
+				resourceInfoMap := val.(*unstructured.Unstructured)
+				buff,err := json.Marshal(resourceInfoMap)
+				if err != nil {
+					panic("shouldn't get here:"+err.Error())
 				}
-				resList = append(resList, resourceInfo)
+				reader := bytes.NewReader(buff)
+				resourceList,err := s.client.Build(reader,false)
+				if err != nil {
+					panic("shouldn't get here:"+err.Error())
+				}
+				resList = append(resList, resourceList...)
+				// var resourceInfo = &resource.Info{}
+
+				// refreshErr := resourceInfo.Refresh(val, false)
+				// if refreshErr != nil {
+				// 	panic("should not get here: " + refreshErr.Error())
+				// }
+				// resourceInfo.Mapping = &meta.RESTMapping{}
+				// resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")
+				// resourceInfo.Mapping.GroupVersionKind = val.GetObjectKind().GroupVersionKind()
+				// updateErr := resourceInfo.Get()				
+				// if updateErr != nil {
+				// 	panic("should not get here: " + updateErr.Error())
+				// }
+				// resList = append(resList, resourceInfo)
 			}
 		}
 	}
@@ -308,7 +325,7 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 // Getting the resource verifies that the resource doesn't exist or is managed by kubehcl
 // Builds the resource from the state this is done to update the current configuration
 // This also verifies if the resource exists and was not saved in the kubehcl state in order to not update it
-func (s *KubeSecretStorage) BuildResourceFromState(wanted kube.ResourceList, name string) (kube.ResourceList, hcl.Diagnostics) {
+func (s *KubeSecretStorage) BuildResourceFromState(wanted kube.ResourceList, name string, currentOnly bool) (kube.ResourceList, hcl.Diagnostics) {
 	// Get current resource configuration
 	// Get the resource configuration from the state
 	if s.storageKind == "stateless" {
@@ -349,5 +366,14 @@ func (s *KubeSecretStorage) BuildResourceFromState(wanted kube.ResourceList, nam
 
 		return nil, diags
 	}
+
+	if len(current) == 1 {
+		return current, diags
+	}
+
+	if currentOnly {
+		return kube.ResourceList{}, diags
+	}
+
 	return savedResource, diags
 }
