@@ -11,10 +11,10 @@ import (
 func List(conf *settings.EnvSettings, viewArguments *view.ViewArgs, storageKind string) {
 	cfg, diags := kubeclient.New("", conf, storageKind)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 	} else {
 		if secrets, diags := cfg.List(); diags.HasErrors() {
-			view.DiagPrinter(diags, viewArguments)
+			v.DiagPrinter(diags, viewArguments)
 		} else {
 			for _, secret := range secrets {
 				fmt.Printf("Installation: %s\n", secret)

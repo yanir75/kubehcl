@@ -395,13 +395,13 @@ func parseFmtArgs(args []string) (string, hcl.Diagnostics) {
 func Fmt(args []string, viewArguments *view.ViewArgs, recurisve bool) {
 	folder, diags := parseFmtArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 	diags = fmtDir(folder, recurisve)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 }

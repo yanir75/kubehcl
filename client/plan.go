@@ -44,21 +44,21 @@ func adjustCmp(m map[string]*view.CompareResources) {
 func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,cmdSettings *settings.CmdSettings) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 
 	varsF, vals, diags := parseCmdSettings(cmdSettings)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 
@@ -69,7 +69,7 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 		})
 	}
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 	
@@ -81,7 +81,7 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		os.Exit(1)
 	}
 
@@ -118,24 +118,23 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 	diags = append(diags, g.Walk(validateFunc)...)
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(planFunc)...)
-		cfg.DeleteResources()
 	}
 	if diags.HasErrors(){
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 
 	currentMap,diags := cfg.GetStateResourcesCurrentState()
 	if diags.HasErrors(){
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 	cmps,diags := cfg.CompareResources(wantedMap,currentMap)
 	if diags.HasErrors(){
-		view.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags,viewArguments)
 		return
 	}
 	adjustCmp(cmps)
-	view.PlanPrinter(cmps)
+	v.PlanPrinter(cmps,viewArguments)
 
 }

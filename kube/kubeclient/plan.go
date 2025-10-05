@@ -26,7 +26,7 @@ func (cfg *Config) buildStateResources()(map[string]kube.ResourceList,hcl.Diagno
 	}
 
 	for key,value := range savedMap {
-		if cfg.Storage.Get(key) != nil {
+		// if cfg.Storage.Get(key) != nil {
 			reader := bytes.NewReader(value)
 			savedResource, builderErr := cfg.Client.Build(reader, true)
 			if builderErr != nil {
@@ -37,7 +37,7 @@ func (cfg *Config) buildStateResources()(map[string]kube.ResourceList,hcl.Diagno
 				})
 			}
 			stateMap[key] = savedResource
-		}
+		// }
 	}
 	return stateMap,diags
 }
@@ -61,7 +61,9 @@ func (cfg *Config) GetStateResourcesCurrentState ()(map[string]kube.ResourceList
 		res,buildDiags := cfg.Storage.BuildResourceFromState(value,key,true)
 		
 		diags = append(diags, buildDiags...)
-		currentStateMap[key] = res
+		if len(res) > 0{
+			currentStateMap[key] = res
+		}
 	}
 
 	return currentStateMap,diags
@@ -112,12 +114,13 @@ func (cfg *Config) buildObject(to,from kube.ResourceList)(*view.CompareResources
 				IOStreams:       ioStreams,
 		}
 	cmp := &view.CompareResources{
-		Current: from[0].Object,
+		Current: obj.Live(),
 	}
 	if wanted,err := obj.Merged(); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't get resource",
+			Summary: "Couldn't get current resource state",
+			Detail: fmt.Sprintf("%s",err),
 		})
 	} else {
 		cmp.Wanted = wanted

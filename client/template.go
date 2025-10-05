@@ -45,13 +45,13 @@ func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
 func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
 	folderName, diags := parseTemplateArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
 	varF, vars, diags := parseCmdSettings(cmdSettings)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
@@ -62,7 +62,7 @@ func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSetti
 	diags = append(diags, g.Init()...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 	var mutex sync.Mutex
@@ -102,6 +102,6 @@ func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSetti
 
 	diags = append(diags, g.Walk(printFunc)...)
 
-	view.DiagPrinter(diags, viewArguments)
+	v.DiagPrinter(diags, viewArguments)
 
 }
