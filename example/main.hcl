@@ -24,7 +24,7 @@ kube_resource "foo" {
     }
   }
   spec = {
-    replicas = 3
+    replicas = 5
     selector = {
       matchLabels = {
         app = each.value

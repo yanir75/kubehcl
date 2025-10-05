@@ -58,21 +58,21 @@ func parseInstallArgs(args []string) (string, string, hcl.Diagnostics) {
 func Install(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings, createNamespace bool) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
 	varsF, vals, diags := parseCmdSettings(cmdSettings)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 	g := &configs.Graph{
@@ -83,14 +83,14 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
-	view.DiagPrinter(diags, viewArguments)
+	v.DiagPrinter(diags, viewArguments)
 
 	diags = cfg.VerifyInstall(createNamespace)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 
@@ -141,7 +141,7 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	}
 	validateDiags := g.Walk(validateFunc)
 	if len(validateDiags) > 0 {
-		view.DiagPrinter(validateDiags[0:1], viewArguments)
+		v.DiagPrinter(validateDiags[0:1], viewArguments)
 		os.Exit(1)
 	}
 
@@ -157,6 +157,6 @@ func Install(args []string, conf *settings.EnvSettings, viewArguments *view.View
 	}
 	diags = append(diags, cfg.Storage.UpdateState()...)
 
-	view.DiagPrinter(diags, viewArguments)
+	v.DiagPrinter(diags, viewArguments)
 
 }

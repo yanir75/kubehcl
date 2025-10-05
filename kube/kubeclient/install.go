@@ -102,7 +102,7 @@ func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.R
 	if diags.HasErrors() {
 		return &kube.Result{}, diags
 	}
-	res, err := cfg.Client.Update(current, wanted)
+	res, err := cfg.Client.Update(current, wanted,kube.ClientUpdateOptionServerSideApply(true,false))
 
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{

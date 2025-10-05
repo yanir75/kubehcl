@@ -69,7 +69,7 @@ func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
 func Create(args []string, viewArguments *view.ViewArgs) {
 	name, diags := parseCreateArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 	cacheDir(name)

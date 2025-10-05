@@ -44,7 +44,7 @@ func parseUninstallArgs(args []string) (string, string, hcl.Diagnostics) {
 func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
 	name, folderName, diags := parseUninstallArgs(args)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
@@ -52,7 +52,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 
@@ -60,7 +60,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
@@ -68,7 +68,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 	diags = append(diags, secretDiags...)
 
 	if secretDiags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
@@ -81,7 +81,7 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 	}
 
 	if diags.HasErrors() {
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 
@@ -93,15 +93,15 @@ func Uninstall(args []string, conf *settings.EnvSettings, viewArguments *view.Vi
 		})
 		diags = append(diags, cfg.Storage.DeleteState()...)
 		if diags.HasErrors() {
-			view.DiagPrinter(diags, viewArguments)
+			v.DiagPrinter(diags, viewArguments)
 			os.Exit(1)
 		}
-		view.DiagPrinter(diags, viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(0)
 	}
 
 	_, deleteDiags := cfg.DeleteAllResources()
 	diags = append(diags, deleteDiags...)
-	view.DiagPrinter(diags, viewArguments)
+	v.DiagPrinter(diags, viewArguments)
 
 }

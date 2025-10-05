@@ -2,11 +2,26 @@ package client
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/terminal"
+	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
+
+var v *view.View = view.NewView(&terminal.Streams{
+	Stdout: &terminal.OutputStream{
+		File: os.Stdout,
+	},
+	Stderr: &terminal.OutputStream{
+		File: os.Stderr,
+	},
+	Stdin: &terminal.InputStream{
+		File: os.Stdin,
+	},
+})
 
 func parseCmdSettings(c *settings.CmdSettings) (string, []string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
