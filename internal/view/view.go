@@ -16,6 +16,7 @@ package view
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
@@ -48,6 +49,27 @@ type ResourceChange struct{
 
 func (r * ResourceChange) hasNext() bool{
 	return r.ChangeMap != nil
+}
+
+type Kind int 
+const(
+	REGULAR = iota
+	LIST
+	MAP
+)
+
+func (r * ResourceChange) nextKind() Kind{
+	if r.hasNext(){
+		for key := range r.ChangeMap {
+			if strings.HasPrefix(key,"[") && strings.HasSuffix(key,"]") {
+				return LIST
+			} else {
+				return MAP
+			}
+		}
+	}
+
+	return REGULAR
 }
 
 type CompareResources struct{
@@ -236,14 +258,37 @@ func (v *View) PlanPrinter(m map[string]*CompareResources,viewDef *ViewArgs) {
 	v.SetConfigSources(configs.Parser().Files)
 	v.Configure(viewDef)
 	if v.colorize.Disable {
-		v.plainPlanPrinter(m)
+		v.planPlainPrinter(m)
 	} else {
 		v.planColoredPrinter(m)
 	}
 }
 
-func (v *View) plainPlanPrinter(m map[string]*CompareResources){
+func (v *View) planPlainPrinter(m map[string]*CompareResources){
+	_,_ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
+	_,_ = v.streams.Println()
+	_,_ = v.streams.Println("+ create")
+	_,_ = v.streams.Println("~ modify")
+	_,_ = v.streams.Println("- remove")
+	_,_ = v.streams.Println()
+	_,_ = v.streams.Println("Kubehcl will perform the following actions:")
+	_,_ = v.streams.Println()
+	for key,value := range m {
+		changeMap := v.getChanges(value.Current,value.Wanted)
+		if len(changeMap) > 0 {
+			_,_ = v.streams.Printf("%s {",key)
+			_,_ = v.streams.Println()
+			_,_ = v.streams.Println()
+			msg := v.StringifyChangeMap(changeMap,"")
+			msg = strings.ReplaceAll(msg,"+++++","+")
+			msg = strings.ReplaceAll(msg,"-----","-")
+			msg = strings.ReplaceAll(msg,"~~~~~","~")
+			_,_ = v.streams.Print(msg)
+			_,_ = v.streams.Println("}")
+			_,_ = v.streams.Println()
+		}
 
+	}
 }
 
 func addAllChangesMap(rChange *ResourceChange,v map[string]any,status Status) {
@@ -291,8 +336,9 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 		return
 	}
 
-	switch fromValMap := fromValue.(type) {
+	switch fromValUnknown := fromValue.(type) {
 	case map[string]any:
+		fromValMap := fromValUnknown
 		toValueMap := toValue.(map[string]any)
 		rChange.ChangeMap = make(map[string]*ResourceChange)
 
@@ -327,6 +373,43 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 				curResourceChange.ToValue = toVal
 				generateResourceChange(curResourceChange,nil,toVal)
 			} 
+		}
+	
+	case []any:
+		toValueList := toValue.([]any)
+		fromValList := fromValUnknown
+		rChange.ChangeMap = make(map[string]*ResourceChange)
+		index := 0
+		for ;index < len(fromValList); index ++ {
+			key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+			curResourceChange := &ResourceChange{
+				Name: key,
+			}
+			if index > len(toValueList) {
+				curResourceChange.Status = ADDED
+				curResourceChange.FromValue = fromValList[index]
+				curResourceChange.ToValue = nil
+				generateResourceChange(curResourceChange,fromValList[index],nil)
+				rChange.ChangeMap[key] = curResourceChange
+			}	else if !reflect.DeepEqual(fromValList[index],toValueList[index]) {
+				curResourceChange.FromValue = fromValList[index]
+				curResourceChange.ToValue = toValueList[index]
+				curResourceChange.Status = MODIFIED
+				generateResourceChange(curResourceChange,fromValList[index],toValueList[index])
+				rChange.ChangeMap[key] = curResourceChange
+			}
+		}
+
+		for ;index<len(toValueList);index++ {
+			key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+			rChange.ChangeMap[key] = &ResourceChange{
+				Name: key,
+			}
+			curResourceChange := rChange.ChangeMap[key]
+			curResourceChange.Status = ADDED
+			curResourceChange.FromValue = nil
+			curResourceChange.ToValue = toValueList[index]
+			generateResourceChange(curResourceChange,nil,toValueList[index])
 		}
 
 
@@ -374,7 +457,7 @@ func generateResourceChanges(from,to map[string]any) ResourceChangeMap{
 
 }
 
-func(v *View) printChanges(from,to runtime.Object) {
+func(v *View) getChanges(from,to runtime.Object) ResourceChangeMap{
 	var f map[string]any 
 	if from == nil {
 		f = make(map[string]any)
@@ -390,8 +473,48 @@ func(v *View) printChanges(from,to runtime.Object) {
 	}
 	
 
-	changeMap := generateResourceChanges(f,t)
-	fmt.Printf("%s",changeMap)
+	return generateResourceChanges(f,t)
+	
+}
+
+func (v *View) StringifyChangeMap(changeMap ResourceChangeMap,spaces string) string{
+	spaces+= "   "
+	msg := ""
+	for key,value:= range changeMap {
+		isListKey := strings.HasPrefix(key,"[") && strings.HasSuffix(key,"]")
+		switch value.nextKind(){
+		case MAP:
+			if isListKey {
+				msg += fmt.Sprintf("%s{\n",spaces)
+			} else {
+				msg += fmt.Sprintf("%s%s = {\n",spaces,key)	
+			}
+			msg += v.StringifyChangeMap(value.ChangeMap,spaces)
+			msg += fmt.Sprintf("%s}\n",spaces)
+			msg += fmt.Sprintln()
+
+		case LIST:
+			if isListKey {
+				msg += fmt.Sprintf("%s[\n",spaces)
+			} else {
+				msg += fmt.Sprintf("%s%s = [\n",spaces,key)			
+			}
+			msg += v.StringifyChangeMap(value.ChangeMap,spaces)
+			msg += fmt.Sprintf("%s]\n",spaces)
+			msg += fmt.Sprintln()
+		default:
+			switch value.Status {
+			case ADDED:
+					msg += fmt.Sprintf("%s+++++ %s = %s\n",spaces,key,fmt.Sprint(value.ToValue))
+				
+			case REMOVED:
+					msg += fmt.Sprintf("%s----- %s = %s\n",spaces,key,fmt.Sprint(value.FromValue))
+			default:
+				msg += fmt.Sprintf("%s~~~~~ %s = %s -> %s\n",spaces,key,fmt.Sprint(value.FromValue),fmt.Sprint(value.ToValue))
+			}
+		}
+	}
+	return msg
 }
 
 func (v *View) planColoredPrinter(m map[string]*CompareResources){
@@ -403,7 +526,20 @@ func (v *View) planColoredPrinter(m map[string]*CompareResources){
 	_,_ = v.streams.Println()
 	_,_ = v.streams.Println("Kubehcl will perform the following actions:")
 	_,_ = v.streams.Println()
-	for _,value := range m {
-		v.printChanges(value.Current,value.Wanted)
+	for key,value := range m {
+		changeMap := v.getChanges(value.Current,value.Wanted)
+		if len(changeMap) > 0 {
+			_,_ = v.streams.Printf("%s {",key)
+			_,_ = v.streams.Println()
+			_,_ = v.streams.Println()
+			msg := v.StringifyChangeMap(changeMap,"")
+			msg = strings.ReplaceAll(msg,"+++++",colorstring.Color("[bold][green]+[reset]"))
+			msg = strings.ReplaceAll(msg,"-----",colorstring.Color("[bold][red]-[reset]"))
+			msg = strings.ReplaceAll(msg,"~~~~~",colorstring.Color("[bold][yellow]~[reset]"))
+			_,_ = v.streams.Print(msg)
+			_,_ = v.streams.Println("}")
+			_,_ = v.streams.Println()
+		}
+
 	}
 }
