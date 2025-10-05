@@ -10,43 +10,43 @@
 
 # }
 
-kube_resource "foo" {
-  for_each = {
-    "foo" = "bar",
-    "bar" = "foo"
-  }
-  apiVersion = "apps/v1"
-  kind       = "Deployment"
-  metadata = {
-    name = each.key
-    labels = {
-      app = each.value
-    }
-  }
-  spec = {
-    replicas = 5
-    selector = {
-      matchLabels = {
-        app = each.value
-      }
-    }
-    template = {
-      metadata = {
-        labels = {
-          app = each.value
-        }
-      }
-      spec = {
-        containers = [{
-          name  = each.value
-          image = "nginx:1.14.2"
-          ports = var.foo
-        }]
-      }
-    }
-  }
-  # depends_on = [module.test, kube_resource.namespace]
-}
+# kube_resource "foo" {
+#   for_each = {
+#     "foo" = "bar",
+#     "bar" = "foo"
+#   }
+#   apiVersion = "apps/v1"
+#   kind       = "Deployment"
+#   metadata = {
+#     name = each.key
+#     labels = {
+#       app = each.value
+#     }
+#   }
+#   spec = {
+#     replicas = 1
+#     selector = {
+#       matchLabels = {
+#         app = each.value
+#       }
+#     }
+#     template = {
+#       metadata = {
+#         labels = {
+#           app = each.value
+#         }
+#       }
+#       spec = {
+#         containers = [{
+#           name  = each.value
+#           image = "nginx:1.14.2"
+#           ports = var.foo
+#         }]
+#       }
+#     }
+#   }
+#   # depends_on = [module.test, kube_resource.namespace]
+# }
 
 # module "test" {
 

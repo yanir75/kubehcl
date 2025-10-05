@@ -118,7 +118,6 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 	diags = append(diags, g.Walk(validateFunc)...)
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(planFunc)...)
-		cfg.DeleteResources()
 	}
 	if diags.HasErrors(){
 		v.DiagPrinter(diags,viewArguments)

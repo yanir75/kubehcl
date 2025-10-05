@@ -22,6 +22,7 @@ import (
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"kubehcl.sh/kubehcl/kube/kubeclient/storage"
 	"kubehcl.sh/kubehcl/settings"
 )
@@ -44,6 +45,7 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 	// cfg.StorageKind = storageKind
 	cfg.Settings = conf
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
+	
 	err := cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 	if err != nil {
 		panic("Shouldn't get here")
@@ -94,7 +96,6 @@ func (cfg *Config) validateNamespace() hcl.Diagnostics {
 func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (kube.ResourceList, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	data, err := ctyjson.Marshal(value, value.Type())
-
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -115,6 +116,8 @@ func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (ku
 			Subject:  rg,
 		})
 	}
+	obj := kubeResourceList[0].Object.(*unstructured.Unstructured)
+	obj.Object["metadata"].(map[string]any)["annotations"].(map[string]any)["kubectl.kubernetes.io/last-applied-configuration"] = string(data)
 	return kubeResourceList, diags
 }
 

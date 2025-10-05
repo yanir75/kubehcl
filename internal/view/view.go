@@ -19,7 +19,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/mitchellh/colorstring"
-	"github.com/zclconf/go-cty/cty"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubehcl.sh/kubehcl/internal/configs"
@@ -31,28 +30,26 @@ import (
 type Status int
 
 const (
-	ADDED Status = iota
-	REMOVED 
-	MODIFIED 
+	ADDED = iota
+	REMOVED
+	MODIFIED
 )
 
-type Line struct {
+type DiffMap map[string]Status
+
+type ResourceChangeMap map[string]*ResourceChange
+type ResourceChange struct{
+	ChangeMap ResourceChangeMap
 	Name string
-	ToValue any
 	FromValue any
+	ToValue any
 	Status Status
-}
-type ResourceChanges struct {
-	Name string
-	Lines []*Line
 }
 
-type CmpAttr struct {
-	Name string
-	FromAttr any 
-	ToAttr any
-	Status Status
+func (r * ResourceChange) hasNext() bool{
+	return r.ChangeMap != nil
 }
+
 type CompareResources struct{
 	Current runtime.Object
 	Wanted runtime.Object
@@ -220,32 +217,6 @@ For more help on using this command, run:
   kubehcl %s -help
 `
 
-// outputColumns returns the number of text character cells any non-error
-// output should be wrapped to.
-//
-// This is the number of columns to use if you are calling v.streams.Print or
-// related functions.
-// func (v *View) outputColumns() int {
-// 	return v.streams.Stdout.Columns()
-// }
-
-// errorColumns returns the number of text character cells any error
-// output should be wrapped to.
-//
-// This is the number of columns to use if you are calling v.streams.Eprint
-// or related functions.
-// func (v *View) errorColumns() int {
-// 	return v.streams.Stderr.Columns()
-// }
-
-// outputHorizRule will call v.streams.Println with enough horizontal line
-// characters to fill an entire row of output.
-//
-// If UI color is enabled, the rule will get a dark grey coloring to try to
-// visually de-emphasize it.
-// func (v *View) outputHorizRule() {
-// 	v.streams.Println(format.HorizontalRule(v.colorize, v.outputColumns()))
-// }
 
 func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
@@ -261,166 +232,6 @@ func (v *View) DiagPrinter (diags hcl.Diagnostics, viewDef *ViewArgs) {
 	v.Diagnostics(d)
 }
 
-func inferType(value interface{})cty.Value {
-
-	switch tt:=value.(type){
-	case string:
-		return cty.StringVal(tt)
-	case int64:
-		return cty.NumberIntVal(tt)
-	case float64:
-		return cty.NumberFloatVal(tt)
-	case bool:
-		return cty.BoolVal(tt)
-	case []any:
-		var vals []cty.Value
-		for _,val := range tt {
-			vals = append(vals, inferType(val))
-		}
-		return cty.ListVal(vals)
-
-	case map[string]any:
-		valMap := make(map[string]cty.Value)
-		for key,val := range tt {
-			valMap[key] = inferType(val)
-		}
-		return cty.ObjectVal(valMap)
-	default:
-		panic("Unknown type")
-	}
-}
-
-// func determineAttr(attrName string ,current *resource.Info,wanted *resource.Info) string{
-// 	if current == nil {
-// 		return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName))
-// 	}
-
-// 	if wanted == nil {
-// 		return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName))
-// 	}
-
-// 	switch w:=wanted.Object.(type) {
-// 	case *unstructured.Unstructured:
-// 		switch c:=current.Object.(type){
-// 		case *unstructured.Unstructured:
-// 			if _,exists := c.Object[attrName]; !exists {
-// 				return colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",attrName))
-// 			}
-
-// 			if _,exists := w.Object[attrName]; !exists {
-// 				return colorstring.Color(fmt.Sprintf("[bold][red]-[reset] %s",attrName))
-// 			}
-
-// 			if reflect.DeepEqual(c.Object[attrName],w.Object[attrName]) {
-// 				return ""
-// 			} else {
-// 				return colorstring.Color(fmt.Sprintf("[bold][yellow]~[reset] %s",attrName))
-// 			}
-
-// 		}
-// 	}
-// 	panic("Didn't return any value")
-// }
-
-
-
-
-// func printResourceDiff(name string,current *resource.Info,wanted *resource.Info) {
-//     f := hclwrite.NewEmptyFile()
-// 	if wanted != nil  && current != nil {
-// 		cur := current.Object.(*unstructured.Unstructured)
-// 		// wan := wanted.Object.(*unstructured.Unstructured)
-// 		fmt.Printf("%s",cur.man)
-// 	}
-	
-// 	if current != nil {
-// 		switch tt:= current.Object.(type){
-// 		case *unstructured.Unstructured:
-// 			removeUnnecessaryFields(tt.Object)
-// 		}
-// 	}
-
-// 	if wanted != nil {
-// 		switch tt:= wanted.Object.(type){
-// 		case *unstructured.Unstructured:
-// 			removeUnnecessaryFields(tt.Object)
-// 		}
-// 	}
-// 	if wanted != nil {
-// 		switch tt:=wanted.Object.(type){
-// 		case *unstructured.Unstructured:
-// 				block := f.Body().AppendNewBlock(name,[]string{})
-// 				body := block.Body()
-// 				if attr:=determineAttr("kind",current,wanted); attr!= "" {
-// 					body.SetAttributeValue(attr,inferType(tt.Object["kind"]))
-// 				}
-
-// 				if attr:=determineAttr("apiVersion",current,wanted); attr!= "" {
-// 					body.SetAttributeValue(attr,inferType(tt.Object["apiVersion"]))
-// 				}
-
-// 				for key,value := range tt.Object{
-// 					if attr:=determineAttr(key,current,wanted); attr!= "" {
-// 						body.SetAttributeValue(attr,inferType(value))
-// 					}
-// 				}				// fmt.Printf("key: %s value: %s\n",key,value)
-
-// 		}
-// 	}
-
-// 	if wanted == nil {
-// 		switch tt:=current.Object.(type){
-// 		case *unstructured.Unstructured:
-// 				block := f.Body().AppendNewBlock(name,[]string{})
-// 				body := block.Body()
-// 				if attr:=determineAttr("kind",current,wanted); attr!= "" {
-// 					body.SetAttributeValue(attr,inferType(tt.Object["kind"]))
-// 				}
-
-// 				if attr:=determineAttr("apiVersion",current,wanted); attr!= "" {
-// 					body.SetAttributeValue(attr,inferType(tt.Object["apiVersion"]))
-// 				}
-// 				for key,value := range tt.Object{
-// 					if attr:=determineAttr(key,current,wanted); attr!= "" {
-// 						body.SetAttributeValue(attr,inferType(value))
-// 					}
-// 				}				// fmt.Printf("key: %s value: %s\n",key,value)
-
-// 		}
-// 	}
-
-// 	hclStr := string(f.Bytes())
-// 	splitStr := strings.Split(hclStr, "\n")
-// 	splitStr[0] = colorstring.Color(fmt.Sprintf("[bold][green]+[reset] %s",splitStr[0]))
-// 	fmt.Printf("%s",strings.Join(splitStr,"\n"))
-// 	// f.WriteTo(os.Stdout)
-
-// }
-
-// func PlanPrinter(wanted,current map[string]kube.ResourceList){
-// 	// var buf bytes.Buffer
-// 	fmt.Println("Kubehcl will use the following symbols for each action and attribute")
-// 	fmt.Println()
-// 	fmt.Println(colorstring.Color("[bold][green]+[reset] create"))
-// 	fmt.Println(colorstring.Color("[bold][yellow]~[reset] replace"))
-// 	fmt.Println(colorstring.Color("[bold][red]-[reset] destroy"))
-// 	fmt.Println()
-// 	fmt.Println("Kubehcl will perform the following actions:")
-// 	fmt.Println()
-
-// 	for key,value := range wanted {
-// 		currentList := current[key]
-// 		for i,val := range value {
-// 			if i< len(currentList){
-// 				printResourceDiff(key,currentList[i],val)
-// 			} else {
-// 				printResourceDiff(key,nil,val)
-// 			}
-// 		}
-// 	}
-// }
-
-
 func (v *View) PlanPrinter(m map[string]*CompareResources,viewDef *ViewArgs) {
 	v.SetConfigSources(configs.Parser().Files)
 	v.Configure(viewDef)
@@ -431,191 +242,159 @@ func (v *View) PlanPrinter(m map[string]*CompareResources,viewDef *ViewArgs) {
 	}
 }
 
-func determineAttrDiff(fromVal,toVal any,key string)[]*CmpAttr{
-	cmpAttrList := []*CmpAttr{}
-
-	if fromVal == nil && toVal != nil {
-		cmpAttr := &CmpAttr{
-				Name: key,
-				FromAttr: fromVal,
-				ToAttr: toVal,
-				Status: ADDED,
-			}
-		cmpAttrList = append(cmpAttrList, cmpAttr)
-		return cmpAttrList
-	}
-
-	if fromVal != nil && toVal == nil {
-		cmpAttr := &CmpAttr{
-				Name: key,
-				FromAttr: fromVal,
-				ToAttr: toVal,
-				Status: REMOVED,
-			}
-		cmpAttrList = append(cmpAttrList, cmpAttr)
-		return cmpAttrList
-	}
-
-	switch fromValTT:=fromVal.(type) {
-		case map[string]any:
-			toValTT := toVal.(map[string]any)
-			for item,fromValMap := range fromValTT {
-				if toValMap,ok := toValTT[item]; ok {
-					if !reflect.DeepEqual(toValMap,fromValMap){
-						cmpAttrList = append(cmpAttrList, determineAttrDiff(fromValMap,toValMap,fmt.Sprintf("%s.%s",key,item))...)
-					}
-				} else {
-						cmpAttrList = append(cmpAttrList, determineAttrDiff(fromValMap,nil,fmt.Sprintf("%s.%s",key,item))...)	
-				}
-			}
-
-			for item,toValMap := range toValTT {
-				if _,ok := fromValTT[item]; !ok {
-					cmpAttrList = append(cmpAttrList, determineAttrDiff(nil,toValMap,fmt.Sprintf("%s.%s",key,item))...)	
-				}
-			}
-			return cmpAttrList
-
-		case []any:
-			toValTT := toVal.([]any)
-			if len(toValTT) < len(fromValTT) {
-				index := 0
-				for _,item := range toValTT {
-					if !reflect.DeepEqual(fromValTT[index],item){
-						cmpAttrList = append(cmpAttrList, determineAttrDiff(fromValTT[index],item,fmt.Sprintf("%s[%d]",key,index))...)
-					}
-					index+=1
-				}
-				for ; index<len(fromValTT); index++ {
-					cmpAttrList = append(cmpAttrList, determineAttrDiff(fromValTT[index],nil,fmt.Sprintf("%s[%d]",key,index))...)
-				}
-				return cmpAttrList
-			} else {
-				index := 0
-				for _,item := range fromValTT {
-					if !reflect.DeepEqual(toValTT[index],item){
-						cmpAttrList = append(cmpAttrList, determineAttrDiff(item,toValTT[index],fmt.Sprintf("%s[%d]",key,index))...)
-					}
-					index+=1
-				}
-				for ; index<len(toValTT); index++ {
-					cmpAttrList = append(cmpAttrList, determineAttrDiff(nil,toValTT[index],fmt.Sprintf("%s[%d]",key,index))...)
-				}
-				return cmpAttrList
-			}
-
-		default:
-			if !reflect.DeepEqual(fromVal,toVal){
-				cmpAttrList = append(cmpAttrList, &CmpAttr{
-					Name: key,
-					FromAttr: fromVal,
-					ToAttr: toVal,
-					Status: MODIFIED,
-				})
-				return cmpAttrList
-			}
-	}
-	return cmpAttrList
-}
-
-func determineMapDiff(current,wanted map[string]any)map[string]*CmpAttr{
-	diffMap := make(map[string]*CmpAttr)
-	for key,curVal := range current {
-		if wanVal,ok := wanted[key]; ok {
-			attrsCmp := determineAttrDiff(curVal,wanVal,key)
-			for _,item := range attrsCmp {
-				if _,inMap := diffMap[item.Name];inMap {
-					panic("Item should not appear twice"+item.Name)
-				}
-				diffMap[item.Name] = item
-			}
-		} else {
-			diffMap[key] = &CmpAttr{
-				Name: key,
-				FromAttr: curVal,
-				ToAttr: nil,
-				Status: REMOVED}
-		}
-	}
-
-	for key,wanVal := range wanted {
-		if _,ok := current[key]; !ok {
-			diffMap[key] = &CmpAttr{
-				Name: key,
-				FromAttr: nil,
-				ToAttr: wanVal,
-				Status: ADDED}
-		} 
-	}
-	return diffMap
-
-}
-
-
-
-func generateResourceChanges(m map[string]*CompareResources) []*ResourceChanges{
-
-	resourceChanges := []*ResourceChanges{}
-	for name,cmp := range m {
-		var mFrom map[string]any = make(map[string]any)
-		var mTo map[string]any = make(map[string]any)
-		if cmp.Current != nil {
-			current := cmp.Current.(*unstructured.Unstructured)
-			mFrom = current.Object
-		}
-		if cmp.Wanted != nil {
-			wanted := cmp.Wanted.(*unstructured.Unstructured)
-			mTo = wanted.Object
-		}
-		diffMap := determineMapDiff(mFrom,mTo)
-		if len(diffMap) > 0 {
-			resourceChange := &ResourceChanges{
-								Name: name,
-								Lines: []*Line{},
-							}
-			for key,value := range diffMap {
-				if value.FromAttr == nil {
-					resourceChange.Lines = append(resourceChange.Lines, 
-						&Line{
-							Name: key,
-							ToValue: value.ToAttr,
-							FromValue: nil,
-							Status: value.Status,
-						},
-					)
-				} else if value.ToAttr == nil {
-					resourceChange.Lines = append(resourceChange.Lines, 
-						&Line{
-							Name: key,
-							ToValue: nil,
-							FromValue: value.FromAttr,
-							Status: value.Status,
-						},
-					)
-					} else {
-						resourceChange.Lines = append(resourceChange.Lines, 
-							&Line{
-								Name: key,
-								ToValue: value.ToAttr,
-								FromValue: value.FromAttr,
-								Status: value.Status,
-							},
-						)
-					}
-			}
-			resourceChanges = append(resourceChanges, resourceChange)
-		}
-	}
-
-	return resourceChanges
-}
-
 func (v *View) plainPlanPrinter(m map[string]*CompareResources){
 
 }
 
+func addAllChangesMap(rChange *ResourceChange,v map[string]any,status Status) {
+	rChange.ChangeMap = make(map[string]*ResourceChange)
+	for key,value := range v {
+		switch status {
+			case ADDED:
+				rChange.ChangeMap[key] = &ResourceChange{
+					Name: key,
+					FromValue: nil,
+					ToValue: value,
+					Status: status,
+				}			
+			case REMOVED:
+				rChange.ChangeMap[key] = &ResourceChange{
+					Name: key,
+					FromValue: value,
+					ToValue: nil,
+					Status: status,
+				}
+		}
+		addAllChanges(rChange.ChangeMap[key],value,status)
+	}
+}
+
+func addAllChanges(rChange *ResourceChange,v any,status Status) {
+	switch tt:=v.(type) {
+		case map[string]any:
+			addAllChangesMap(rChange,tt,status)
+		default:
+			rChange.ChangeMap = nil
+	}
+
+	}
+
+
+func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
+	if fromValue == nil {
+		addAllChanges(rChange,toValue,ADDED)
+		return
+	}
+
+	if toValue == nil {
+		addAllChanges(rChange,toValue,REMOVED)
+		return
+	}
+
+	switch fromValMap := fromValue.(type) {
+	case map[string]any:
+		toValueMap := toValue.(map[string]any)
+		rChange.ChangeMap = make(map[string]*ResourceChange)
+
+		for key,fromVal := range fromValMap {
+				curResourceChange := &ResourceChange{
+					Name: key,
+				}
+
+			if toVal,ok := toValueMap[key];!ok {
+				curResourceChange.Status = ADDED
+				curResourceChange.FromValue = fromVal
+				curResourceChange.ToValue = nil
+				generateResourceChange(curResourceChange,fromVal,nil)
+				rChange.ChangeMap[key] = curResourceChange
+			} else if !reflect.DeepEqual(fromVal,toVal) {
+				curResourceChange.FromValue = fromVal
+				curResourceChange.ToValue = toVal
+				curResourceChange.Status = MODIFIED
+				generateResourceChange(curResourceChange,fromVal,toVal)
+				rChange.ChangeMap[key] = curResourceChange
+			}
+		}
+
+		for key,toVal := range toValueMap {
+			if _,ok := fromValMap[key];!ok {
+				rChange.ChangeMap[key] = &ResourceChange{
+					Name: key,
+				}
+				curResourceChange := rChange.ChangeMap[key]
+				curResourceChange.Status = ADDED
+				curResourceChange.FromValue = nil
+				curResourceChange.ToValue = toVal
+				generateResourceChange(curResourceChange,nil,toVal)
+			} 
+		}
+
+
+	default:
+	}
+}
+
+func generateResourceChanges(from,to map[string]any) ResourceChangeMap{
+	dMap := make(ResourceChangeMap)
+	for key,fromValue := range from {
+		if toValue,ok := to[key]; !ok {
+			dMap[key] = &ResourceChange{
+				Name: key,
+				FromValue: fromValue,
+				ToValue: nil,
+				Status: REMOVED,
+			}
+			generateResourceChange(dMap[key],fromValue,nil)
+		} else if !reflect.DeepEqual(toValue,fromValue){
+			rChange := &ResourceChange{
+				Name: key,
+				FromValue: fromValue,
+				ToValue: toValue,
+				Status: MODIFIED,
+			}
+			dMap[key] = rChange
+			generateResourceChange(rChange,fromValue,toValue)
+		}
+	}
+
+	for key,toValue := range to {
+		if _,ok := from[key]; !ok {
+			dMap[key] = &ResourceChange{
+				Name: key,
+				FromValue: nil,
+				ToValue: toValue,
+				Status: ADDED,
+			}
+			generateResourceChange(dMap[key],nil,toValue)
+
+		} 
+	}
+
+	return dMap
+
+}
+
+func(v *View) printChanges(from,to runtime.Object) {
+	var f map[string]any 
+	if from == nil {
+		f = make(map[string]any)
+	} else {
+		f = from.(*unstructured.Unstructured).Object
+	}
+	var t map[string]any 
+
+	if to == nil {
+		t = make(map[string]any)
+	} else {
+		t = to.(*unstructured.Unstructured).Object
+	}
+	
+
+	changeMap := generateResourceChanges(f,t)
+	fmt.Printf("%s",changeMap)
+}
+
 func (v *View) planColoredPrinter(m map[string]*CompareResources){
-	changes := generateResourceChanges(m)
 	_,_ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
 	_,_ = v.streams.Println()
 	_,_ = v.streams.Println(colorstring.Color("[bold][green]+[reset] create"))
@@ -624,26 +403,7 @@ func (v *View) planColoredPrinter(m map[string]*CompareResources){
 	_,_ = v.streams.Println()
 	_,_ = v.streams.Println("Kubehcl will perform the following actions:")
 	_,_ = v.streams.Println()
-	for _,change := range changes {
-		_,_ = v.streams.Printf("%s {",change.Name)
-		_,_ = v.streams.Println()
-		_,_ = v.streams.Println()
-	// 	for _,line := range change.Lines {
-	// 		switch line.Status {
-	// 			case ADDED:
-	// 				_,_ = v.streams.Print(colorstring.Color("[bold][green]  +[reset]"))
-	// 			case MODIFIED:
-	// 				_,_ = v.streams.Print(colorstring.Color("[bold][yellow]  ~[reset]"))
-	// 			default:
-	// 				_,_ = v.streams.Print(colorstring.Color("[bold][red]  -[reset]"))
-	// 		}
-	// 		_,_ = v.streams.Printf("%s",line.Value)
-	// 		_,_ = v.streams.Println()
-	// 	}
-		_,_ = v.streams.Println()
-		_,_ = v.streams.Println("}")
-		_,_ = v.streams.Println()
-	// 	_,_ = v.streams.Println()
-
-	} 
+	for _,value := range m {
+		v.printChanges(value.Current,value.Wanted)
+	}
 }
