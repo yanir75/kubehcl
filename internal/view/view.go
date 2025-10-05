@@ -504,24 +504,24 @@ func (v *View) StringifyChangeMap(changeMap ResourceChangeMap, spaces string) st
 	spaces += "   "
 	msg := ""
 	for key, value := range changeMap {
-		isListKey := strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]")
+		// isListKey := strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]")
 		switch value.nextKind() {
 		case MAP:
-			if isListKey {
-				msg += fmt.Sprintf("%s{\n", spaces)
-			} else {
+			// if isListKey {
+				// msg += fmt.Sprintf("%s{\n", spaces)
+			// } else {
 				msg += fmt.Sprintf("%s%s = {\n", spaces, key)
-			}
+			// }
 			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
 			msg += fmt.Sprintf("%s}\n", spaces)
 			msg += fmt.Sprintln()
 
 		case LIST:
-			if isListKey {
-				msg += fmt.Sprintf("%s[\n", spaces)
-			} else {
+			// if isListKey {
+				// msg += fmt.Sprintf("%s[\n", spaces)
+			// } else {
 				msg += fmt.Sprintf("%s%s = [\n", spaces, key)
-			}
+			// }
 			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
 			msg += fmt.Sprintf("%s]\n", spaces)
 			msg += fmt.Sprintln()
