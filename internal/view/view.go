@@ -314,10 +314,36 @@ func addAllChangesMap(rChange *ResourceChange, v map[string]any, status Status) 
 	}
 }
 
+func addAllChangesList(rChange *ResourceChange, v []any, status Status) {
+	rChange.ChangeMap = make(map[string]*ResourceChange)
+	for index, value := range v {
+		key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+		switch status {
+		case ADDED:
+			rChange.ChangeMap[key] = &ResourceChange{
+				Name:      key,
+				FromValue: nil,
+				ToValue:   value,
+				Status:    status,
+			}
+		case REMOVED:
+			rChange.ChangeMap[key] = &ResourceChange{
+				Name:      key,
+				FromValue: value,
+				ToValue:   nil,
+				Status:    status,
+			}
+		}
+		addAllChanges(rChange.ChangeMap[key], value, status)
+	}
+}
+
 func addAllChanges(rChange *ResourceChange, v any, status Status) {
 	switch tt := v.(type) {
 	case map[string]any:
 		addAllChangesMap(rChange, tt, status)
+	case []any:
+		addAllChangesList(rChange, tt, status)
 	default:
 		rChange.ChangeMap = nil
 	}
@@ -500,14 +526,14 @@ func (v *View) StringifyChangeMap(changeMap ResourceChangeMap, spaces string) st
 			msg += fmt.Sprintf("%s]\n", spaces)
 			msg += fmt.Sprintln()
 		default:
+			newSpaces := spaces[:len(spaces)-2]
 			switch value.Status {
 			case ADDED:
-				msg += fmt.Sprintf("%s+++++ %s = %s\n", spaces, key, fmt.Sprint(value.ToValue))
-
+				msg += fmt.Sprintf("%s+++++ %s = %s\n", newSpaces, key, fmt.Sprint(value.ToValue))
 			case REMOVED:
-				msg += fmt.Sprintf("%s----- %s = %s\n", spaces, key, fmt.Sprint(value.FromValue))
+				msg += fmt.Sprintf("%s----- %s = %s\n", newSpaces, key, fmt.Sprint(value.FromValue))
 			default:
-				msg += fmt.Sprintf("%s~~~~~ %s = %s -> %s\n", spaces, key, fmt.Sprint(value.FromValue), fmt.Sprint(value.ToValue))
+				msg += fmt.Sprintf("%s~~~~~ %s = %s -> %s\n", newSpaces, key, fmt.Sprint(value.FromValue), fmt.Sprint(value.ToValue))
 			}
 		}
 	}
@@ -526,7 +552,13 @@ func (v *View) planColoredPrinter(m map[string]*CompareResources) {
 	for key, value := range m {
 		changeMap := v.getChanges(value.Current, value.Wanted)
 		if len(changeMap) > 0 {
-			_, _ = v.streams.Printf("%s {", key)
+			if value.Current == nil {
+				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][green]+[reset]"), key)
+			} else if value.Wanted == nil {
+				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][red]-[reset]"), key)
+			} else {
+				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][yellow]~[reset]"), key)
+			}
 			_, _ = v.streams.Println()
 			_, _ = v.streams.Println()
 			msg := v.StringifyChangeMap(changeMap, "")

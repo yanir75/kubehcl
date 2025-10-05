@@ -24,8 +24,9 @@ func removeUnnecessaryFields(m map[string]interface{}) {
 	delete(meta, "resourceVersion")
 	delete(meta, "generation")
 	delete(meta, "selfLink")
-
 	delete(meta, "managedFields")
+	anno := meta["annotations"].(map[string]any)
+	delete(anno,"kubectl.kubernetes.io/last-applied-configuration")
 }
 
 func adjustCmp(m map[string]*view.CompareResources) {
