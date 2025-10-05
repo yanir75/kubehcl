@@ -21,12 +21,12 @@ func planCmd() *cobra.Command {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
-			client.Plan(args,conf,viewSettings,cmdSettings)
+			client.Plan(args, conf, viewSettings, cmdSettings)
 		},
 	}
 
 	AddCmdSettings(planCmd)
-	
+
 	return planCmd
 
 }

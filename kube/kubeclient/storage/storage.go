@@ -20,7 +20,7 @@ type Storage interface {
 	Get(name string) []byte
 	GetAllStateResources() (ResourceMap, hcl.Diagnostics)
 	GetResourceCurrentState(resources kube.ResourceList) (kube.ResourceList, hcl.Diagnostics)
-	BuildResourceFromState(wanted kube.ResourceList, name string,currentOnly bool) (kube.ResourceList, hcl.Diagnostics)
+	BuildResourceFromState(wanted kube.ResourceList, name string, currentOnly bool) (kube.ResourceList, hcl.Diagnostics)
 	DeleteState() hcl.Diagnostics
 	UpdateState() hcl.Diagnostics
 }

@@ -39,29 +39,30 @@ const (
 type DiffMap map[string]Status
 
 type ResourceChangeMap map[string]*ResourceChange
-type ResourceChange struct{
+type ResourceChange struct {
 	ChangeMap ResourceChangeMap
-	Name string
+	Name      string
 	FromValue any
-	ToValue any
-	Status Status
+	ToValue   any
+	Status    Status
 }
 
-func (r * ResourceChange) hasNext() bool{
+func (r *ResourceChange) hasNext() bool {
 	return r.ChangeMap != nil
 }
 
-type Kind int 
-const(
+type Kind int
+
+const (
 	REGULAR = iota
 	LIST
 	MAP
 )
 
-func (r * ResourceChange) nextKind() Kind{
-	if r.hasNext(){
+func (r *ResourceChange) nextKind() Kind {
+	if r.hasNext() {
 		for key := range r.ChangeMap {
-			if strings.HasPrefix(key,"[") && strings.HasSuffix(key,"]") {
+			if strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]") {
 				return LIST
 			} else {
 				return MAP
@@ -72,9 +73,9 @@ func (r * ResourceChange) nextKind() Kind{
 	return REGULAR
 }
 
-type CompareResources struct{
+type CompareResources struct {
 	Current runtime.Object
-	Wanted runtime.Object
+	Wanted  runtime.Object
 }
 
 type ViewArgs struct {
@@ -177,7 +178,7 @@ func (v *View) SetConfigSources(cb func() map[string]*hcl.File) {
 // Warnings are printed to stdout, and errors to stderr.
 func (v *View) Diagnostics(diags tfdiags.Diagnostics) {
 	diags.Sort()
-	
+
 	if len(diags) == 0 {
 		return
 	}
@@ -239,14 +240,13 @@ For more help on using this command, run:
   kubehcl %s -help
 `
 
-
 func (v *View) SetShowSensitive(showSensitive bool) {
 	v.showSensitive = showSensitive
 }
 
 // Prints the diagnostic received with the arguments.
 // This will print them in the same format as opentofu format
-func (v *View) DiagPrinter (diags hcl.Diagnostics, viewDef *ViewArgs) {
+func (v *View) DiagPrinter(diags hcl.Diagnostics, viewDef *ViewArgs) {
 	v.SetConfigSources(configs.Parser().Files)
 	var d tfdiags.Diagnostics
 	d = d.Append(diags)
@@ -254,7 +254,7 @@ func (v *View) DiagPrinter (diags hcl.Diagnostics, viewDef *ViewArgs) {
 	v.Diagnostics(d)
 }
 
-func (v *View) PlanPrinter(m map[string]*CompareResources,viewDef *ViewArgs) {
+func (v *View) PlanPrinter(m map[string]*CompareResources, viewDef *ViewArgs) {
 	v.SetConfigSources(configs.Parser().Files)
 	v.Configure(viewDef)
 	if v.colorize.Disable {
@@ -264,75 +264,74 @@ func (v *View) PlanPrinter(m map[string]*CompareResources,viewDef *ViewArgs) {
 	}
 }
 
-func (v *View) planPlainPrinter(m map[string]*CompareResources){
-	_,_ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
-	_,_ = v.streams.Println()
-	_,_ = v.streams.Println("+ create")
-	_,_ = v.streams.Println("~ modify")
-	_,_ = v.streams.Println("- remove")
-	_,_ = v.streams.Println()
-	_,_ = v.streams.Println("Kubehcl will perform the following actions:")
-	_,_ = v.streams.Println()
-	for key,value := range m {
-		changeMap := v.getChanges(value.Current,value.Wanted)
+func (v *View) planPlainPrinter(m map[string]*CompareResources) {
+	_, _ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
+	_, _ = v.streams.Println()
+	_, _ = v.streams.Println("+ create")
+	_, _ = v.streams.Println("~ modify")
+	_, _ = v.streams.Println("- remove")
+	_, _ = v.streams.Println()
+	_, _ = v.streams.Println("Kubehcl will perform the following actions:")
+	_, _ = v.streams.Println()
+	for key, value := range m {
+		changeMap := v.getChanges(value.Current, value.Wanted)
 		if len(changeMap) > 0 {
-			_,_ = v.streams.Printf("%s {",key)
-			_,_ = v.streams.Println()
-			_,_ = v.streams.Println()
-			msg := v.StringifyChangeMap(changeMap,"")
-			msg = strings.ReplaceAll(msg,"+++++","+")
-			msg = strings.ReplaceAll(msg,"-----","-")
-			msg = strings.ReplaceAll(msg,"~~~~~","~")
-			_,_ = v.streams.Print(msg)
-			_,_ = v.streams.Println("}")
-			_,_ = v.streams.Println()
+			_, _ = v.streams.Printf("%s {", key)
+			_, _ = v.streams.Println()
+			_, _ = v.streams.Println()
+			msg := v.StringifyChangeMap(changeMap, "")
+			msg = strings.ReplaceAll(msg, "+++++", "+")
+			msg = strings.ReplaceAll(msg, "-----", "-")
+			msg = strings.ReplaceAll(msg, "~~~~~", "~")
+			_, _ = v.streams.Print(msg)
+			_, _ = v.streams.Println("}")
+			_, _ = v.streams.Println()
 		}
 
 	}
 }
 
-func addAllChangesMap(rChange *ResourceChange,v map[string]any,status Status) {
+func addAllChangesMap(rChange *ResourceChange, v map[string]any, status Status) {
 	rChange.ChangeMap = make(map[string]*ResourceChange)
-	for key,value := range v {
+	for key, value := range v {
 		switch status {
-			case ADDED:
-				rChange.ChangeMap[key] = &ResourceChange{
-					Name: key,
-					FromValue: nil,
-					ToValue: value,
-					Status: status,
-				}			
-			case REMOVED:
-				rChange.ChangeMap[key] = &ResourceChange{
-					Name: key,
-					FromValue: value,
-					ToValue: nil,
-					Status: status,
-				}
+		case ADDED:
+			rChange.ChangeMap[key] = &ResourceChange{
+				Name:      key,
+				FromValue: nil,
+				ToValue:   value,
+				Status:    status,
+			}
+		case REMOVED:
+			rChange.ChangeMap[key] = &ResourceChange{
+				Name:      key,
+				FromValue: value,
+				ToValue:   nil,
+				Status:    status,
+			}
 		}
-		addAllChanges(rChange.ChangeMap[key],value,status)
+		addAllChanges(rChange.ChangeMap[key], value, status)
 	}
 }
 
-func addAllChanges(rChange *ResourceChange,v any,status Status) {
-	switch tt:=v.(type) {
-		case map[string]any:
-			addAllChangesMap(rChange,tt,status)
-		default:
-			rChange.ChangeMap = nil
+func addAllChanges(rChange *ResourceChange, v any, status Status) {
+	switch tt := v.(type) {
+	case map[string]any:
+		addAllChangesMap(rChange, tt, status)
+	default:
+		rChange.ChangeMap = nil
 	}
 
-	}
+}
 
-
-func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
+func generateResourceChange(rChange *ResourceChange, fromValue, toValue any) {
 	if fromValue == nil {
-		addAllChanges(rChange,toValue,ADDED)
+		addAllChanges(rChange, toValue, ADDED)
 		return
 	}
 
 	if toValue == nil {
-		addAllChanges(rChange,toValue,REMOVED)
+		addAllChanges(rChange, toValue, REMOVED)
 		return
 	}
 
@@ -342,28 +341,28 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 		toValueMap := toValue.(map[string]any)
 		rChange.ChangeMap = make(map[string]*ResourceChange)
 
-		for key,fromVal := range fromValMap {
-				curResourceChange := &ResourceChange{
-					Name: key,
-				}
+		for key, fromVal := range fromValMap {
+			curResourceChange := &ResourceChange{
+				Name: key,
+			}
 
-			if toVal,ok := toValueMap[key];!ok {
+			if toVal, ok := toValueMap[key]; !ok {
 				curResourceChange.Status = ADDED
 				curResourceChange.FromValue = fromVal
 				curResourceChange.ToValue = nil
-				generateResourceChange(curResourceChange,fromVal,nil)
+				generateResourceChange(curResourceChange, fromVal, nil)
 				rChange.ChangeMap[key] = curResourceChange
-			} else if !reflect.DeepEqual(fromVal,toVal) {
+			} else if !reflect.DeepEqual(fromVal, toVal) {
 				curResourceChange.FromValue = fromVal
 				curResourceChange.ToValue = toVal
 				curResourceChange.Status = MODIFIED
-				generateResourceChange(curResourceChange,fromVal,toVal)
+				generateResourceChange(curResourceChange, fromVal, toVal)
 				rChange.ChangeMap[key] = curResourceChange
 			}
 		}
 
-		for key,toVal := range toValueMap {
-			if _,ok := fromValMap[key];!ok {
+		for key, toVal := range toValueMap {
+			if _, ok := fromValMap[key]; !ok {
 				rChange.ChangeMap[key] = &ResourceChange{
 					Name: key,
 				}
@@ -371,17 +370,17 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 				curResourceChange.Status = ADDED
 				curResourceChange.FromValue = nil
 				curResourceChange.ToValue = toVal
-				generateResourceChange(curResourceChange,nil,toVal)
-			} 
+				generateResourceChange(curResourceChange, nil, toVal)
+			}
 		}
-	
+
 	case []any:
 		toValueList := toValue.([]any)
 		fromValList := fromValUnknown
 		rChange.ChangeMap = make(map[string]*ResourceChange)
 		index := 0
-		for ;index < len(fromValList); index ++ {
-			key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+		for ; index < len(fromValList); index++ {
+			key := fmt.Sprintf("[%s]", fmt.Sprint(index))
 			curResourceChange := &ResourceChange{
 				Name: key,
 			}
@@ -389,19 +388,19 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 				curResourceChange.Status = ADDED
 				curResourceChange.FromValue = fromValList[index]
 				curResourceChange.ToValue = nil
-				generateResourceChange(curResourceChange,fromValList[index],nil)
+				generateResourceChange(curResourceChange, fromValList[index], nil)
 				rChange.ChangeMap[key] = curResourceChange
-			}	else if !reflect.DeepEqual(fromValList[index],toValueList[index]) {
+			} else if !reflect.DeepEqual(fromValList[index], toValueList[index]) {
 				curResourceChange.FromValue = fromValList[index]
 				curResourceChange.ToValue = toValueList[index]
 				curResourceChange.Status = MODIFIED
-				generateResourceChange(curResourceChange,fromValList[index],toValueList[index])
+				generateResourceChange(curResourceChange, fromValList[index], toValueList[index])
 				rChange.ChangeMap[key] = curResourceChange
 			}
 		}
 
-		for ;index<len(toValueList);index++ {
-			key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+		for ; index < len(toValueList); index++ {
+			key := fmt.Sprintf("[%s]", fmt.Sprint(index))
 			rChange.ChangeMap[key] = &ResourceChange{
 				Name: key,
 			}
@@ -409,136 +408,134 @@ func generateResourceChange(rChange *ResourceChange,fromValue,toValue any) {
 			curResourceChange.Status = ADDED
 			curResourceChange.FromValue = nil
 			curResourceChange.ToValue = toValueList[index]
-			generateResourceChange(curResourceChange,nil,toValueList[index])
+			generateResourceChange(curResourceChange, nil, toValueList[index])
 		}
-
 
 	default:
 	}
 }
 
-func generateResourceChanges(from,to map[string]any) ResourceChangeMap{
+func generateResourceChanges(from, to map[string]any) ResourceChangeMap {
 	dMap := make(ResourceChangeMap)
-	for key,fromValue := range from {
-		if toValue,ok := to[key]; !ok {
+	for key, fromValue := range from {
+		if toValue, ok := to[key]; !ok {
 			dMap[key] = &ResourceChange{
-				Name: key,
+				Name:      key,
 				FromValue: fromValue,
-				ToValue: nil,
-				Status: REMOVED,
+				ToValue:   nil,
+				Status:    REMOVED,
 			}
-			generateResourceChange(dMap[key],fromValue,nil)
-		} else if !reflect.DeepEqual(toValue,fromValue){
+			generateResourceChange(dMap[key], fromValue, nil)
+		} else if !reflect.DeepEqual(toValue, fromValue) {
 			rChange := &ResourceChange{
-				Name: key,
+				Name:      key,
 				FromValue: fromValue,
-				ToValue: toValue,
-				Status: MODIFIED,
+				ToValue:   toValue,
+				Status:    MODIFIED,
 			}
 			dMap[key] = rChange
-			generateResourceChange(rChange,fromValue,toValue)
+			generateResourceChange(rChange, fromValue, toValue)
 		}
 	}
 
-	for key,toValue := range to {
-		if _,ok := from[key]; !ok {
+	for key, toValue := range to {
+		if _, ok := from[key]; !ok {
 			dMap[key] = &ResourceChange{
-				Name: key,
+				Name:      key,
 				FromValue: nil,
-				ToValue: toValue,
-				Status: ADDED,
+				ToValue:   toValue,
+				Status:    ADDED,
 			}
-			generateResourceChange(dMap[key],nil,toValue)
+			generateResourceChange(dMap[key], nil, toValue)
 
-		} 
+		}
 	}
 
 	return dMap
 
 }
 
-func(v *View) getChanges(from,to runtime.Object) ResourceChangeMap{
-	var f map[string]any 
+func (v *View) getChanges(from, to runtime.Object) ResourceChangeMap {
+	var f map[string]any
 	if from == nil {
 		f = make(map[string]any)
 	} else {
 		f = from.(*unstructured.Unstructured).Object
 	}
-	var t map[string]any 
+	var t map[string]any
 
 	if to == nil {
 		t = make(map[string]any)
 	} else {
 		t = to.(*unstructured.Unstructured).Object
 	}
-	
 
-	return generateResourceChanges(f,t)
-	
+	return generateResourceChanges(f, t)
+
 }
 
-func (v *View) StringifyChangeMap(changeMap ResourceChangeMap,spaces string) string{
-	spaces+= "   "
+func (v *View) StringifyChangeMap(changeMap ResourceChangeMap, spaces string) string {
+	spaces += "   "
 	msg := ""
-	for key,value:= range changeMap {
-		isListKey := strings.HasPrefix(key,"[") && strings.HasSuffix(key,"]")
-		switch value.nextKind(){
+	for key, value := range changeMap {
+		isListKey := strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]")
+		switch value.nextKind() {
 		case MAP:
 			if isListKey {
-				msg += fmt.Sprintf("%s{\n",spaces)
+				msg += fmt.Sprintf("%s{\n", spaces)
 			} else {
-				msg += fmt.Sprintf("%s%s = {\n",spaces,key)	
+				msg += fmt.Sprintf("%s%s = {\n", spaces, key)
 			}
-			msg += v.StringifyChangeMap(value.ChangeMap,spaces)
-			msg += fmt.Sprintf("%s}\n",spaces)
+			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
+			msg += fmt.Sprintf("%s}\n", spaces)
 			msg += fmt.Sprintln()
 
 		case LIST:
 			if isListKey {
-				msg += fmt.Sprintf("%s[\n",spaces)
+				msg += fmt.Sprintf("%s[\n", spaces)
 			} else {
-				msg += fmt.Sprintf("%s%s = [\n",spaces,key)			
+				msg += fmt.Sprintf("%s%s = [\n", spaces, key)
 			}
-			msg += v.StringifyChangeMap(value.ChangeMap,spaces)
-			msg += fmt.Sprintf("%s]\n",spaces)
+			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
+			msg += fmt.Sprintf("%s]\n", spaces)
 			msg += fmt.Sprintln()
 		default:
 			switch value.Status {
 			case ADDED:
-					msg += fmt.Sprintf("%s+++++ %s = %s\n",spaces,key,fmt.Sprint(value.ToValue))
-				
+				msg += fmt.Sprintf("%s+++++ %s = %s\n", spaces, key, fmt.Sprint(value.ToValue))
+
 			case REMOVED:
-					msg += fmt.Sprintf("%s----- %s = %s\n",spaces,key,fmt.Sprint(value.FromValue))
+				msg += fmt.Sprintf("%s----- %s = %s\n", spaces, key, fmt.Sprint(value.FromValue))
 			default:
-				msg += fmt.Sprintf("%s~~~~~ %s = %s -> %s\n",spaces,key,fmt.Sprint(value.FromValue),fmt.Sprint(value.ToValue))
+				msg += fmt.Sprintf("%s~~~~~ %s = %s -> %s\n", spaces, key, fmt.Sprint(value.FromValue), fmt.Sprint(value.ToValue))
 			}
 		}
 	}
 	return msg
 }
 
-func (v *View) planColoredPrinter(m map[string]*CompareResources){
-	_,_ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
-	_,_ = v.streams.Println()
-	_,_ = v.streams.Println(colorstring.Color("[bold][green]+[reset] create"))
-	_,_ = v.streams.Println(colorstring.Color("[bold][yellow]~[reset] modify"))
-	_,_ = v.streams.Println(colorstring.Color("[bold][red]-[reset] remove"))
-	_,_ = v.streams.Println()
-	_,_ = v.streams.Println("Kubehcl will perform the following actions:")
-	_,_ = v.streams.Println()
-	for key,value := range m {
-		changeMap := v.getChanges(value.Current,value.Wanted)
+func (v *View) planColoredPrinter(m map[string]*CompareResources) {
+	_, _ = v.streams.Println("Kubehcl will use the following symbols for each action and attribute")
+	_, _ = v.streams.Println()
+	_, _ = v.streams.Println(colorstring.Color("[bold][green]+[reset] create"))
+	_, _ = v.streams.Println(colorstring.Color("[bold][yellow]~[reset] modify"))
+	_, _ = v.streams.Println(colorstring.Color("[bold][red]-[reset] remove"))
+	_, _ = v.streams.Println()
+	_, _ = v.streams.Println("Kubehcl will perform the following actions:")
+	_, _ = v.streams.Println()
+	for key, value := range m {
+		changeMap := v.getChanges(value.Current, value.Wanted)
 		if len(changeMap) > 0 {
-			_,_ = v.streams.Printf("%s {",key)
-			_,_ = v.streams.Println()
-			_,_ = v.streams.Println()
-			msg := v.StringifyChangeMap(changeMap,"")
-			msg = strings.ReplaceAll(msg,"+++++",colorstring.Color("[bold][green]+[reset]"))
-			msg = strings.ReplaceAll(msg,"-----",colorstring.Color("[bold][red]-[reset]"))
-			msg = strings.ReplaceAll(msg,"~~~~~",colorstring.Color("[bold][yellow]~[reset]"))
-			_,_ = v.streams.Print(msg)
-			_,_ = v.streams.Println("}")
-			_,_ = v.streams.Println()
+			_, _ = v.streams.Printf("%s {", key)
+			_, _ = v.streams.Println()
+			_, _ = v.streams.Println()
+			msg := v.StringifyChangeMap(changeMap, "")
+			msg = strings.ReplaceAll(msg, "+++++", colorstring.Color("[bold][green]+[reset]"))
+			msg = strings.ReplaceAll(msg, "-----", colorstring.Color("[bold][red]-[reset]"))
+			msg = strings.ReplaceAll(msg, "~~~~~", colorstring.Color("[bold][yellow]~[reset]"))
+			_, _ = v.streams.Print(msg)
+			_, _ = v.streams.Println("}")
+			_, _ = v.streams.Println()
 		}
 
 	}

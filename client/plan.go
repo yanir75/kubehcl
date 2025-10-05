@@ -29,11 +29,11 @@ func removeUnnecessaryFields(m map[string]interface{}) {
 }
 
 func adjustCmp(m map[string]*view.CompareResources) {
-	for _,value := range m {
+	for _, value := range m {
 		if value.Current != nil {
 			cur := value.Current.(*unstructured.Unstructured)
 			removeUnnecessaryFields(cur.Object)
-		} 
+		}
 		if value.Wanted != nil {
 			wanted := value.Wanted.(*unstructured.Unstructured)
 			removeUnnecessaryFields(wanted.Object)
@@ -41,10 +41,10 @@ func adjustCmp(m map[string]*view.CompareResources) {
 	}
 }
 
-func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,cmdSettings *settings.CmdSettings) {
+func Plan(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
-		v.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
@@ -58,30 +58,30 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)
 	if diags.HasErrors() {
-		v.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
 	if d.BackendStorage.Kind == "stateless" {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Can't use plan in stateless mode",
+			Summary:  "Can't use plan in stateless mode",
 		})
 	}
 	if diags.HasErrors() {
-		v.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
-	
+
 	g := &configs.Graph{
 		DecodedModule: d,
 	}
 	diags = append(diags, g.Init()...)
-	cfg, cfgDiags := kubeclient.New(name,conf,d.BackendStorage.Kind)
+	cfg, cfgDiags := kubeclient.New(name, conf, d.BackendStorage.Kind)
 	diags = append(diags, cfgDiags...)
 
 	if diags.HasErrors() {
-		v.DiagPrinter(diags,viewArguments)
+		v.DiagPrinter(diags, viewArguments)
 		os.Exit(1)
 	}
 
@@ -104,7 +104,7 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 				if !planDiags.HasErrors() {
 					mutex.Lock()
 					defer mutex.Unlock()
-					for key,value := range wanted {
+					for key, value := range wanted {
 						wantedMap[key] = value
 					}
 				}
@@ -119,22 +119,22 @@ func Plan(args []string,conf *settings.EnvSettings,viewArguments *view.ViewArgs,
 	if !diags.HasErrors() {
 		diags = append(diags, g.Walk(planFunc)...)
 	}
-	if diags.HasErrors(){
-		v.DiagPrinter(diags,viewArguments)
+	if diags.HasErrors() {
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 
-	currentMap,diags := cfg.GetStateResourcesCurrentState()
-	if diags.HasErrors(){
-		v.DiagPrinter(diags,viewArguments)
+	currentMap, diags := cfg.GetStateResourcesCurrentState()
+	if diags.HasErrors() {
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
-	cmps,diags := cfg.CompareResources(wantedMap,currentMap)
-	if diags.HasErrors(){
-		v.DiagPrinter(diags,viewArguments)
+	cmps, diags := cfg.CompareResources(wantedMap, currentMap)
+	if diags.HasErrors() {
+		v.DiagPrinter(diags, viewArguments)
 		return
 	}
 	adjustCmp(cmps)
-	v.PlanPrinter(cmps,viewArguments)
+	v.PlanPrinter(cmps, viewArguments)
 
 }

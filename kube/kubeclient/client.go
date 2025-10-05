@@ -45,7 +45,7 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 	// cfg.StorageKind = storageKind
 	cfg.Settings = conf
 	cfg.Client = kube.New(cfg.Settings.RESTClientGetter())
-	
+
 	err := cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 	if err != nil {
 		panic("Shouldn't get here")

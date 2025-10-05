@@ -98,11 +98,11 @@ func (cfg *Config) DeleteResources() (map[string]bool, *kube.Result, hcl.Diagnos
 // If the resource does not exist it will simply be created
 func (cfg *Config) compareStates(wanted kube.ResourceList, name string) (*kube.Result, hcl.Diagnostics) {
 	// if cfg.StorageKind == "stateless"
-	current, diags := cfg.Storage.BuildResourceFromState(wanted, name,false)
+	current, diags := cfg.Storage.BuildResourceFromState(wanted, name, false)
 	if diags.HasErrors() {
 		return &kube.Result{}, diags
 	}
-	res, err := cfg.Client.Update(current, wanted,kube.ClientUpdateOptionServerSideApply(true,true))
+	res, err := cfg.Client.Update(current, wanted, kube.ClientUpdateOptionServerSideApply(true, true))
 
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{

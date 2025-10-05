@@ -290,14 +290,14 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 		for _, value := range res {
 			for _, val := range value {
 				resourceInfoMap := val.(*unstructured.Unstructured)
-				buff,err := json.Marshal(resourceInfoMap)
+				buff, err := json.Marshal(resourceInfoMap)
 				if err != nil {
-					panic("shouldn't get here:"+err.Error())
+					panic("shouldn't get here:" + err.Error())
 				}
 				reader := bytes.NewReader(buff)
-				resourceList,err := s.client.Build(reader,false)
+				resourceList, err := s.client.Build(reader, false)
 				if err != nil {
-					panic("shouldn't get here:"+err.Error())
+					panic("shouldn't get here:" + err.Error())
 				}
 				resList = append(resList, resourceList...)
 				// var resourceInfo = &resource.Info{}
@@ -309,7 +309,7 @@ func (s *KubeSecretStorage) GetResourceCurrentState(resources kube.ResourceList)
 				// resourceInfo.Mapping = &meta.RESTMapping{}
 				// resourceInfo.Mapping.Resource = val.GetObjectKind().GroupVersionKind().GroupVersion().WithResource("")
 				// resourceInfo.Mapping.GroupVersionKind = val.GetObjectKind().GroupVersionKind()
-				// updateErr := resourceInfo.Get()				
+				// updateErr := resourceInfo.Get()
 				// if updateErr != nil {
 				// 	panic("should not get here: " + updateErr.Error())
 				// }
