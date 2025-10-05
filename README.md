@@ -26,9 +26,9 @@ brew tap yanir75/homebrew-apps https://github.com/yanir75/homebrew-apps
 brew install kubehcl  
 ```  
   
-Linux  
+Linux/Windows  
 ```
-go install github.com/yanir75/kubehcl@latest
+Download the relevant package from https://github.com/yanir75/kubehcl/releases
 ```
 
 ## Functions
