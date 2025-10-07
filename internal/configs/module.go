@@ -23,6 +23,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
+	"kubehcl.sh/kubehcl/internal/logging"
 )
 
 //TODO: remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
@@ -90,6 +91,12 @@ func (m *Module) merge(o *Module) {
 
 // Verify that each input has value
 func (m *Module) verify() hcl.Diagnostics {
+	name := m.Name
+	if m.Name == ""{
+		name = "root"
+	}
+	logging.KubeLogger.Info(fmt.Sprintf("Verifying inputs for module: %s",name))
+
 	var diags hcl.Diagnostics
 	for _, input := range m.Inputs {
 		if !input.HasDefault {
@@ -107,7 +114,7 @@ func (m *Module) verify() hcl.Diagnostics {
 func decodeVars(vals []string) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var variables VariableMap = make(map[string]*Variable)
-
+	
 	for _, val := range vals {
 		srcHCL, diagsParse := parser.ParseHCL([]byte(val), "commandline arguments")
 		diags = append(diags, diagsParse...)
@@ -405,6 +412,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 
 // Decode a single file into a module format
 func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s",fileName))
 	// wg := sync.WaitGroup{}
 	// wg.Add(5)
 	input, err := os.Open(fileName)
@@ -508,6 +516,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding folder %s",folderName))
 	var diags hcl.Diagnostics
 	// if mod := modMap.Get(folderName); mod != nil {
 	// return mod,diags

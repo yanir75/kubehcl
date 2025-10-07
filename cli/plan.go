@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/logging"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
@@ -19,6 +20,7 @@ func planCmd() *cobra.Command {
 		Long:  plandesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
+			logging.SetLogger(conf.Debug)
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
 			client.Plan(args, conf, viewSettings, cmdSettings)

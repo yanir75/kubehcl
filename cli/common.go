@@ -37,7 +37,6 @@ func addCommonToCommand(cmd *cobra.Command) {
 	ctx := context.WithValue(cmd.Context(), settingsKey, definitions)
 
 	cmd.SetContext(ctx)
-
 }
 
 func AddCmdSettings(cmd *cobra.Command) {

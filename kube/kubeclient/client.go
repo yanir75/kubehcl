@@ -51,7 +51,6 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 		panic("Shouldn't get here")
 	}
 
-	cfg.Storage, diags = storage.New(cfg.Client, name, conf.Namespace(), storageKind)
 	cfg.Name = name
 	if conf.Timeout < 0 {
 		cfg.Timeout = 100 * time.Second
@@ -70,6 +69,13 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 		}
 		cfg.Version = version.Major + "." + version.Minor
 
+	} else {
+		return nil,diags
+	}
+	
+	cfg.Storage, diags = storage.New(cfg.Client, name, conf.Namespace(), storageKind)
+	if diags.HasErrors() {
+		return nil,diags
 	}
 
 	return cfg, diags

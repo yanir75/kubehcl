@@ -20,7 +20,7 @@ func CreateRootCMD() *cobra.Command {
 	}
 
 	addCommonToCommand(rootCmd)
-
+	
 	rootCmd.AddCommand(
 		licenseCmd(),
 		installCmd(),

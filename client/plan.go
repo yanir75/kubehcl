@@ -1,15 +1,18 @@
 package client
 
 import (
+	"fmt"
 	"os"
 	"sync"
 
 	"github.com/hashicorp/hcl/v2"
 	"helm.sh/helm/v4/pkg/kube"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
+	"kubehcl.sh/kubehcl/internal/logging"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/kube/kubeclient"
 	"kubehcl.sh/kubehcl/settings"
@@ -17,7 +20,6 @@ import (
 
 func removeUnnecessaryFields(m map[string]interface{}) {
 	delete(m, "status")
-
 	meta := m["metadata"].(map[string]interface{})
 	delete(meta, "uid")
 	delete(meta, "creationTimestamp")
@@ -29,20 +31,24 @@ func removeUnnecessaryFields(m map[string]interface{}) {
 	delete(anno,"kubectl.kubernetes.io/last-applied-configuration")
 }
 
+func checkObjectAndFields(o runtime.Object){
+	if o != nil {
+		cur := o.(*unstructured.Unstructured)
+		removeUnnecessaryFields(cur.Object)		
+	}
+}
+
 func adjustCmp(m map[string]*view.CompareResources) {
-	for _, value := range m {
-		if value.Current != nil {
-			cur := value.Current.(*unstructured.Unstructured)
-			removeUnnecessaryFields(cur.Object)
-		}
-		if value.Wanted != nil {
-			wanted := value.Wanted.(*unstructured.Unstructured)
-			removeUnnecessaryFields(wanted.Object)
-		}
+	for key, value := range m {
+		logging.KubeLogger.Info(fmt.Sprintf("removing unnecessary fields for comparison purposes from %s",key))
+		checkObjectAndFields(value.Current)
+		checkObjectAndFields(value.Wanted)
 	}
 }
 
 func Plan(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
+	logging.KubeLogger.Info(fmt.Sprintf("Parsing install arguments %s",args))
+
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewArguments)
@@ -55,6 +61,7 @@ func Plan(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArg
 		v.DiagPrinter(diags, viewArguments)
 		return
 	}
+
 
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)

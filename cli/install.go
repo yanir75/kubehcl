@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/logging"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
@@ -21,7 +22,6 @@ type install struct {
 
 // Apply command will validate then create the corresponding components written in the configuration files
 func installCmd() *cobra.Command {
-
 	var i install
 
 	installCmd := &cobra.Command{
@@ -32,6 +32,7 @@ func installCmd() *cobra.Command {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
+			logging.SetLogger(conf.Debug)
 
 			client.Install(args, conf, viewSettings, cmdSettings, i.CreateNamespace)
 		},

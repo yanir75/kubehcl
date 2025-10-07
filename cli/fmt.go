@@ -3,7 +3,9 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/logging"
 	"kubehcl.sh/kubehcl/internal/view"
+	"kubehcl.sh/kubehcl/settings"
 )
 
 // type install struct {
@@ -26,6 +28,9 @@ func fmtCmd() *cobra.Command {
 		Short: "format all files in the folder",
 		Long:  fmtdesc,
 		Run: func(cmd *cobra.Command, args []string) {
+			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
+			logging.SetLogger(conf.Debug)
+
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			client.Fmt(args, viewSettings, f.recursive)
 		},

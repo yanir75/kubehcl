@@ -2,6 +2,7 @@ package client
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 //go:embed files/*
 var files embed.FS
 
-func cacheDir(outputDir string) {
+func cacheDir(outputDir string) hcl.Diagnostics{
 
 	err := fs.WalkDir(files, "files", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -39,8 +40,13 @@ func cacheDir(outputDir string) {
 		return err
 	})
 	if err != nil {
-		panic("Should not get here")
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't create folder",
+			Detail: fmt.Sprintf("Got error please check if files already exist %s",err.Error()),
+		}}
 	}
+	return nil
 }
 
 func parseCreateArgs(args []string) (string, hcl.Diagnostics) {
@@ -72,5 +78,7 @@ func Create(args []string, viewArguments *view.ViewArgs) {
 		v.DiagPrinter(diags, viewArguments)
 		return
 	}
-	cacheDir(name)
+	diags = cacheDir(name)
+	v.DiagPrinter(diags, viewArguments)
+
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"kubehcl.sh/kubehcl/client"
+	"kubehcl.sh/kubehcl/internal/logging"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 )
@@ -24,9 +25,10 @@ func templateCmd() *cobra.Command {
 		Long:  "Template converts the hcl to yaml in order to view the kubernetes yamls which will be applied and created in your environment",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			// conf := cmd.Context().Value(settingsKey).(*settings.EnvSettings)
+			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			cmdSettings := cmd.Context().Value(cmdSettingsKey).(*settings.CmdSettings)
+			logging.SetLogger(conf.Debug)
 
 			switch t.Kind {
 			case "yaml":
