@@ -15,35 +15,12 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-// Parses arguments for template command
-
-func parseTemplateArgs(args []string) (string, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-
-	if len(args) > 1 {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Too many arguments required arguments are: folder",
-		})
-		return "", diags
-	}
-
-	if len(args) < 1 {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Insufficient number of arguments required arguments are: folder",
-		})
-		return "", diags
-	}
-
-	return args[0], diags
-}
 
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values
 func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
-	folderName, diags := parseTemplateArgs(args)
+	folderName, diags := parseFolderArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewArguments)
 		return

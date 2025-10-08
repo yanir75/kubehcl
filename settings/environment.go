@@ -41,6 +41,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
+	"kubehcl.sh/kubehcl/internal/kubehclpath"
 
 	"helm.sh/helm/v4/pkg/kube"
 )
@@ -92,6 +93,15 @@ type EnvSettings struct {
 	Timeout int
 	// QPS is queries per second which may be used to avoid throttling.
 	QPS float32
+
+	// RegistryConfig is the path to the registry config file.
+	RegistryConfig string
+	// RepositoryConfig is the path to the repositories file.
+	RepositoryConfig string
+	// RepositoryCache is the path to the repository cache directory.
+	RepositoryCache string
+	// ContentCache is the location where cached charts are stored
+	ContentCache string
 }
 
 func NewSettings() *EnvSettings {
@@ -109,6 +119,10 @@ func NewSettings() *EnvSettings {
 		BurstLimit:                envIntOr("KUBEHCL_BURST_LIMIT", defaultBurstLimit),
 		Timeout:                   envIntOr("KUBEHCL_TIMEOUT", defaultTimeout),
 		QPS:                       envFloat32Or("KUBEHCL_QPS", defaultQPS),
+		RegistryConfig:            envOr("KUBEHCL_REGISTRY_CONFIG", kubehclpath.ConfigPath("registry/config.json")),
+		RepositoryConfig:          envOr("KUBEHCL_REPOSITORY_CONFIG", kubehclpath.ConfigPath("repositories.hcl")),
+		RepositoryCache:           envOr("KUBEHCL_REPOSITORY_CACHE", kubehclpath.CachePath("repository")),
+		ContentCache:              envOr("KUBEHCL_CONTENT_CACHE", kubehclpath.CachePath("content")),
 	}
 	env.Debug, _ = strconv.ParseBool(os.Getenv("KUBEHCL_DEBUG"))
 
@@ -158,7 +172,10 @@ func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.BurstLimit, "burst-limit", s.BurstLimit, "client-side default throttling limit")
 	fs.Float32Var(&s.QPS, "qps", s.QPS, "queries per second used when communicating with the Kubernetes API, not including bursting")
 	fs.IntVar(&s.Timeout, "timeout", s.Timeout, "Timeout for each resource creation")
-
+	fs.StringVar(&s.RegistryConfig, "registry-config", s.RegistryConfig, "path to the registry config file")
+	fs.StringVar(&s.RepositoryConfig, "repository-config", s.RepositoryConfig, "path to the file containing repository names and URLs")
+	fs.StringVar(&s.RepositoryCache, "repository-cache", s.RepositoryCache, "path to the directory containing cached repository indexes")
+	fs.StringVar(&s.ContentCache, "content-cache", s.ContentCache, "path to the directory containing cached content (e.g. charts)")
 }
 
 func envOr(name, def string) string {
@@ -220,7 +237,10 @@ func (s *EnvSettings) EnvVars() map[string]string {
 		"KUBEHCL_MAX_HISTORY": strconv.Itoa(s.MaxHistory),
 		"KUBEHCL_BURST_LIMIT": strconv.Itoa(s.BurstLimit),
 		"KUBEHCL_QPS":         strconv.FormatFloat(float64(s.QPS), 'f', 2, 32),
-
+		"KUBEHCL_REGISTRY_CONFIG":   s.RegistryConfig,
+		"KUBEHCL_REPOSITORY_CACHE":  s.RepositoryCache,
+		"KUBEHCL_CONTENT_CACHE":     s.ContentCache,
+		"KUBEHCL_REPOSITORY_CONFIG": s.RepositoryConfig,
 		// broken, these are populated from KUBEHCL flags and not kubeconfig.
 		"KUBEHCL_KUBECONTEXT":                  s.KubeContext,
 		"KUBEHCL_KUBETOKEN":                    s.KubeToken,
