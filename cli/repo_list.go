@@ -19,10 +19,9 @@ func repoListCmd() *cobra.Command {
 			viewSettings := cmd.Parent().Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.ListRepos(conf,viewSettings,args)
+			client.ListRepos(conf, viewSettings, args)
 		},
 	}
-
 
 	return repoListCommand
 }

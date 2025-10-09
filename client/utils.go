@@ -38,7 +38,6 @@ func parseCmdSettings(c *settings.CmdSettings) (string, []string, hcl.Diagnostic
 	return c.VarsFile, c.Vars, diags
 }
 
-
 // Parses arguments for template,push command
 
 func parseFolderArgs(args []string) (string, hcl.Diagnostics) {

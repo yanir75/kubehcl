@@ -70,12 +70,12 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 		cfg.Version = version.Major + "." + version.Minor
 
 	} else {
-		return nil,diags
+		return nil, diags
 	}
-	
+
 	cfg.Storage, diags = storage.New(cfg.Client, name, conf.Namespace(), storageKind)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 
 	return cfg, diags

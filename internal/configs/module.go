@@ -92,10 +92,10 @@ func (m *Module) merge(o *Module) {
 // Verify that each input has value
 func (m *Module) verify() hcl.Diagnostics {
 	name := m.Name
-	if m.Name == ""{
+	if m.Name == "" {
 		name = "root"
 	}
-	logging.KubeLogger.Info(fmt.Sprintf("Verifying inputs for module: %s",name))
+	logging.KubeLogger.Info(fmt.Sprintf("Verifying inputs for module: %s", name))
 
 	var diags hcl.Diagnostics
 	for _, input := range m.Inputs {
@@ -114,7 +114,7 @@ func (m *Module) verify() hcl.Diagnostics {
 func decodeVars(vals []string) (VariableMap, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	var variables VariableMap = make(map[string]*Variable)
-	
+
 	for _, val := range vals {
 		srcHCL, diagsParse := parser.ParseHCL([]byte(val), "commandline arguments")
 		diags = append(diags, diagsParse...)
@@ -412,7 +412,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 
 // Decode a single file into a module format
 func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
-	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s",fileName))
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
 	// wg := sync.WaitGroup{}
 	// wg.Add(5)
 	input, err := os.Open(fileName)
@@ -516,7 +516,7 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
-	logging.KubeLogger.Info(fmt.Sprintf("Decoding folder %s",folderName))
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding folder %s", folderName))
 	var diags hcl.Diagnostics
 	// if mod := modMap.Get(folderName); mod != nil {
 	// return mod,diags
@@ -564,5 +564,3 @@ func DecodeFolderAndModules(releaseName string, folderName string, name string, 
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }
-
-

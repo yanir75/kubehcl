@@ -317,7 +317,7 @@ func addAllChangesMap(rChange *ResourceChange, v map[string]any, status Status) 
 func addAllChangesList(rChange *ResourceChange, v []any, status Status) {
 	rChange.ChangeMap = make(map[string]*ResourceChange)
 	for index, value := range v {
-		key := fmt.Sprintf("[%s]",fmt.Sprint(index))
+		key := fmt.Sprintf("[%s]", fmt.Sprint(index))
 		switch status {
 		case ADDED:
 			rChange.ChangeMap[key] = &ResourceChange{
@@ -508,9 +508,9 @@ func (v *View) StringifyChangeMap(changeMap ResourceChangeMap, spaces string) st
 		switch value.nextKind() {
 		case MAP:
 			// if isListKey {
-				// msg += fmt.Sprintf("%s{\n", spaces)
+			// msg += fmt.Sprintf("%s{\n", spaces)
 			// } else {
-				msg += fmt.Sprintf("%s%s = {\n", spaces, key)
+			msg += fmt.Sprintf("%s%s = {\n", spaces, key)
 			// }
 			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
 			msg += fmt.Sprintf("%s}\n", spaces)
@@ -518,9 +518,9 @@ func (v *View) StringifyChangeMap(changeMap ResourceChangeMap, spaces string) st
 
 		case LIST:
 			// if isListKey {
-				// msg += fmt.Sprintf("%s[\n", spaces)
+			// msg += fmt.Sprintf("%s[\n", spaces)
 			// } else {
-				msg += fmt.Sprintf("%s%s = [\n", spaces, key)
+			msg += fmt.Sprintf("%s%s = [\n", spaces, key)
 			// }
 			msg += v.StringifyChangeMap(value.ChangeMap, spaces)
 			msg += fmt.Sprintf("%s]\n", spaces)
@@ -553,11 +553,11 @@ func (v *View) planColoredPrinter(m map[string]*CompareResources) {
 		changeMap := v.getChanges(value.Current, value.Wanted)
 		if len(changeMap) > 0 {
 			if value.Current == nil {
-				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][green]+[reset]"), key)
+				_, _ = v.streams.Printf("%s %s {", colorstring.Color("[bold][green]+[reset]"), key)
 			} else if value.Wanted == nil {
-				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][red]-[reset]"), key)
+				_, _ = v.streams.Printf("%s %s {", colorstring.Color("[bold][red]-[reset]"), key)
 			} else {
-				_, _ = v.streams.Printf("%s %s {",colorstring.Color("[bold][yellow]~[reset]"), key)
+				_, _ = v.streams.Printf("%s %s {", colorstring.Color("[bold][yellow]~[reset]"), key)
 			}
 			_, _ = v.streams.Println()
 			_, _ = v.streams.Println()

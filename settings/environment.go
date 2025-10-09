@@ -231,12 +231,12 @@ func envCSV(name string) (ls []string) {
 
 func (s *EnvSettings) EnvVars() map[string]string {
 	envvars := map[string]string{
-		"KUBEHCL_BIN":         os.Args[0],
-		"KUBEHCL_DEBUG":       fmt.Sprint(s.Debug),
-		"KUBEHCL_NAMESPACE":   s.Namespace(),
-		"KUBEHCL_MAX_HISTORY": strconv.Itoa(s.MaxHistory),
-		"KUBEHCL_BURST_LIMIT": strconv.Itoa(s.BurstLimit),
-		"KUBEHCL_QPS":         strconv.FormatFloat(float64(s.QPS), 'f', 2, 32),
+		"KUBEHCL_BIN":               os.Args[0],
+		"KUBEHCL_DEBUG":             fmt.Sprint(s.Debug),
+		"KUBEHCL_NAMESPACE":         s.Namespace(),
+		"KUBEHCL_MAX_HISTORY":       strconv.Itoa(s.MaxHistory),
+		"KUBEHCL_BURST_LIMIT":       strconv.Itoa(s.BurstLimit),
+		"KUBEHCL_QPS":               strconv.FormatFloat(float64(s.QPS), 'f', 2, 32),
 		"KUBEHCL_REGISTRY_CONFIG":   s.RegistryConfig,
 		"KUBEHCL_REPOSITORY_CACHE":  s.RepositoryCache,
 		"KUBEHCL_CONTENT_CACHE":     s.ContentCache,

@@ -20,11 +20,10 @@ func repoAddCmd() *cobra.Command {
 			viewSettings := cmd.Parent().Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.AddRepo(o,conf,viewSettings,args)
+			client.AddRepo(o, conf, viewSettings, args)
 		},
 	}
-	settings.AddRepoSettings(o,repoAddCommand.Flags())
-
+	settings.AddRepoSettings(o, repoAddCommand.Flags())
 
 	return repoAddCommand
 }

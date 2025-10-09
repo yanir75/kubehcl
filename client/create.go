@@ -14,7 +14,7 @@ import (
 //go:embed files/*
 var files embed.FS
 
-func cacheDir(outputDir string) hcl.Diagnostics{
+func cacheDir(outputDir string) hcl.Diagnostics {
 
 	err := fs.WalkDir(files, "files", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -42,8 +42,8 @@ func cacheDir(outputDir string) hcl.Diagnostics{
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary: "Couldn't create folder",
-			Detail: fmt.Sprintf("Got error please check if files already exist %s",err.Error()),
+			Summary:  "Couldn't create folder",
+			Detail:   fmt.Sprintf("Got error please check if files already exist %s", err.Error()),
 		}}
 	}
 	return nil

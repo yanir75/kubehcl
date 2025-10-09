@@ -19,10 +19,9 @@ func repoRemoveCmd() *cobra.Command {
 			viewSettings := cmd.Parent().Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.RemoveRepo(conf,viewSettings,args)
+			client.RemoveRepo(conf, viewSettings, args)
 		},
 	}
-
 
 	return repoRemoveCommand
 }

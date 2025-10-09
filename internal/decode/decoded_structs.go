@@ -81,20 +81,20 @@ type DecodedModuleCall struct {
 }
 
 type DecodedRepo struct {
-	Name        string         
-	DeclRange   hcl.Range      
-	Url string
-	Protocol string
-	Username string
-	Password string
-	Timeout int64
-	CertFile string
-	KeyFile string
-	CaFile string
+	Name                  string
+	DeclRange             hcl.Range
+	Url                   string
+	Protocol              string
+	Username              string
+	Password              string
+	Timeout               int64
+	CertFile              string
+	KeyFile               string
+	CaFile                string
 	InsecureSkipTLSverify bool
-	PlainHttp bool
-	RepoFile string
-	RepoCache string
+	PlainHttp             bool
+	RepoFile              string
+	RepoCache             string
 }
 
 type DecodedRepoMap map[string]*DecodedRepo

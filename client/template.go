@@ -15,7 +15,6 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-
 // Template expects 1 argument
 // 1. Folder name which folder to decode
 // Template will render the configuration and print it as json/yaml format after inserting the values

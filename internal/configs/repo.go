@@ -40,36 +40,36 @@ var inputRepoBlockSchema = &hcl.BodySchema{
 }
 
 type Repo struct {
-	Name        string         // `json:"Name"`
-	DeclRange   hcl.Range      // `json:"DeclRange"`
-	Url string
-	Protocol string
-	Username string
-	Password string
-	Timeout int64
-	CertFile string
-	KeyFile string
-	CaFile string
+	Name                  string    // `json:"Name"`
+	DeclRange             hcl.Range // `json:"DeclRange"`
+	Url                   string
+	Protocol              string
+	Username              string
+	Password              string
+	Timeout               int64
+	CertFile              string
+	KeyFile               string
+	CaFile                string
 	InsecureSkipTLSverify bool
-	PlainHttp bool
-	RepoFile string
-	RepoCache string
+	PlainHttp             bool
+	RepoFile              string
+	RepoCache             string
 }
 
 type RepoMap map[string]*Repo
 
-func getValidProtocols()[]string{
-	return []string{"http","https","oci"}
+func getValidProtocols() []string {
+	return []string{"http", "https", "oci"}
 }
 
-func (r *Repo) decode()(*decode.DecodedRepo,hcl.Diagnostics){
-	if !slices.Contains(getValidProtocols(),r.Protocol){
-		return nil,hcl.Diagnostics{
+func (r *Repo) decode() (*decode.DecodedRepo, hcl.Diagnostics) {
+	if !slices.Contains(getValidProtocols(), r.Protocol) {
+		return nil, hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Protocol is invalid",
-				Detail: fmt.Sprintf("Protocol %s is invalid please use http, https or oci",r.Protocol),
-				Subject: &r.DeclRange,
+				Summary:  "Protocol is invalid",
+				Detail:   fmt.Sprintf("Protocol %s is invalid please use http, https or oci", r.Protocol),
+				Subject:  &r.DeclRange,
 			},
 		}
 	}
@@ -78,7 +78,7 @@ func (r *Repo) decode()(*decode.DecodedRepo,hcl.Diagnostics){
 		Name:                  r.Name,
 		DeclRange:             r.DeclRange,
 		Url:                   r.Url,
-		Protocol: 				r.Protocol,
+		Protocol:              r.Protocol,
 		Username:              r.Username,
 		Password:              r.Password,
 		Timeout:               r.Timeout,
@@ -89,19 +89,18 @@ func (r *Repo) decode()(*decode.DecodedRepo,hcl.Diagnostics){
 		PlainHttp:             r.PlainHttp,
 		RepoFile:              r.RepoFile,
 		RepoCache:             r.RepoCache,
-	
-	},hcl.Diagnostics{}
+	}, hcl.Diagnostics{}
 }
 
-func (r RepoMap) Decode()(decode.DecodedRepoMap,hcl.Diagnostics){
+func (r RepoMap) Decode() (decode.DecodedRepoMap, hcl.Diagnostics) {
 	var decodedRepoMap decode.DecodedRepoMap = make(map[string]*decode.DecodedRepo)
 	var diags hcl.Diagnostics
-	for key,value := range r {
-		decodedRepo,decodeDiags := value.decode()
+	for key, value := range r {
+		decodedRepo, decodeDiags := value.decode()
 		diags = append(diags, decodeDiags...)
 		decodedRepoMap[key] = decodedRepo
 	}
-	return decodedRepoMap,diags
+	return decodedRepoMap, diags
 }
 
 func DecodeRepoBlocks(blocks hcl.Blocks) (RepoMap, hcl.Diagnostics) {
@@ -130,19 +129,19 @@ func DecodeRepoBlocks(blocks hcl.Blocks) (RepoMap, hcl.Diagnostics) {
 
 func decodeRepoBlock(block *hcl.Block) (*Repo, hcl.Diagnostics) {
 	var repo = &Repo{
-		Name:       block.Labels[0],
-		DeclRange:  block.DefRange,
-		Username: "",
-		Password: "",
-		Timeout: 120,
-		CaFile: "",
-		CertFile: "",
-		KeyFile: "",
+		Name:                  block.Labels[0],
+		DeclRange:             block.DefRange,
+		Username:              "",
+		Password:              "",
+		Timeout:               120,
+		CaFile:                "",
+		CertFile:              "",
+		KeyFile:               "",
 		InsecureSkipTLSverify: false,
-		PlainHttp: false,
-		RepoFile: "",
-		RepoCache: "",
-		Protocol: "",
+		PlainHttp:             false,
+		RepoFile:              "",
+		RepoCache:             "",
+		Protocol:              "",
 	}
 
 	content, diags := block.Body.Content(inputRepoBlockSchema)
@@ -195,34 +194,31 @@ func decodeRepoBlock(block *hcl.Block) (*Repo, hcl.Diagnostics) {
 		diags = append(diags, valDiags...)
 	}
 
-
 	return repo, diags
 }
 
-
-func DecodeRepos(fileName string) (decode.DecodedRepoMap,hcl.Diagnostics){
+func DecodeRepos(fileName string) (decode.DecodedRepoMap, hcl.Diagnostics) {
 	if err := os.MkdirAll(filepath.Dir(fileName), 0755); err != nil {
-		return nil,hcl.Diagnostics{
+		return nil, hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't open file",
-				Detail: fmt.Sprintf("File %s couldn't be opened, %s",fileName,err.Error()),
+				Summary:  "Couldn't open file",
+				Detail:   fmt.Sprintf("File %s couldn't be opened, %s", fileName, err.Error()),
 			},
 		}
 	}
 
 	input, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		
-		return nil,hcl.Diagnostics{
+
+		return nil, hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't open file",
-				Detail: fmt.Sprintf("File %s couldn't be opened, %s",fileName,err.Error()),
+				Summary:  "Couldn't open file",
+				Detail:   fmt.Sprintf("File %s couldn't be opened, %s", fileName, err.Error()),
 			},
 		}
 	}
-	
 
 	defer func() {
 		err = input.Close()
@@ -230,14 +226,14 @@ func DecodeRepos(fileName string) (decode.DecodedRepoMap,hcl.Diagnostics){
 			panic("Couldn't close the file")
 		}
 	}()
-	_, err = input.Seek(0,0)
+	_, err = input.Seek(0, 0)
 	if err != nil {
-		
-		return nil,hcl.Diagnostics{
+
+		return nil, hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't seek in file",
-				Detail: fmt.Sprintf("File %s couldn't be seeked, %s",fileName,err.Error()),
+				Summary:  "Couldn't seek in file",
+				Detail:   fmt.Sprintf("File %s couldn't be seeked, %s", fileName, err.Error()),
 			},
 		}
 	}
@@ -246,11 +242,11 @@ func DecodeRepos(fileName string) (decode.DecodedRepoMap,hcl.Diagnostics){
 
 	src, err := io.ReadAll(input)
 	if err != nil {
-		return nil,hcl.Diagnostics{
+		return nil, hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Couldn't read file",
-				Detail: fmt.Sprintf("File %s couldn't be read, %s",fileName,err.Error()),
+				Summary:  "Couldn't read file",
+				Detail:   fmt.Sprintf("File %s couldn't be read, %s", fileName, err.Error()),
 			},
 		}
 	}
@@ -258,18 +254,18 @@ func DecodeRepos(fileName string) (decode.DecodedRepoMap,hcl.Diagnostics){
 	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
 	diags = append(diags, diagsParse...)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 	b, blockDiags := srcHCL.Body.Content(inputRepoBlocks)
 	diags = append(diags, blockDiags...)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 	repos := b.Blocks.OfType("repo")
-	repoMap,diags := DecodeRepoBlocks(repos)
+	repoMap, diags := DecodeRepoBlocks(repos)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
-	m,diags := repoMap.Decode()
-	return m,diags
+	m, diags := repoMap.Decode()
+	return m, diags
 }

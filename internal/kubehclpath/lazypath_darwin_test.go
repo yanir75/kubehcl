@@ -32,7 +32,7 @@ const (
 )
 
 func TestDataPath(t *testing.T) {
-	os.Unsetenv(xdg.DataHomeEnvVar)
+	_ = os.Unsetenv(xdg.DataHomeEnvVar)
 
 	expected := filepath.Join(homedir.HomeDir(), "Library", appName, testFile)
 
@@ -50,7 +50,7 @@ func TestDataPath(t *testing.T) {
 }
 
 func TestConfigPath(t *testing.T) {
-	os.Unsetenv(xdg.ConfigHomeEnvVar)
+	_ = os.Unsetenv(xdg.ConfigHomeEnvVar)
 
 	expected := filepath.Join(homedir.HomeDir(), "Library", "Preferences", appName, testFile)
 
@@ -68,7 +68,7 @@ func TestConfigPath(t *testing.T) {
 }
 
 func TestCachePath(t *testing.T) {
-	os.Unsetenv(xdg.CacheHomeEnvVar)
+	_ = os.Unsetenv(xdg.CacheHomeEnvVar)
 
 	expected := filepath.Join(homedir.HomeDir(), "Library", "Caches", appName, testFile)
 
