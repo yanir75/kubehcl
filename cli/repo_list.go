@@ -9,22 +9,20 @@ import (
 )
 
 // Create module command for the cmd tool
-func repoAddCmd() *cobra.Command {
-	o := settings.NewRepoSettings()
+func repoListCmd() *cobra.Command {
 
-	repoAddCommand := &cobra.Command{
-		Use:   "add [NAME] [REPO]",
-		Short: "add a repository of modules",
-		Long:  "add provides you the option to add a repository which contains modules modules",
+	repoListCommand := &cobra.Command{
+		Use:   "list",
+		Short: "lists all added repositories",
+		Long:  "list allows you to see which repositories were added",
 		Run: func(cmd *cobra.Command, args []string) {
 			viewSettings := cmd.Parent().Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.AddRepo(o,conf,viewSettings,args)
+			client.ListRepos(conf,viewSettings,args)
 		},
 	}
-	settings.AddRepoSettings(o,repoAddCommand.Flags())
 
 
-	return repoAddCommand
+	return repoListCommand
 }

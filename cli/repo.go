@@ -18,7 +18,11 @@ func repoCmd() *cobra.Command {
 			}
 		},
 	}
-	repoCmd.AddCommand(repoAddCmd())
+	repoCmd.AddCommand(
+		repoAddCmd(),
+		repoRemoveCmd(),
+		repoListCmd(),
+	)
 
 	return repoCmd
 }

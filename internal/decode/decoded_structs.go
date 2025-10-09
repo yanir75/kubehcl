@@ -84,6 +84,7 @@ type DecodedRepo struct {
 	Name        string         
 	DeclRange   hcl.Range      
 	Url string
+	Protocol string
 	Username string
 	Password string
 	Timeout int64

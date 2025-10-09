@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -24,6 +25,7 @@ var inputRepoBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "Name", Required: true},
 		{Name: "Url", Required: true},
+		{Name: "Protocol", Required: true},
 		{Name: "Username", Required: false},
 		{Name: "Password", Required: false},
 		{Name: "Timeout", Required: false},
@@ -41,6 +43,7 @@ type Repo struct {
 	Name        string         // `json:"Name"`
 	DeclRange   hcl.Range      // `json:"DeclRange"`
 	Url string
+	Protocol string
 	Username string
 	Password string
 	Timeout int64
@@ -55,11 +58,27 @@ type Repo struct {
 
 type RepoMap map[string]*Repo
 
+func getValidProtocols()[]string{
+	return []string{"http","https","oci"}
+}
+
 func (r *Repo) decode()(*decode.DecodedRepo,hcl.Diagnostics){
+	if !slices.Contains(getValidProtocols(),r.Protocol){
+		return nil,hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Protocol is invalid",
+				Detail: fmt.Sprintf("Protocol %s is invalid please use http, https or oci",r.Protocol),
+				Subject: &r.DeclRange,
+			},
+		}
+	}
+
 	return &decode.DecodedRepo{
 		Name:                  r.Name,
 		DeclRange:             r.DeclRange,
 		Url:                   r.Url,
+		Protocol: 				r.Protocol,
 		Username:              r.Username,
 		Password:              r.Password,
 		Timeout:               r.Timeout,
@@ -123,6 +142,7 @@ func decodeRepoBlock(block *hcl.Block) (*Repo, hcl.Diagnostics) {
 		PlainHttp: false,
 		RepoFile: "",
 		RepoCache: "",
+		Protocol: "",
 	}
 
 	content, diags := block.Body.Content(inputRepoBlockSchema)
@@ -168,6 +188,10 @@ func decodeRepoBlock(block *hcl.Block) (*Repo, hcl.Diagnostics) {
 	}
 	if attr, exists := content.Attributes["RepoCache"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &repo.RepoCache)
+		diags = append(diags, valDiags...)
+	}
+	if attr, exists := content.Attributes["Protocol"]; exists {
+		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &repo.Protocol)
 		diags = append(diags, valDiags...)
 	}
 

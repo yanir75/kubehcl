@@ -1,19 +1,24 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/configs"
+	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 	"oras.land/oras-go/v2/registry/remote"
@@ -27,6 +32,8 @@ func parseRepoAddArgs(args []string) (string, string, hcl.Diagnostics) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Required arguments are :[name, URL]",
+			Detail: fmt.Sprintf("Got %s",args),
+
 		})
 		return "", "", diags
 	}
@@ -34,38 +41,233 @@ func parseRepoAddArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-func RepoAdd(opts *settings.RepoAddOptions,defs *settings.EnvSettings,viewDef *view.ViewArgs,args []string){
+func generateBlockFromRepo(opts *settings.RepoAddOptions)*hclwrite.Block{
+	block := hclwrite.NewBlock("repo",[]string{opts.Name})
+	valueOf := reflect.ValueOf(*opts)
+	typeOf := reflect.TypeOf(*opts)
 
-	name,url,diags := parseRepoAddArgs(args)
+	for i:=0; i< valueOf.NumField() ;i++ {
+		
+		val := valueOf.Field(i).Interface()
+		
+		switch tt:=val.(type) {
+		case int64:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(tt))
+		case string:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.StringVal(tt))
+		case bool:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.BoolVal(tt))
+		case time.Duration:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(int64(tt.Seconds())))
+		default:
+			panic("shouldn't get here")
+		}
+		
+	}
+	return block
+}
+
+func generateBlockFromValue(value *decode.DecodedRepo)*hclwrite.Block{
+	block := hclwrite.NewBlock("repo",[]string{value.Name})
+	valueOf := reflect.ValueOf(*value)
+	typeOf := reflect.TypeOf(*value)
+
+	for i:=0; i< valueOf.NumField() ;i++ {
+		
+		val := valueOf.Field(i).Interface()
+		
+		switch tt:=val.(type) {
+		case int64:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(tt))
+		case string:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.StringVal(tt))
+		case bool:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.BoolVal(tt))
+		case time.Duration:
+			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(int64(tt.Seconds())))
+		default:
+		}
+		
+	}
+	return block
+}
+
+func AddRepo(opts *settings.RepoAddOptions,envSettings *settings.EnvSettings,viewDef *view.ViewArgs,args []string){
+	name,u,diags := parseRepoAddArgs(args)
 	if diags.HasErrors(){
 		v.DiagPrinter(diags,viewDef)
 		return
 	}
 
-	repos,diags := configs.DecodeRepos(defs.RepositoryConfig)
+	parsedUrl, err := url.Parse(u)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't parse url",
+			Detail: fmt.Sprintf("Url %s can't be parsed, err: %s",u,err.Error()),
+		})
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+	if strings.Contains(u,"://") {
+		opts.Url = parsedUrl.Host +parsedUrl.Path
+	} else {
+		opts.Url = u
+	}	
+	opts.Name = name
+	if parsedUrl.Scheme == "" {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "No protocol",
+			Detail: fmt.Sprintf("Url %s doesn't contain protocol, please add protocol like https:// or oci://",u),
+		})
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+	opts.Protocol = parsedUrl.Scheme
+
+	if parsedUrl.Scheme == "oci" {
+		AddRepoOci(opts,envSettings,viewDef)
+	} else {
+		AddRepoHttp(opts,envSettings,viewDef)
+	}
+
+}
+
+func doRequest(opts *settings.RepoAddOptions,path string,httpClient *http.Client,fullUrl string)(*bytes.Buffer,hcl.Diagnostics){
+	var diags hcl.Diagnostics
+	var err error
+	var req *http.Request
+
+	if fullUrl == ""{
+		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/%s",opts.Protocol,opts.Url,path), nil)
+	} else {
+		http.NewRequest(http.MethodGet, fullUrl, nil)		
+	}
+
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't create request",
+			Detail: fmt.Sprintf("Request couldn't be created err: %s",err.Error()),
+		})
+		return nil,diags
+	}
+
+	req.Header.Set("User-Agent", "kubehcl")
+
+	if opts.Username != "" && opts.Password != "" {
+		req.SetBasicAuth(opts.Username, opts.Password)
+	}
+
+	resp, err := httpClient.Do(req)
+
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Request failed",
+			Detail: fmt.Sprintf("Request couldn't be created err: %s",err.Error()),
+		})
+		return nil,diags
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+			diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Request failed",
+			Detail: fmt.Sprintf("Status code is %d",http.StatusOK),
+		})
+		return nil,diags
+	}
+	
+	buf := bytes.NewBuffer(nil)
+
+	_, err = io.Copy(buf, resp.Body)
+
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't copy body to buff",
+			Detail: fmt.Sprint(err.Error()),
+		})
+		return nil,diags
+	}
+
+	return buf,diags
+}
+
+func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) {
+	repos,diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors(){
 		v.DiagPrinter(diags,viewDef)
 		return
 	}
 
-	if val,ok := repos[name]; ok {
+	if val,ok := repos[opts.Name]; ok {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary: "Repository already exists",
 			Detail: fmt.Sprintf("Repository %s already exists",val.Name),
 			Subject: &val.DeclRange,
 		})
+		v.DiagPrinter(diags,viewDef)
+		return
 	}
 
+	opts.RepoCache = envSettings.RepositoryCache
+	opts.RepoFile = envSettings.RepositoryConfig
+	
+	httpClient,diags := newHttpClient(opts)
+	if diags.HasErrors(){
+		v.DiagPrinter(diags,viewDef)
+		return	
+	}
+	_,diags = doRequest(opts,"index.yaml",httpClient,"")
+	if diags.HasErrors(){
+		v.DiagPrinter(diags,viewDef)
+		return	
+	}
+
+	f := hclwrite.NewEmptyFile()
+	body := f.Body()
+	body.AppendBlock(generateBlockFromRepo(opts))
+
+	repoCacheFile, err := os.OpenFile(envSettings.RepositoryConfig, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't create file",
+			Detail: fmt.Sprint(err.Error()),
+		})
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+
+	f.WriteTo(repoCacheFile)
+}
+
+func AddRepoOci(opts *settings.RepoAddOptions,envSettings *settings.EnvSettings,viewDef *view.ViewArgs){
+	repos,diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors(){
 		v.DiagPrinter(diags,viewDef)
 		return
 	}
-	
-	opts.Name = name
-	opts.Url = url
-	opts.RepoCache = defs.RepositoryCache
-	opts.RepoFile = defs.RepositoryConfig
+
+	if val,ok := repos[opts.Name]; ok {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Repository already exists",
+			Detail: fmt.Sprintf("Repository %s already exists",val.Name),
+			Subject: &val.DeclRange,
+		})
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+
+	opts.RepoCache = envSettings.RepositoryCache
+	opts.RepoFile = envSettings.RepositoryConfig
 	repo,err := remote.NewRepository(opts.Url)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -78,7 +280,7 @@ func RepoAdd(opts *settings.RepoAddOptions,defs *settings.EnvSettings,viewDef *v
 	}
 
 
-	repo.Client,diags = newClient(opts,repo.Reference.Registry)
+	repo.Client,diags = newAuthClient(opts,repo.Reference.Registry)
 
 	if diags.HasErrors(){
 		v.DiagPrinter(diags,viewDef)
@@ -103,35 +305,9 @@ func RepoAdd(opts *settings.RepoAddOptions,defs *settings.EnvSettings,viewDef *v
 
 	f := hclwrite.NewEmptyFile()
 	body := f.Body()
-	block := body.AppendNewBlock("repo",[]string{opts.Name})
-	valueOf := reflect.ValueOf(*opts)
-	typeOf := reflect.TypeOf(*opts)
+	body.AppendBlock(generateBlockFromRepo(opts))
 
-	for i:=0; i< valueOf.NumField() ;i++ {
-		
-		val := valueOf.Field(i).Interface()
-		
-		switch tt:=val.(type) {
-		case int64:
-			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(tt))
-		case string:
-			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.StringVal(tt))
-		case bool:
-			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.BoolVal(tt))
-		case time.Duration:
-			block.Body().SetAttributeValue(typeOf.Field(i).Name,cty.NumberIntVal(int64(tt.Seconds())))
-		default:
-			panic("shouldn't get here")
-		}
-		
-	}
-	// err = os.MkdirAll(defs.RepositoryConfig, 0555) // Create with read/write/execute for owner, read/execute for others
-	// if err != nil {
-	// 	fmt.Printf("Error creating directory: %v\n", err)
-	// 	return
-	// }
-
-	repoCacheFile, err := os.OpenFile(defs.RepositoryConfig, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	repoCacheFile, err := os.OpenFile(envSettings.RepositoryConfig, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -149,7 +325,7 @@ func RepoAdd(opts *settings.RepoAddOptions,defs *settings.EnvSettings,viewDef *v
 
 
 
-func newClient(opts *settings.RepoAddOptions,regName string) (*auth.Client,hcl.Diagnostics){
+func newHttpClient(opts *settings.RepoAddOptions) (*http.Client,hcl.Diagnostics){
 	var diags hcl.Diagnostics
 	cfg := &tls.Config{
 		InsecureSkipVerify: opts.InsecureSkipTLSverify,
@@ -185,8 +361,17 @@ func newClient(opts *settings.RepoAddOptions,regName string) (*auth.Client,hcl.D
 		Transport: &http.Transport{
 			TLSClientConfig: cfg,
 		},
-
 	}
+
+	return httpClient,diags
+}
+
+func newAuthClient(opts *settings.RepoAddOptions,regName string) (*auth.Client,hcl.Diagnostics) {
+	httpClient,diags := newHttpClient(opts)
+	if diags.HasErrors(){
+		return nil,diags
+	}
+
 	authClient := &auth.Client{
 		Client: httpClient,
 		Cache:  auth.NewCache(),
@@ -197,4 +382,79 @@ func newClient(opts *settings.RepoAddOptions,regName string) (*auth.Client,hcl.D
 	}
 
 	return authClient,diags
+}
+
+
+
+func parseRepoRemoveArgs(args []string) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) != 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Required arguments are :[name]",
+			Detail: fmt.Sprintf("Got %s",args),
+		})
+		return "", diags
+	}
+	return args[0], diags
+
+}
+
+func RemoveRepo(envSettings *settings.EnvSettings,viewDef *view.ViewArgs, args []string){
+	name,diags := parseRepoRemoveArgs(args)
+	if diags.HasErrors(){
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+
+	repos,diags := configs.DecodeRepos(envSettings.RepositoryConfig)
+	if diags.HasErrors(){
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+
+	if _,ok := repos[name];!ok {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Repository doesn't exist",
+			Detail: fmt.Sprintf("Repository %s doesn't exist",name),
+		})
+		v.DiagPrinter(diags,viewDef)
+		return 
+	}
+
+	delete(repos,name)
+	f := hclwrite.NewEmptyFile()
+	body := f.Body()
+	for _,value := range repos{
+		body.AppendBlock(generateBlockFromValue(value))
+	}
+
+	repoCacheFile, err := os.OpenFile(envSettings.RepositoryConfig, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary: "Couldn't create file",
+			Detail: fmt.Sprint(err.Error()),
+		})
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+	f.WriteTo(repoCacheFile)
+
+}
+
+func ListRepos(envSettings *settings.EnvSettings,viewDef *view.ViewArgs, args []string){
+
+	repos,diags := configs.DecodeRepos(envSettings.RepositoryConfig)
+	if diags.HasErrors(){
+		v.DiagPrinter(diags,viewDef)
+		return
+	}
+	fmt.Println("Name \t\tURL")
+	for _,value := range repos {
+		fmt.Printf("%s \t\t%s\n",value.Name,value.Url)
+	}
+
 }

@@ -12,7 +12,7 @@ type RepoAddOptions struct {
 	Username             string
 	Password             string
 	Timeout              time.Duration
-
+	Protocol 				  string
 	CertFile              string
 	KeyFile               string
 	CaFile                string
