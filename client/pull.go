@@ -36,9 +36,14 @@ func parsePullArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-func untarFile(buff []byte) (afero.Fs,hcl.Diagnostics){
+func untarFile(buff []byte, save bool) (afero.Fs,hcl.Diagnostics){
 	var diags hcl.Diagnostics
+
 	appFs := afero.NewMemMapFs()
+	
+	if save {
+		appFs = afero.NewOsFs()
+	}
 
 	gzf, err := gzip.NewReader(bytes.NewBuffer(buff))
 	if err != nil {
@@ -129,7 +134,7 @@ func untarFile(buff []byte) (afero.Fs,hcl.Diagnostics){
 
 
 
-func pullOci(r *decode.DecodedRepo,tag string)hcl.Diagnostics{
+func pullOci(r *decode.DecodedRepo,tag string,save bool)hcl.Diagnostics{
 	repository, err := remote.NewRepository(r.Url)
 	var diags hcl.Diagnostics 
 	if err != nil {
@@ -184,7 +189,7 @@ func pullOci(r *decode.DecodedRepo,tag string)hcl.Diagnostics{
 		return diags
 	}
 	
-	_,diags = untarFile(layerContent)
+	_,diags = untarFile(layerContent,save)
 	
 	return diags
 }
@@ -227,7 +232,7 @@ func Pull(version string, envSettings *settings.EnvSettings, viewDef *view.ViewA
 
 	switch repo.Protocol {
 	case "oci":
-		diags = pullOci(repo,tag)
+		diags = pullOci(repo,tag,true)
 		if diags.HasErrors(){
 			v.DiagPrinter(diags,viewDef)
 			return
