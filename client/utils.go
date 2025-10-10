@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
@@ -60,4 +62,23 @@ func parseFolderArgs(args []string) (string, hcl.Diagnostics) {
 	}
 
 	return args[0], diags
+}
+
+
+func repoToOpts(r *decode.DecodedRepo) *settings.RepoAddOptions {
+	return &settings.RepoAddOptions{
+			Name: r.Name,                  
+			Url: r.Url,                   
+			Username: r.Username,              
+			Password: r.Password,              
+			Timeout: time.Duration(r.Timeout) * time.Second,               
+			Protocol: r.Protocol,              
+			CertFile: r.CertFile,              
+			KeyFile: r.KeyFile,               
+			CaFile: r.CaFile,                
+			InsecureSkipTLSverify: r.InsecureSkipTLSverify, 
+			PlainHttp: r.PlainHttp,             
+			RepoFile: r.RepoFile,              
+			RepoCache: r.RepoCache,             
+	}
 }

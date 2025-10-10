@@ -32,6 +32,7 @@ func CreateRootCMD() *cobra.Command {
 		versionCmd(),
 		planCmd(),
 		repoCmd(),
+		PullCmd(),
 	)
 
 	rootCmd.Root().CompletionOptions.DisableDefaultCmd = true

@@ -10,6 +10,7 @@ import (
 type ModuleCall struct {
 	decode.Deployable
 	Source hcl.Expression `json:"Source"`
+	Version		   hcl.Expression		   `json:"Version"`
 }
 
 type Module struct {
@@ -22,6 +23,7 @@ type Module struct {
 	ModuleCalls    ModuleCallList  `json:"ModuleCalls"`
 	DependsOn      []hcl.Traversal `json:"DependsOn"`
 	Source         string          `json:"Source"`
+	Version		   string		   `json:"Version"`
 }
 
 type ModuleList []*Module

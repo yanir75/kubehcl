@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 	"kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/logging"
@@ -31,6 +32,10 @@ import (
 // var maxGoRountines = 10
 
 var parser = hclparse.NewParser()
+
+const (
+	INDEXFILE = "index.hclvars"
+)
 
 func Parser() *hclparse.Parser {
 	return parser
@@ -143,7 +148,9 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 	if string(folderName[len(folderName)-1]) != "/" {
 		folderName = folderName + "/"
 	}
+
 	fullName := folderName + fileName
+
 	if _, err := os.Stat(fullName); errors.Is(err, os.ErrNotExist) {
 		return VariableMap{}, diags
 	}
@@ -247,6 +254,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 		if string(source[:2]) == "./" {
 			source = source[2:]
 		}
+		
 		source = folderName + source
 		attrs, attrDiags := call.Config.JustAttributes()
 		diags = append(diags, attrDiags...)
@@ -410,30 +418,8 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	return decodedModule, diags
 }
 
-// Decode a single file into a module format
-func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
-	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
-	// wg := sync.WaitGroup{}
-	// wg.Add(5)
-	input, err := os.Open(fileName)
-	if err != nil {
-		fmt.Printf("%s", err)
-	}
-
-	defer func() {
-		err = input.Close()
-		if err != nil {
-			panic("Couldn't close the file")
-		}
-	}()
-
+func decodeHclBytes(src []byte,fileName string,addrMap addrs.AddressMap) (Module,hcl.Diagnostics){
 	var diags hcl.Diagnostics
-
-	src, err := io.ReadAll(input)
-	if err != nil {
-		fmt.Printf("%s", err)
-	}
-
 	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
 	diags = append(diags, diagsParse...)
 
@@ -514,6 +500,32 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 	}, diags
 }
 
+// Decode a single file into a module format
+func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
+	// wg := sync.WaitGroup{}
+	// wg.Add(5)
+	input, err := os.Open(fileName)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+
+	defer func() {
+		err = input.Close()
+		if err != nil {
+			panic("Couldn't close the file")
+		}
+	}()
+
+
+	src, err := io.ReadAll(input)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+	
+	return decodeHclBytes(src,fileName,addrMap)
+}
+
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
 func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	logging.KubeLogger.Info(fmt.Sprintf("Decoding folder %s", folderName))
@@ -557,8 +569,87 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	return deployable, diags
 }
 
+func decodeIndexFile(fileName string) (map[string]string,hcl.Diagnostics){
+	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
+	input, err := os.Open(fileName)
+	if err != nil {
+		return make(map[string]string),hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: fmt.Sprintf("File %s is missing",INDEXFILE),
+				Detail: fmt.Sprintf("%s file must be created and populated with the relevant info",INDEXFILE),
+			},
+		}
+	}
+
+	defer func() {
+		err = input.Close()
+		if err != nil {
+			panic("Couldn't close the file")
+		}
+	}()
+	var diags hcl.Diagnostics
+
+	src, err := io.ReadAll(input)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+
+	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
+	diags = append(diags, diagsParse...)
+	attrs, attrDiags := srcHCL.Body.JustAttributes()
+	diags = append(diags, attrDiags...)
+	var variables VariableMap = make(map[string]*Variable)
+	requiredAttrs := []string{"name","version"}
+	for _,item := range requiredAttrs {
+		if _,ok := attrs[item]; !ok {
+			diags =append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: fmt.Sprintf("%s must contain name",INDEXFILE),
+				Detail: fmt.Sprintf("File %s contains descriptive keys for the module, %s is a required key",INDEXFILE,item),
+				Subject: srcHCL.Body.MissingItemRange().Ptr(),
+			})
+		}	
+	}
+
+	for _, attr := range attrs {
+		variables[attr.Name] = &Variable{
+			Name:       attr.Name,
+			Default:    attr.Expr,
+			HasDefault: true,
+			DeclRange:  *attr.Expr.Range().Ptr(),
+		}
+	}
+	decodedVariables,decodeDiags := variables.Decode(&hcl.EvalContext{})
+	diags = append(diags, decodeDiags...)
+	annotations := make(map[string]string)
+	for _,variable := range decodedVariables {
+		var str string
+		err := gocty.FromCtyValue(variable.Default,&str)
+		if err != nil {
+			diags =append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: fmt.Sprintf("Variables in %s must be strings",INDEXFILE),
+				Detail: fmt.Sprintf("Variable %s is not string error: %s",variable.Name,err.Error()),
+				Subject: &variable.DeclRange,
+			})
+		} else {
+			annotations[variable.Name] = str
+		}
+	}
+
+	return annotations,diags
+}
+
 // Decode both folder and module into a decoded module
 func DecodeFolderAndModules(releaseName string, folderName string, name string, varF string, vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
+	if depth == 0 {
+		_,diags := decodeIndexFile(folderName+"/"+INDEXFILE)
+		if diags.HasErrors(){
+			return &decode.DecodedModule{},diags
+		}
+	}
+
 	mod, diags := decodeFolder(folderName)
 	dm, decodeDiags := mod.decode(releaseName, 0, folderName, varF, vals, &hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
