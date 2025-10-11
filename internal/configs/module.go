@@ -15,11 +15,12 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 
-	// "sync"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/spf13/afero"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 	"kubehcl.sh/kubehcl/internal/addrs"
@@ -30,11 +31,12 @@ import (
 //TODO: remove decode folder from each module and add module caching no reason to decode a module 10 times if it exists in a folder
 //TODO: Seperate the decoding file and folder from module part
 // var maxGoRountines = 10
-
+var RepoConfigFile *string
 var parser = hclparse.NewParser()
 
 const (
-	INDEXFILE = "index.hclvars"
+	INDEXVARSFILE = "index.hclvars"
+	DOWNLOADINDEXFILE = "index.yaml"
 )
 
 func Parser() *hclparse.Parser {
@@ -181,6 +183,177 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 
 }
 
+func (call *ModuleCall) decodeCallWithFolder(source,folderName string,appFs afero.Fs)(*Module,hcl.Diagnostics){
+		var diags hcl.Diagnostics
+		
+		if string(folderName[len(folderName)-1]) != "/" {
+			folderName = folderName + "/"
+		}
+
+		if string(source[:2]) == "./" {
+			source = source[2:]
+		}
+
+		source = folderName + source
+		module, modDiags := decodeFolder(source,appFs)
+
+		module.Source = source
+		if folderName == source || folderName == source+"./" || folderName+"./" == source {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Circle folder",
+				Detail:   fmt.Sprintf("Folder can't be used as a module causes a loop: %s", source),
+			})
+			return &Module{}, diags
+		}
+
+		diags = append(diags, modDiags...)
+
+		// check if variable is declared correctly
+		// _,diag := module.Inputs.Decode(nil)
+		// diags = append(diags, diag...)
+		for _, input := range module.Inputs {
+			if input.HasDefault {
+				_, diag := input.Default.Value(nil)
+				diags = append(diags, diag...)
+			}
+		}
+
+		attrs, attrDiags := call.Config.JustAttributes()
+		diags = append(diags, attrDiags...)
+
+		for _, attr := range attrs {
+			if attr.Name == "depends_on" {
+				continue
+			}
+			variable := &Variable{
+				Name:       attr.Name,
+				Default:    attr.Expr,
+				HasDefault: true,
+				DeclRange:  attr.Expr.Range(),
+			}
+			if existingVar, exists := module.Inputs[variable.Name]; !exists {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Variable not declared in module",
+					Detail:   fmt.Sprintf("Assigned a value to variable which was not declared in the module: %s", variable.Name),
+					Subject:  &variable.DeclRange,
+				})
+			} else {
+				if existingVar.Type != cty.NilType {
+					variable.Type = existingVar.Type
+				}
+				module.Inputs[variable.Name] = variable
+			}
+		}
+		for _, input := range module.Inputs {
+			if !input.HasDefault {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Variable requires value",
+					Detail:   fmt.Sprintf("Need to assign a value to variable which was declared in the module: %s", input.Name),
+					Subject:  &input.DeclRange,
+				})
+			}
+		}
+		module.Name = call.Name
+		module.DependsOn = call.DependsOn
+		return module,diags
+}
+
+func parseSource(source string,r *hcl.Range)(string,string,hcl.Diagnostics){
+	strs := strings.Split(source,"/")
+	if len(strs) != 4 {
+		return "","",hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Source is invalid",
+				Detail: fmt.Sprintf("Format of source is repo://<repoName>/<tag or name> got %s",source),
+				Subject: r,
+			},
+		}
+	}
+	return strs[2],strs[3],hcl.Diagnostics{}
+}
+
+func (call *ModuleCall) decodeCallWithRepo(source,prev string)(*Module,hcl.Diagnostics){
+		version,_ := call.DecodeVersion(&hcl.EvalContext{})
+		repoName,tag,diags := parseSource(source,call.Source.Range().Ptr())
+		if diags.HasErrors(){
+			return &Module{},diags
+		}
+
+		appFs,diags :=	Pull(version,*RepoConfigFile,repoName,tag,false)
+		if diags.HasErrors() {
+			return &Module{},diags
+		}
+		module, modDiags := decodeFolder(tag,appFs)
+
+		module.Source = tag
+		if prev == tag  {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Circle repo",
+				Detail:   fmt.Sprintf("Repo can't be used as a module causes a loop: %s", source),
+			})
+			return &Module{}, diags
+		}
+
+		diags = append(diags, modDiags...)
+
+		// check if variable is declared correctly
+		// _,diag := module.Inputs.Decode(nil)
+		// diags = append(diags, diag...)
+		for _, input := range module.Inputs {
+			if input.HasDefault {
+				_, diag := input.Default.Value(nil)
+				diags = append(diags, diag...)
+			}
+		}
+
+		attrs, attrDiags := call.Config.JustAttributes()
+		diags = append(diags, attrDiags...)
+
+		for _, attr := range attrs {
+			if attr.Name == "depends_on" {
+				continue
+			}
+			variable := &Variable{
+				Name:       attr.Name,
+				Default:    attr.Expr,
+				HasDefault: true,
+				DeclRange:  attr.Expr.Range(),
+			}
+			if existingVar, exists := module.Inputs[variable.Name]; !exists {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Variable not declared in module",
+					Detail:   fmt.Sprintf("Assigned a value to variable which was not declared in the module: %s", variable.Name),
+					Subject:  &variable.DeclRange,
+				})
+			} else {
+				if existingVar.Type != cty.NilType {
+					variable.Type = existingVar.Type
+				}
+				module.Inputs[variable.Name] = variable
+			}
+		}
+		for _, input := range module.Inputs {
+			if !input.HasDefault {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Variable requires value",
+					Detail:   fmt.Sprintf("Need to assign a value to variable which was declared in the module: %s", input.Name),
+					Subject:  &input.DeclRange,
+				})
+			}
+		}
+		module.Name = call.Name
+		module.DependsOn = call.DependsOn
+		module.Scope = appFs
+		return module,diags
+}
+
 // Decode module into decoded module
 // This decodes module and also modules inside that module
 // There are few parameters
@@ -188,9 +361,13 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 // Folder to decode
 // Namespace to add to each resource if not exists
 // previous module context all vars and locals to apply to the variables of the new module
-func (m *Module) decode(releaseName string, depth int, folderName string, varsF string, vals []string, prevCtx *hcl.EvalContext) (*decode.DecodedModule, hcl.Diagnostics) {
+func (m *Module) decode(releaseName string, depth int, folderName string, varsF string, vals []string, prevCtx *hcl.EvalContext,appFs afero.Fs) (*decode.DecodedModule, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-
+	if m.Scope != nil {
+		appFs = m.Scope
+	} else {
+		m.Scope = appFs
+	}
 	decodedModule := &decode.DecodedModule{
 		Depth:     depth,
 		Name:      m.Name,
@@ -247,80 +424,29 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	var modules ModuleList
 	for _, call := range m.ModuleCalls {
 		source, sourceDiags := call.DecodeSource(&hcl.EvalContext{})
-		if string(folderName[len(folderName)-1]) != "/" {
-			folderName = folderName + "/"
-		}
-
-		if string(source[:2]) == "./" {
-			source = source[2:]
-		}
-
-		source = folderName + source
-		attrs, attrDiags := call.Config.JustAttributes()
-		diags = append(diags, attrDiags...)
+		
 		diags = append(diags, sourceDiags...)
-		module, modDiags := decodeFolder(source)
-
-		module.Source = source
-		if folderName == source || folderName == source+"./" || folderName+"./" == source {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Circle folder",
-				Detail:   fmt.Sprintf("Folder can't be used as a module causes a loop: %s", source),
-			})
-			return &decode.DecodedModule{}, diags
-		}
-
-		diags = append(diags, modDiags...)
-
-		// check if variable is declared correctly
-		// _,diag := module.Inputs.Decode(nil)
-		// diags = append(diags, diag...)
-		for _, input := range module.Inputs {
-			if input.HasDefault {
-				_, diag := input.Default.Value(nil)
-				diags = append(diags, diag...)
-			}
-		}
-
-		for _, attr := range attrs {
-			if attr.Name == "depends_on" {
-				continue
-			}
-			variable := &Variable{
-				Name:       attr.Name,
-				Default:    attr.Expr,
-				HasDefault: true,
-				DeclRange:  attr.Expr.Range(),
-			}
-			if existingVar, exists := module.Inputs[variable.Name]; !exists {
+		if strings.HasPrefix(source,"repo://"){
+			module,callDiags :=call.decodeCallWithRepo(source,folderName)
+			modules = append(modules, module)
+			diags = append(diags, callDiags...)
+			if module.Name == "" {
 				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Variable not declared in module",
-					Detail:   fmt.Sprintf("Assigned a value to variable which was not declared in the module: %s", variable.Name),
-					Subject:  &variable.DeclRange,
+					Severity: hcl.DiagWarning,
+					Summary: "This was pulled through a repo",
+					Detail: fmt.Sprintf("This module was pull from repo, please validate the source %s",source),
 				})
-			} else {
-				if existingVar.Type != cty.NilType {
-					variable.Type = existingVar.Type
-				}
-				module.Inputs[variable.Name] = variable
+				return &decode.DecodedModule{},diags
+			}
+			
+		} else {
+			module,callDiags :=call.decodeCallWithFolder(source,folderName,appFs)
+			modules = append(modules, module)
+			diags = append(diags, callDiags...)
+			if module.Name == "" {
+				return &decode.DecodedModule{},diags
 			}
 		}
-		for _, input := range module.Inputs {
-			if !input.HasDefault {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Variable requires value",
-					Detail:   fmt.Sprintf("Need to assign a value to variable which was declared in the module: %s", input.Name),
-					Subject:  &input.DeclRange,
-				})
-			}
-		}
-		module.Name = call.Name
-		module.DependsOn = call.DependsOn
-		modules = append(modules, module)
-
 	}
 
 	if diags.HasErrors() {
@@ -364,7 +490,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	decodedModule.ModuleCalls = DecodedModuleCalls
 
 	for _, module := range modules {
-		dm, dmDiags := module.decode(releaseName, depth+1, module.Source, "", make([]string, 0), ctx)
+		dm, dmDiags := module.decode(releaseName, depth+1, module.Source, "", make([]string, 0), ctx,appFs)
 		diags = append(diags, dmDiags...)
 		decodedModule.Modules = append(decodedModule.Modules, dm)
 	}
@@ -378,9 +504,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 				if val, exists := resInfoMap["metadata"]; exists {
 					if val.Type().IsObjectType() || val.Type().IsMapType() {
 						metadata := val.AsValueMap()
-						// if _, exists := metadata["namespace"]; !exists && namespace != "" {
-						// 	metadata["namespace"] = cty.StringVal(namespace)
-						// }
+
 						if annotations, exists := metadata["annotations"]; exists {
 							if annotations.Type().IsObjectType() || annotations.Type().IsMapType() {
 								annotationsMap := val.AsValueMap()
@@ -426,70 +550,42 @@ func decodeHclBytes(src []byte, fileName string, addrMap addrs.AddressMap) (Modu
 	b, blockDiags := srcHCL.Body.Content(inputConfig)
 	diags = append(diags, blockDiags...)
 
-	// Decode variables
 	var vars VariableMap
-	// tasks <- Task{func() {
 	variables, varDiags := DecodeVariableBlocks(b.Blocks.OfType("variable"))
 	vars = variables
-	// l.Lock()
-	// defer l.Unlock()
+
 	diags = append(diags, varDiags...)
-	// wg.Done()
 
-	// }}
-
-	// get ctx
-
-	// decode locals
 	var locals Locals
-	// tasks <- Task{func() {
 	localList, localDiags := DecodeLocalsBlocks(b.Blocks.OfType("locals"), addrMap)
 	locals = localList
-	// l.Lock()
-	// defer l.Unlock()
-	diags = append(diags, localDiags...)
-	// wg.Done()
 
-	// }}
+	diags = append(diags, localDiags...)
 
 	var defaultAnnotaions Annotations
 
-	// tasks <- Task{func() {
 	annotations, annotationsDiags := DecodeAnnotationsBlocks(b.Blocks.OfType("default_annotations"), addrMap)
 	defaultAnnotaions = annotations
-	// l.Lock()
-	// defer l.Unlock()
-	diags = append(diags, annotationsDiags...)
-	// wg.Done()
 
-	// }}
+	diags = append(diags, annotationsDiags...)
 
 	var resources ResourceList
 
-	// tasks <- Task{func() {
 	resourcesList, resourceDiags := DecodeResourceBlocks(b.Blocks.OfType("kube_resource"), addrMap)
 	resources = resourcesList
-	// l.Lock()
-	// defer l.Unlock()
-	diags = append(diags, resourceDiags...)
-	// wg.Done()
 
-	// }}
+	diags = append(diags, resourceDiags...)
+
 	storageBlock, storageDiags := DecodeBackendStorageBlocks(b.Blocks.OfType("backend_storage"))
 	diags = append(diags, storageDiags...)
 
 	var modules ModuleCallList
 
-	// tasks <- Task{func() {
 	moduleList, moduleDiags := DecodeModuleBlocks(b.Blocks.OfType("module"), addrMap)
 	modules = moduleList
-	// l.Lock()
-	// defer l.Unlock()
-	diags = append(diags, moduleDiags...)
-	// wg.Done()
-	// }}
 
-	// wg.Wait()
+	diags = append(diags, moduleDiags...)
+
 	return Module{
 		BackendStorage: storageBlock,
 		Inputs:         vars,
@@ -501,11 +597,10 @@ func decodeHclBytes(src []byte, fileName string, addrMap addrs.AddressMap) (Modu
 }
 
 // Decode a single file into a module format
-func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
+func decodeFile(fileName string, addrMap addrs.AddressMap,appFs afero.Fs) (Module, hcl.Diagnostics) {
 	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
-	// wg := sync.WaitGroup{}
-	// wg.Add(5)
-	input, err := os.Open(fileName)
+
+	input, err := appFs.Open(fileName)
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
@@ -526,14 +621,12 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 }
 
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
-func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
+func decodeFolder(folderName string,appFs afero.Fs) (*Module, hcl.Diagnostics) {
 	logging.KubeLogger.Info(fmt.Sprintf("Decoding folder %s", folderName))
 	var diags hcl.Diagnostics
-	// if mod := modMap.Get(folderName); mod != nil {
-	// return mod,diags
-	// }
+
 	var addrMap = addrs.AddressMap{}
-	files, err := os.ReadDir(folderName)
+	files, err := afero.ReadDir(appFs,folderName)
 	var deployable = &Module{}
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -543,28 +636,21 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 		})
 	}
 	var moduleList []*Module
-	// wg := sync.WaitGroup{}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ext {
-			// wg.Add(1)
-			// tasks <- Task{func(){
-			dep, decodeDiags := decodeFile(folderName+"/"+f.Name(), addrMap)
-			// l.Lock()
-			// defer l.Unlock()
+
+			dep, decodeDiags := decodeFile(folderName+"/"+f.Name(), addrMap,appFs)
+
 			moduleList = append(moduleList, &dep)
 			diags = append(diags, decodeDiags...)
-			// wg.Done()
-			// }}
+
 		}
 	}
-	// wg.Wait()
+
 	for _, module := range moduleList {
 		deployable.merge(module)
 	}
 
-	// dM, decodeModuleDiags := deployable.decode(depth)
-	// diags = append(diags, decodeModuleDiags...)
-	// dM.Name = name
 	return deployable, diags
 }
 
@@ -575,8 +661,8 @@ func decodeIndexFile(fileName string) (map[string]string, hcl.Diagnostics) {
 		return make(map[string]string), hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("File %s is missing", INDEXFILE),
-				Detail:   fmt.Sprintf("%s file must be created and populated with the relevant info", INDEXFILE),
+				Summary:  fmt.Sprintf("File %s is missing", INDEXVARSFILE),
+				Detail:   fmt.Sprintf("%s file must be created and populated with the relevant info", INDEXVARSFILE),
 			},
 		}
 	}
@@ -604,8 +690,8 @@ func decodeIndexFile(fileName string) (map[string]string, hcl.Diagnostics) {
 		if _, ok := attrs[item]; !ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s must contain name", INDEXFILE),
-				Detail:   fmt.Sprintf("File %s contains descriptive keys for the module, %s is a required key", INDEXFILE, item),
+				Summary:  fmt.Sprintf("%s must contain name", INDEXVARSFILE),
+				Detail:   fmt.Sprintf("File %s contains descriptive keys for the module, %s is a required key", INDEXVARSFILE, item),
 				Subject:  srcHCL.Body.MissingItemRange().Ptr(),
 			})
 		}
@@ -628,7 +714,7 @@ func decodeIndexFile(fileName string) (map[string]string, hcl.Diagnostics) {
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("Variables in %s must be strings", INDEXFILE),
+				Summary:  fmt.Sprintf("Variables in %s must be strings", INDEXVARSFILE),
 				Detail:   fmt.Sprintf("Variable %s is not string error: %s", variable.Name, err.Error()),
 				Subject:  &variable.DeclRange,
 			})
@@ -643,14 +729,14 @@ func decodeIndexFile(fileName string) (map[string]string, hcl.Diagnostics) {
 // Decode both folder and module into a decoded module
 func DecodeFolderAndModules(releaseName string, folderName string, name string, varF string, vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	if depth == 0 {
-		_, diags := decodeIndexFile(folderName + "/" + INDEXFILE)
+		_, diags := decodeIndexFile(folderName + "/" + INDEXVARSFILE)
 		if diags.HasErrors() {
 			return &decode.DecodedModule{}, diags
 		}
 	}
-
-	mod, diags := decodeFolder(folderName)
-	dm, decodeDiags := mod.decode(releaseName, 0, folderName, varF, vals, &hcl.EvalContext{})
+	appFs := afero.NewOsFs()
+	mod, diags := decodeFolder(folderName,appFs)
+	dm, decodeDiags := mod.decode(releaseName, 0, folderName, varF, vals, &hcl.EvalContext{},appFs)
 	diags = append(diags, decodeDiags...)
 	return dm, diags
 }

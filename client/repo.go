@@ -1,12 +1,10 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -136,69 +134,6 @@ func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, v
 
 }
 
-func doRequest(opts *settings.RepoAddOptions, path string, httpClient *http.Client, fullUrl string) (*bytes.Buffer, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	var err error
-	var req *http.Request
-
-	if fullUrl == "" {
-		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/%s", opts.Protocol, opts.Url, path), nil)
-	} else {
-		req, err = http.NewRequest(http.MethodGet, fullUrl, nil)
-	}
-
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't create request",
-			Detail:   fmt.Sprintf("Request couldn't be created err: %s", err.Error()),
-		})
-		return nil, diags
-	}
-
-	req.Header.Set("User-Agent", "kubehcl")
-
-	if opts.Username != "" && opts.Password != "" {
-		req.SetBasicAuth(opts.Username, opts.Password)
-	}
-
-	resp, err := httpClient.Do(req)
-
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Request failed",
-			Detail:   fmt.Sprintf("Request couldn't be created err: %s", err.Error()),
-		})
-		return nil, diags
-	}
-
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Request failed",
-			Detail:   fmt.Sprintf("Status code is %d", http.StatusOK),
-		})
-		return nil, diags
-	}
-
-	buf := bytes.NewBuffer(nil)
-
-	_, err = io.Copy(buf, resp.Body)
-
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Couldn't copy body to buff",
-			Detail:   fmt.Sprint(err.Error()),
-		})
-		return nil, diags
-	}
-
-	return buf, diags
-}
 
 func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
@@ -226,7 +161,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 		v.DiagPrinter(diags, viewDef)
 		return
 	}
-	_, diags = doRequest(opts, INDEXFILE, httpClient, "")
+	_, diags = configs.DoRequest(OptsToRepo(opts), INDEXFILE, httpClient, "")
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
 		return

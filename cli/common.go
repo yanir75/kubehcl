@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/settings"
 )
 
@@ -37,6 +38,7 @@ func addCommonToCommand(cmd *cobra.Command) {
 	ctx := context.WithValue(cmd.Context(), settingsKey, definitions)
 
 	cmd.SetContext(ctx)
+	configs.RepoConfigFile = &definitions.RepositoryConfig
 }
 
 func AddCmdSettings(cmd *cobra.Command) {
