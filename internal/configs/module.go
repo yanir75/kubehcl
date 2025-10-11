@@ -262,7 +262,7 @@ func (call *ModuleCall) decodeCallWithFolder(source, folderName string, appFs af
 
 func parseSource(source string, r *hcl.Range) (string, string, hcl.Diagnostics) {
 	strs := strings.Split(source, "/")
-	if len(strs) != 4 {
+	if len(strs) < 4 {
 		return "", "", hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -272,7 +272,11 @@ func parseSource(source string, r *hcl.Range) (string, string, hcl.Diagnostics) 
 			},
 		}
 	}
-	return strs[2], strs[3], hcl.Diagnostics{}
+	newName := strs[3]
+	for i:=4; i<len(strs); i++ {
+		newName = newName+"/"+strs[i]
+	}
+	return strs[2], newName, hcl.Diagnostics{}
 }
 
 func (call *ModuleCall) decodeCallWithRepo(source, prev string) (*Module, hcl.Diagnostics) {
