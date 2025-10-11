@@ -13,17 +13,17 @@ type pull struct {
 }
 
 // Create module command for the cmd tool
-func PullCmd() *cobra.Command {
+func pullCmd() *cobra.Command {
 	p := &pull{}
 	PullCmd := &cobra.Command{
 		Use:   "pull [REPO NAME] [TAG/NAME]",
-		Short: "add a repository of modules",
-		Long:  "add provides you the option to add a repository which contains modules modules",
+		Short: "pulls a module from the repo",
+		Long:  "pulls a moduel from the repo with the given tag and name, this will createa folder. Module must be tar.gz",
 		Run: func(cmd *cobra.Command, args []string) {
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.Pull(p.Version, conf, viewSettings, args,true)
+			client.Pull(p.Version, conf, viewSettings, args, true)
 		},
 	}
 

@@ -49,37 +49,36 @@ func (e Entrys) contains(name, version string) (string, error) {
 	return "", fmt.Errorf("no matching version %s", version)
 }
 
-
 func replaceFirstSegment(path, newFirstSegment string) string {
-    // Clean the path
-    cleanPath := filepath.Clean(path)
+	// Clean the path
+	cleanPath := filepath.Clean(path)
 
-    // Split path into parts
-    parts := strings.Split(cleanPath, string(filepath.Separator))
+	// Split path into parts
+	parts := strings.Split(cleanPath, string(filepath.Separator))
 
-    // Handle leading slash
-    leadingSlash := strings.HasPrefix(cleanPath, string(filepath.Separator))
+	// Handle leading slash
+	leadingSlash := strings.HasPrefix(cleanPath, string(filepath.Separator))
 
-    // Replace first non-empty segment
-    for i, part := range parts {
-        if part != "" {
-            parts[i] = newFirstSegment
-            break
-        }
-    }
+	// Replace first non-empty segment
+	for i, part := range parts {
+		if part != "" {
+			parts[i] = newFirstSegment
+			break
+		}
+	}
 
-    // Re-join the parts
-    newPath := filepath.Join(parts...)
+	// Re-join the parts
+	newPath := filepath.Join(parts...)
 
-    // Add leading slash back if it was there
-    if leadingSlash {
-        newPath = string(filepath.Separator) + newPath
-    }
+	// Add leading slash back if it was there
+	if leadingSlash {
+		newPath = string(filepath.Separator) + newPath
+	}
 
-    return newPath
+	return newPath
 }
 
-func untarFile(buff []byte, save bool,folderName string) (afero.Fs, hcl.Diagnostics) {
+func untarFile(buff []byte, save bool, folderName string) (afero.Fs, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	appFs := afero.NewMemMapFs()
@@ -120,7 +119,7 @@ func untarFile(buff []byte, save bool,folderName string) (afero.Fs, hcl.Diagnost
 
 		switch header.Typeflag {
 		case tar.TypeDir: // = directory
-			d := replaceFirstSegment(filepath.Dir(name),folderName)
+			d := replaceFirstSegment(filepath.Dir(name), folderName)
 			err := appFs.Mkdir(d, 0755)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
@@ -142,8 +141,8 @@ func untarFile(buff []byte, save bool,folderName string) (afero.Fs, hcl.Diagnost
 				return appFs, diags
 
 			}
-			d := replaceFirstSegment(filepath.Dir(name),folderName)
-			name := d+string(filepath.Separator) +filepath.Base(name)
+			d := replaceFirstSegment(filepath.Dir(name), folderName)
+			name := d + string(filepath.Separator) + filepath.Base(name)
 			err = appFs.MkdirAll(d, 0755)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
@@ -177,15 +176,15 @@ func untarFile(buff []byte, save bool,folderName string) (afero.Fs, hcl.Diagnost
 	return appFs, diags
 }
 
-func pullHttp(r *decode.DecodedRepo, name string, version string, save bool) (afero.Fs,hcl.Diagnostics) {
-	httpClient, diags := newHttpClient(r)
+func pullHttp(r *decode.DecodedRepo, name string, version string, save bool) (afero.Fs, hcl.Diagnostics) {
+	httpClient, diags := NewHttpClient(r)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 
 	res, diags := DoRequest(r, DOWNLOADINDEXFILE, httpClient, "")
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 	var entries Entrys
 	err := yaml.Unmarshal(res.Bytes(), &entries)
@@ -195,27 +194,27 @@ func pullHttp(r *decode.DecodedRepo, name string, version string, save bool) (af
 			Summary:  "Yaml is invalid",
 			Detail:   fmt.Sprintf("%s \nis invalid", err.Error()),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 	if u, err := entries.contains(name, version); err == nil {
 		res, diags = DoRequest(r, "", httpClient, u)
 		if diags.HasErrors() {
-			return nil,diags
+			return nil, diags
 		}
-		return untarFile(res.Bytes(), save,name)
+		return untarFile(res.Bytes(), save, name)
 	} else {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Couldn't download module",
 			Detail:   fmt.Sprintf("Module couldn't be downloaded, error: %s", err.Error()),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 }
 
-func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs,hcl.Diagnostics) {
+func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs, hcl.Diagnostics) {
 	repository, err := remote.NewRepository(r.Url)
 	var diags hcl.Diagnostics
 	if err != nil {
@@ -225,12 +224,12 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs,hcl.Diagnos
 			Detail:   fmt.Sprintf("Repository is %s invalid, error: %s", r.Name, err.Error()),
 			Subject:  &r.DeclRange,
 		})
-		return nil,diags
+		return nil, diags
 	}
 
-	authClient, diags := newAuthClient(r, repository.Reference.Registry)
+	authClient, diags := NewAuthClient(r, repository.Reference.Registry)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 	repository.Client = authClient
 
@@ -242,7 +241,7 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs,hcl.Diagnos
 			Detail:   fmt.Sprintf("Tag %s cannot be pulled error: %s", tag, err.Error()),
 			Subject:  &r.DeclRange,
 		})
-		return nil,diags
+		return nil, diags
 	}
 	var manifest ocispec.Manifest
 	if err := json.Unmarshal(fetchedManifestContent, &manifest); err != nil {
@@ -256,7 +255,7 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs,hcl.Diagnos
 				Summary:  "Too many layers to the manifest expecting only 1",
 				Detail:   fmt.Sprintf("Manifest has %d layers", len(manifest.Layers)),
 			})
-		return nil,diags
+		return nil, diags
 	}
 
 	layerContent, err := content.FetchAll(context.Background(), repository, manifest.Layers[0])
@@ -267,17 +266,17 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs,hcl.Diagnos
 			Summary:  "Failed to fetch layer manifest",
 			Detail:   fmt.Sprintf("Wan't able to retreive layer %s, error: %s", manifest.Layers[0].URLs, err.Error()),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
-	return untarFile(layerContent, save,tag)
+	return untarFile(layerContent, save, tag)
 }
 
-func Pull(version string, repoConfigFile string, repoName string, tag string,save bool)(afero.Fs,hcl.Diagnostics) {
+func Pull(version string, repoConfigFile string, repoName string, tag string, save bool) (afero.Fs, hcl.Diagnostics) {
 
 	repos, diags := DecodeRepos(repoConfigFile)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 
 	repo, ok := repos[repoName]
@@ -287,7 +286,7 @@ func Pull(version string, repoConfigFile string, repoName string, tag string,sav
 			Summary:  "Repository doesn't exist",
 			Detail:   fmt.Sprintf("%s doesn't exist please add or use other repo name.\n In order to see the repositories please use kubehcl repo list", repoName),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 	if (repo.Protocol == "https" || repo.Protocol == "http") && version == "" {
@@ -297,41 +296,40 @@ func Pull(version string, repoConfigFile string, repoName string, tag string,sav
 			Detail:   fmt.Sprintf("repository %s uses protocol https packages have version, please add --version", repoName),
 			Subject:  &repo.DeclRange,
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 	switch repo.Protocol {
 	case "oci":
-		appFs,diags := pullOci(repo, tag, save)
+		appFs, diags := pullOci(repo, tag, save)
 		if diags.HasErrors() {
-			return nil,diags
+			return nil, diags
 		}
-		return appFs,diags
+		return appFs, diags
 	case "https":
 		appFs, diags := pullHttp(repo, tag, version, save)
 		if diags.HasErrors() {
-			return nil,diags
+			return nil, diags
 		}
-		return appFs,diags
+		return appFs, diags
 	case "http":
-		appFs,diags := pullHttp(repo, tag, version, save)
+		appFs, diags := pullHttp(repo, tag, version, save)
 		if diags.HasErrors() {
-			return nil,diags
+			return nil, diags
 		}
-		return appFs,diags
+		return appFs, diags
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Protocol is invalid",
 			Detail:   fmt.Sprintf("repository %s uses protocol %s which is invalid", repoName, repo.Protocol),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 }
 
-
-func newHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
+func NewHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &tls.Config{
 		InsecureSkipVerify: opts.InsecureSkipTLSverify,
@@ -372,8 +370,8 @@ func newHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
 	return httpClient, diags
 }
 
-func newAuthClient(opts *decode.DecodedRepo, regName string) (*auth.Client, hcl.Diagnostics) {
-	httpClient, diags := newHttpClient(opts)
+func NewAuthClient(opts *decode.DecodedRepo, regName string) (*auth.Client, hcl.Diagnostics) {
+	httpClient, diags := NewHttpClient(opts)
 	if diags.HasErrors() {
 		return nil, diags
 	}

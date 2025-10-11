@@ -2,10 +2,7 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -21,7 +18,6 @@ import (
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
 	"oras.land/oras-go/v2/registry/remote"
-	"oras.land/oras-go/v2/registry/remote/auth"
 )
 
 func parseRepoAddArgs(args []string) (string, string, hcl.Diagnostics) {
@@ -134,7 +130,6 @@ func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, v
 
 }
 
-
 func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors() {
@@ -156,7 +151,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 	opts.RepoCache = envSettings.RepositoryCache
 	opts.RepoFile = envSettings.RepositoryConfig
 
-	httpClient, diags := newHttpClient(opts)
+	httpClient, diags := configs.NewHttpClient(OptsToRepo(opts))
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
 		return
@@ -237,7 +232,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 		return
 	}
 
-	repo.Client, diags = newAuthClient(opts, repo.Reference.Registry)
+	repo.Client, diags = configs.NewAuthClient(OptsToRepo(opts), repo.Reference.Registry)
 
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
@@ -297,65 +292,6 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 		v.DiagPrinter(diags, viewDef)
 		return
 	}
-}
-
-func newHttpClient(opts *settings.RepoAddOptions) (*http.Client, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	cfg := &tls.Config{
-		InsecureSkipVerify: opts.InsecureSkipTLSverify,
-	}
-	if opts.KeyFile != "" && opts.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(opts.CertFile, opts.KeyFile)
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't load certificate",
-				Detail:   fmt.Sprint(err.Error()),
-			})
-			return nil, diags
-		}
-		cfg.Certificates = append(cfg.Certificates, cert)
-	}
-	if opts.CaFile != "" {
-		caCert, err := os.ReadFile(opts.CaFile)
-		if err != nil {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Couldn't load CA certificate",
-				Detail:   fmt.Sprint(err.Error()),
-			})
-			return nil, diags
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-		cfg.RootCAs = caCertPool
-	}
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: cfg,
-		},
-	}
-
-	return httpClient, diags
-}
-
-func newAuthClient(opts *settings.RepoAddOptions, regName string) (*auth.Client, hcl.Diagnostics) {
-	httpClient, diags := newHttpClient(opts)
-	if diags.HasErrors() {
-		return nil, diags
-	}
-
-	authClient := &auth.Client{
-		Client: httpClient,
-		Cache:  auth.NewCache(),
-		Credential: auth.StaticCredential(regName, auth.Credential{
-			Username: opts.Username,
-			Password: opts.Password,
-		}),
-	}
-
-	return authClient, diags
 }
 
 func parseRepoRemoveArgs(args []string) (string, hcl.Diagnostics) {

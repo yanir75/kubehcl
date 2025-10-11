@@ -42,7 +42,7 @@ func (m *ModuleCall) DecodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics
 func (m *ModuleCall) DecodeVersion(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	if m.Version == nil {
-		return "",diags
+		return "", diags
 	}
 	val, valDdiags := m.Version.Value(ctx)
 	diags = append(diags, valDdiags...)
@@ -55,7 +55,7 @@ func (m *ModuleCall) DecodeVersion(ctx *hcl.EvalContext) (string, hcl.Diagnostic
 			Expression:  m.Version,
 			EvalContext: ctx,
 		})
-		return "",diags
+		return "", diags
 	}
 	return val.AsString(), diags
 }
