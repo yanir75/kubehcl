@@ -129,11 +129,11 @@ func (cfg *Config) Create(resource *decode.DecodedResource) (kube.Result, hcl.Di
 
 	var diags hcl.Diagnostics
 	var results = kube.Result{}
-	for key, value := range resource.Config {
+	for _, value := range resource.Config {
 
-		kubeResourceList, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)
+		kubeResourceList, buildDiags := cfg.buildResource(resource.Name, value, &resource.DeclRange)
 		diags = append(diags, buildDiags...)
-		res, updateDiags := cfg.compareStates(kubeResourceList, key)
+		res, updateDiags := cfg.compareStates(kubeResourceList, resource.Name)
 		if !updateDiags.HasErrors() {
 			results.Created = append(results.Created, res.Created...)
 			results.Updated = append(results.Updated, res.Updated...)

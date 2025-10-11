@@ -38,6 +38,28 @@ func (m *ModuleCall) DecodeSource(ctx *hcl.EvalContext) (string, hcl.Diagnostics
 	return val.AsString(), diags
 }
 
+// Decode the version of a module, source means the folder which contains the module
+func (m *ModuleCall) DecodeVersion(ctx *hcl.EvalContext) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	if m.Version == nil {
+		return "",diags
+	}
+	val, valDdiags := m.Version.Value(ctx)
+	diags = append(diags, valDdiags...)
+	if val.Type() != cty.String {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity:    hcl.DiagError,
+			Summary:     "Version must be string",
+			Detail:      fmt.Sprintf("Required string and you entered type %s", val.Type().FriendlyName()),
+			Subject:     m.Version.Range().Ptr(),
+			Expression:  m.Version,
+			EvalContext: ctx,
+		})
+		return "",diags
+	}
+	return val.AsString(), diags
+}
+
 // Decode the multiple module calls to the module
 func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallList, hcl.Diagnostics) {
 	var dR decode.DecodedModuleCallList
@@ -79,6 +101,9 @@ var inputModuleBlockSchema = &hcl.BodySchema{
 			Name:     "source",
 			Required: true,
 		},
+		{
+			Name: "version",
+		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{},
 }
@@ -91,6 +116,7 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 		// Name:      block.Labels[0],
 		// DeclRange: block.DefRange,
 	}
+
 	Module.Name = block.Labels[0]
 	Module.DeclRange = block.DefRange
 	Module.Type = addrs.MType
@@ -101,6 +127,7 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 
 		Module.Count = attr.Expr
 	}
+
 	if attr, exists := content.Attributes["for_each"]; exists {
 		if _, countExists := content.Attributes["count"]; countExists {
 			diags = append(diags, &hcl.Diagnostic{
@@ -122,6 +149,9 @@ func decodeModuleBlock(block *hcl.Block) (*ModuleCall, hcl.Diagnostics) {
 	}
 
 	if attr, exists := content.Attributes["source"]; exists {
+		Module.Source = attr.Expr
+	}
+	if attr, exists := content.Attributes["version"]; exists {
 		Module.Source = attr.Expr
 	}
 

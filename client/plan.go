@@ -28,26 +28,26 @@ func removeUnnecessaryFields(m map[string]interface{}) {
 	delete(meta, "selfLink")
 	delete(meta, "managedFields")
 	anno := meta["annotations"].(map[string]any)
-	delete(anno,"kubectl.kubernetes.io/last-applied-configuration")
+	delete(anno, "kubectl.kubernetes.io/last-applied-configuration")
 }
 
-func checkObjectAndFields(o runtime.Object){
+func checkObjectAndFields(o runtime.Object) {
 	if o != nil {
 		cur := o.(*unstructured.Unstructured)
-		removeUnnecessaryFields(cur.Object)		
+		removeUnnecessaryFields(cur.Object)
 	}
 }
 
 func adjustCmp(m map[string]*view.CompareResources) {
 	for key, value := range m {
-		logging.KubeLogger.Info(fmt.Sprintf("removing unnecessary fields for comparison purposes from %s",key))
+		logging.KubeLogger.Info(fmt.Sprintf("removing unnecessary fields for comparison purposes from %s", key))
 		checkObjectAndFields(value.Current)
 		checkObjectAndFields(value.Wanted)
 	}
 }
 
 func Plan(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArgs, cmdSettings *settings.CmdSettings) {
-	logging.KubeLogger.Info(fmt.Sprintf("Parsing install arguments %s",args))
+	logging.KubeLogger.Info(fmt.Sprintf("Parsing install arguments %s", args))
 
 	name, folderName, diags := parseInstallArgs(args)
 	if diags.HasErrors() {
@@ -61,7 +61,6 @@ func Plan(args []string, conf *settings.EnvSettings, viewArguments *view.ViewArg
 		v.DiagPrinter(diags, viewArguments)
 		return
 	}
-
 
 	d, decodeDiags := configs.DecodeFolderAndModules(name, folderName, "root", varsF, vals, 0)
 	diags = append(diags, decodeDiags...)

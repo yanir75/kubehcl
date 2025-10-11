@@ -10,18 +10,19 @@ package configs
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
+
 	// "kubehcl.sh/kubehcl/internal/addrs"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
 
 // var variables VariableList
-
 type Variable struct {
 	Name        string         // `json:"Name"`
 	Description string         // `json:"Description"`
@@ -45,6 +46,21 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 		{Name: "default", Required: false},
 		{Name: "description", Required: false},
 	},
+}
+
+func (v *Variable) checkVariableName() hcl.Diagnostics{
+	invalidNames := []string{"version","source"}
+	if slices.Contains(invalidNames,v.Name) {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Invalid variable name",
+				Detail: fmt.Sprintf("Variable name %s is reserved for internal use, please use other name",v.Name),
+				Subject: &v.DeclRange,
+			},
+		}
+	}
+	return hcl.Diagnostics{}
 }
 
 // Decode variable and verify the type of the variable matches the default value defined
@@ -146,6 +162,7 @@ func decodeVariableBlock(block *hcl.Block) (*Variable, hcl.Diagnostics) {
 		variable.Default = attr.Expr
 		variable.HasDefault = true
 	}
+	diags = append(diags, variable.checkVariableName()...)
 
 	return variable, diags
 }

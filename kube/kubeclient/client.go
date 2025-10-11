@@ -70,12 +70,12 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 		cfg.Version = version.Major + "." + version.Minor
 
 	} else {
-		return nil,diags
+		return nil, diags
 	}
-	
+
 	cfg.Storage, diags = storage.New(cfg.Client, name, conf.Namespace(), storageKind)
 	if diags.HasErrors() {
-		return nil,diags
+		return nil, diags
 	}
 
 	return cfg, diags
@@ -100,7 +100,7 @@ func (cfg *Config) validateNamespace() hcl.Diagnostics {
 
 // Build resource build the resource from cty.value type into a json
 func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (kube.ResourceList, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
+ 	var diags hcl.Diagnostics
 	data, err := ctyjson.Marshal(value, value.Type())
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -110,7 +110,7 @@ func (cfg *Config) buildResource(key string, value cty.Value, rg *hcl.Range) (ku
 			Subject:  rg,
 		})
 	}
-
+	
 	cfg.Storage.Add(key, data)
 	reader := bytes.NewReader(data)
 	kubeResourceList, buildErr := cfg.Client.Build(reader, true)

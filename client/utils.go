@@ -6,9 +6,14 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"kubehcl.sh/kubehcl/internal/decode"
 	"kubehcl.sh/kubehcl/internal/terminal"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
+)
+
+const (
+	INDEXFILE = "index.yaml"
 )
 
 var v *view.View = view.NewView(&terminal.Streams{
@@ -36,4 +41,46 @@ func parseCmdSettings(c *settings.CmdSettings) (string, []string, hcl.Diagnostic
 	}
 
 	return c.VarsFile, c.Vars, diags
+}
+
+// Parses arguments for template,push command
+
+func parseFolderArgs(args []string) (string, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	if len(args) > 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Too many arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	if len(args) < 1 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Insufficient number of arguments required arguments are: folder",
+		})
+		return "", diags
+	}
+
+	return args[0], diags
+}
+
+func OptsToRepo(r *settings.RepoAddOptions) *decode.DecodedRepo {
+	return &decode.DecodedRepo{
+		Name:                  r.Name,
+		Url:                   r.Url,
+		Username:              r.Username,
+		Password:              r.Password,
+		Timeout:               int64(r.Timeout),
+		Protocol:              r.Protocol,
+		CertFile:              r.CertFile,
+		KeyFile:               r.KeyFile,
+		CaFile:                r.CaFile,
+		InsecureSkipTLSverify: r.InsecureSkipTLSverify,
+		PlainHttp:             r.PlainHttp,
+		RepoFile:              r.RepoFile,
+		RepoCache:             r.RepoCache,
+	}
 }

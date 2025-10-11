@@ -20,7 +20,7 @@ func CreateRootCMD() *cobra.Command {
 	}
 
 	addCommonToCommand(rootCmd)
-	
+
 	rootCmd.AddCommand(
 		licenseCmd(),
 		installCmd(),
@@ -31,7 +31,10 @@ func CreateRootCMD() *cobra.Command {
 		fmtCmd(),
 		versionCmd(),
 		planCmd(),
+		repoCmd(),
+		PullCmd(),
 	)
+
 	rootCmd.Root().CompletionOptions.DisableDefaultCmd = true
 
 	return rootCmd

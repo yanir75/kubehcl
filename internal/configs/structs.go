@@ -2,6 +2,7 @@ package configs
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/afero"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
 
@@ -9,7 +10,9 @@ import (
 
 type ModuleCall struct {
 	decode.Deployable
-	Source hcl.Expression `json:"Source"`
+	Source  hcl.Expression `json:"Source"`
+	Version hcl.Expression `json:"Version"`
+	Scope afero.Fs
 }
 
 type Module struct {
@@ -22,6 +25,8 @@ type Module struct {
 	ModuleCalls    ModuleCallList  `json:"ModuleCalls"`
 	DependsOn      []hcl.Traversal `json:"DependsOn"`
 	Source         string          `json:"Source"`
+	Version        string          `json:"Version"`
+	Scope          afero.Fs
 }
 
 type ModuleList []*Module
