@@ -1,12 +1,10 @@
 package client
 
 import (
-
 	"github.com/hashicorp/hcl/v2"
 	"kubehcl.sh/kubehcl/internal/configs"
 	"kubehcl.sh/kubehcl/internal/view"
 	"kubehcl.sh/kubehcl/settings"
-
 )
 
 func parsePullArgs(args []string) (string, string, hcl.Diagnostics) {
@@ -23,13 +21,13 @@ func parsePullArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-func Pull(version string, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string,save bool) {
+func Pull(version string, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string, save bool) {
 	repoName, tag, diags := parsePullArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return 
+		return
 	}
 
-	_, diags = configs.Pull(version,envSettings.RepositoryConfig,repoName,tag,true)
-	v.DiagPrinter(diags,viewDef)
+	_, diags = configs.Pull(version, envSettings.RepositoryConfig, repoName, tag, true)
+	v.DiagPrinter(diags, viewDef)
 }

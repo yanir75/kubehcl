@@ -67,3 +67,7 @@ default_annotations {
 ##   stateless {}
 #   kube_secret {}
 # }
+
+# module "external" {
+#   source = "repo://foo/bar"
+# }

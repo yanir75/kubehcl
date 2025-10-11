@@ -48,15 +48,15 @@ var inputVariableBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func (v *Variable) checkVariableName() hcl.Diagnostics{
-	invalidNames := []string{"version","source"}
-	if slices.Contains(invalidNames,v.Name) {
+func (v *Variable) checkVariableName() hcl.Diagnostics {
+	invalidNames := []string{"version", "source"}
+	if slices.Contains(invalidNames, v.Name) {
 		return hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Invalid variable name",
-				Detail: fmt.Sprintf("Variable name %s is reserved for internal use, please use other name",v.Name),
-				Subject: &v.DeclRange,
+				Summary:  "Invalid variable name",
+				Detail:   fmt.Sprintf("Variable name %s is reserved for internal use, please use other name", v.Name),
+				Subject:  &v.DeclRange,
 			},
 		}
 	}

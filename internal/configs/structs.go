@@ -12,7 +12,7 @@ type ModuleCall struct {
 	decode.Deployable
 	Source  hcl.Expression `json:"Source"`
 	Version hcl.Expression `json:"Version"`
-	Scope afero.Fs
+	Scope   afero.Fs
 }
 
 type Module struct {
