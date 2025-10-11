@@ -254,7 +254,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 		if string(source[:2]) == "./" {
 			source = source[2:]
 		}
-		
+
 		source = folderName + source
 		attrs, attrDiags := call.Config.JustAttributes()
 		diags = append(diags, attrDiags...)
@@ -418,7 +418,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	return decodedModule, diags
 }
 
-func decodeHclBytes(src []byte,fileName string,addrMap addrs.AddressMap) (Module,hcl.Diagnostics){
+func decodeHclBytes(src []byte, fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
 	diags = append(diags, diagsParse...)
@@ -517,13 +517,12 @@ func decodeFile(fileName string, addrMap addrs.AddressMap) (Module, hcl.Diagnost
 		}
 	}()
 
-
 	src, err := io.ReadAll(input)
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	
-	return decodeHclBytes(src,fileName,addrMap)
+
+	return decodeHclBytes(src, fileName, addrMap)
 }
 
 // Decode a folder into a module format, this goes over each file in the folder and decodes the files, afterwards it merges the modules.
@@ -569,15 +568,15 @@ func decodeFolder(folderName string) (*Module, hcl.Diagnostics) {
 	return deployable, diags
 }
 
-func decodeIndexFile(fileName string) (map[string]string,hcl.Diagnostics){
+func decodeIndexFile(fileName string) (map[string]string, hcl.Diagnostics) {
 	logging.KubeLogger.Info(fmt.Sprintf("Decoding file %s", fileName))
 	input, err := os.Open(fileName)
 	if err != nil {
-		return make(map[string]string),hcl.Diagnostics{
+		return make(map[string]string), hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: fmt.Sprintf("File %s is missing",INDEXFILE),
-				Detail: fmt.Sprintf("%s file must be created and populated with the relevant info",INDEXFILE),
+				Summary:  fmt.Sprintf("File %s is missing", INDEXFILE),
+				Detail:   fmt.Sprintf("%s file must be created and populated with the relevant info", INDEXFILE),
 			},
 		}
 	}
@@ -600,16 +599,16 @@ func decodeIndexFile(fileName string) (map[string]string,hcl.Diagnostics){
 	attrs, attrDiags := srcHCL.Body.JustAttributes()
 	diags = append(diags, attrDiags...)
 	var variables VariableMap = make(map[string]*Variable)
-	requiredAttrs := []string{"name","version"}
-	for _,item := range requiredAttrs {
-		if _,ok := attrs[item]; !ok {
-			diags =append(diags, &hcl.Diagnostic{
+	requiredAttrs := []string{"name", "version"}
+	for _, item := range requiredAttrs {
+		if _, ok := attrs[item]; !ok {
+			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: fmt.Sprintf("%s must contain name",INDEXFILE),
-				Detail: fmt.Sprintf("File %s contains descriptive keys for the module, %s is a required key",INDEXFILE,item),
-				Subject: srcHCL.Body.MissingItemRange().Ptr(),
+				Summary:  fmt.Sprintf("%s must contain name", INDEXFILE),
+				Detail:   fmt.Sprintf("File %s contains descriptive keys for the module, %s is a required key", INDEXFILE, item),
+				Subject:  srcHCL.Body.MissingItemRange().Ptr(),
 			})
-		}	
+		}
 	}
 
 	for _, attr := range attrs {
@@ -620,33 +619,33 @@ func decodeIndexFile(fileName string) (map[string]string,hcl.Diagnostics){
 			DeclRange:  *attr.Expr.Range().Ptr(),
 		}
 	}
-	decodedVariables,decodeDiags := variables.Decode(&hcl.EvalContext{})
+	decodedVariables, decodeDiags := variables.Decode(&hcl.EvalContext{})
 	diags = append(diags, decodeDiags...)
 	annotations := make(map[string]string)
-	for _,variable := range decodedVariables {
+	for _, variable := range decodedVariables {
 		var str string
-		err := gocty.FromCtyValue(variable.Default,&str)
+		err := gocty.FromCtyValue(variable.Default, &str)
 		if err != nil {
-			diags =append(diags, &hcl.Diagnostic{
+			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: fmt.Sprintf("Variables in %s must be strings",INDEXFILE),
-				Detail: fmt.Sprintf("Variable %s is not string error: %s",variable.Name,err.Error()),
-				Subject: &variable.DeclRange,
+				Summary:  fmt.Sprintf("Variables in %s must be strings", INDEXFILE),
+				Detail:   fmt.Sprintf("Variable %s is not string error: %s", variable.Name, err.Error()),
+				Subject:  &variable.DeclRange,
 			})
 		} else {
 			annotations[variable.Name] = str
 		}
 	}
 
-	return annotations,diags
+	return annotations, diags
 }
 
 // Decode both folder and module into a decoded module
 func DecodeFolderAndModules(releaseName string, folderName string, name string, varF string, vals []string, depth int) (*decode.DecodedModule, hcl.Diagnostics) {
 	if depth == 0 {
-		_,diags := decodeIndexFile(folderName+"/"+INDEXFILE)
-		if diags.HasErrors(){
-			return &decode.DecodedModule{},diags
+		_, diags := decodeIndexFile(folderName + "/" + INDEXFILE)
+		if diags.HasErrors() {
+			return &decode.DecodedModule{}, diags
 		}
 	}
 

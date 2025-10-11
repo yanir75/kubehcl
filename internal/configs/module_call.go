@@ -98,7 +98,7 @@ var inputModuleBlockSchema = &hcl.BodySchema{
 			Required: true,
 		},
 		{
-			Name:     "version",
+			Name: "version",
 		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{},

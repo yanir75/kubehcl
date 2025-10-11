@@ -13,6 +13,10 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
+const (
+	INDEXFILE = "index.yaml"
+)
+
 var v *view.View = view.NewView(&terminal.Streams{
 	Stdout: &terminal.OutputStream{
 		File: os.Stdout,
@@ -64,21 +68,20 @@ func parseFolderArgs(args []string) (string, hcl.Diagnostics) {
 	return args[0], diags
 }
 
-
 func repoToOpts(r *decode.DecodedRepo) *settings.RepoAddOptions {
 	return &settings.RepoAddOptions{
-			Name: r.Name,                  
-			Url: r.Url,                   
-			Username: r.Username,              
-			Password: r.Password,              
-			Timeout: time.Duration(r.Timeout) * time.Second,               
-			Protocol: r.Protocol,              
-			CertFile: r.CertFile,              
-			KeyFile: r.KeyFile,               
-			CaFile: r.CaFile,                
-			InsecureSkipTLSverify: r.InsecureSkipTLSverify, 
-			PlainHttp: r.PlainHttp,             
-			RepoFile: r.RepoFile,              
-			RepoCache: r.RepoCache,             
+		Name:                  r.Name,
+		Url:                   r.Url,
+		Username:              r.Username,
+		Password:              r.Password,
+		Timeout:               time.Duration(r.Timeout) * time.Second,
+		Protocol:              r.Protocol,
+		CertFile:              r.CertFile,
+		KeyFile:               r.KeyFile,
+		CaFile:                r.CaFile,
+		InsecureSkipTLSverify: r.InsecureSkipTLSverify,
+		PlainHttp:             r.PlainHttp,
+		RepoFile:              r.RepoFile,
+		RepoCache:             r.RepoCache,
 	}
 }

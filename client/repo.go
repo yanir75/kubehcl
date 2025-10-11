@@ -226,7 +226,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 		v.DiagPrinter(diags, viewDef)
 		return
 	}
-	_, diags = doRequest(opts, "index.yaml", httpClient, "")
+	_, diags = doRequest(opts, INDEXFILE, httpClient, "")
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
 		return
