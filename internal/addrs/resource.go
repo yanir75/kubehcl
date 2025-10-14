@@ -46,5 +46,5 @@ func (r Resource) Equals(o Resource) bool {
 
 const (
 	InModule = "module"
-	RMode    = "resource"
+	RMode    = "kube_resource"
 )

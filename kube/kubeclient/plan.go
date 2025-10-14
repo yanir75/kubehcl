@@ -73,13 +73,13 @@ func (cfg *Config) BuildResource(resource *decode.DecodedResource) (map[string]k
 	var diags hcl.Diagnostics
 	resourceMap := make(map[string]kube.ResourceList)
 
-	for _, value := range resource.Config {
-		wanted, buildDiags := cfg.buildResource(resource.Name, value, &resource.DeclRange)
+	for key, value := range resource.Config {
+		wanted, buildDiags := cfg.buildResource(key, value, &resource.DeclRange)
 		if buildDiags.HasErrors() {
 			diags = append(diags, buildDiags...)
 			return resourceMap, diags
 		}
-		resourceMap[resource.Name] = wanted
+		resourceMap[key] = wanted
 	}
 	return resourceMap, diags
 }

@@ -100,7 +100,7 @@ type DecodedRepo struct {
 type DecodedRepoMap map[string]*DecodedRepo
 
 type DecodedModule struct {
-	Name           string
+	Name           string 
 	Inputs         DecodedVariableList
 	Locals         DecodedLocals
 	Annotations    DecodedAnnotations

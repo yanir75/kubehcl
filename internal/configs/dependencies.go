@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/dag"
 	"kubehcl.sh/kubehcl/internal/decode"
 )
@@ -86,6 +87,11 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 		dependencies = append(dependencies, m.Dependencies...)
 		dependencies = append(dependencies, moduleDependencies...)
 		r.Dependencies = dependencies
+		newConfig := make(map[string]cty.Value)
+		for key,value := range r.Config {
+			newConfig[currentName+key] = value
+		}
+		r.Config = newConfig
 	}
 
 	// for _, module := range m.Modules {
