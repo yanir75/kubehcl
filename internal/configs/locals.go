@@ -47,13 +47,21 @@ func (l *Local) decode(ctx *hcl.EvalContext) (*decode.DecodedLocal, hcl.Diagnost
 }
 
 // Decode multiple locals
-func (v Locals) Decode(ctx *hcl.EvalContext) (decode.DecodedLocals, hcl.Diagnostics) {
-	var dVars decode.DecodedLocals
+func (v Locals) Decode(ctx *hcl.EvalContext) (decode.DecodedLocalsMap, hcl.Diagnostics) {
+	var dVars decode.DecodedLocalsMap = make(decode.DecodedLocalsMap)
 	var diags hcl.Diagnostics
 	for _, variable := range v {
 		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
-		dVars = append(dVars, dV)
+		if _,ok := dVars[dV.Name]; ok {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Resource exists more than once",
+				Detail: fmt.Sprintf("Resource was already declared %s",dV.Name),
+				Subject: &dV.DeclRange,
+			})
+		}
+		dVars[dV.Name] = dV
 	}
 
 	return dVars, diags

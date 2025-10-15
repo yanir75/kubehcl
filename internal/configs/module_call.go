@@ -61,13 +61,21 @@ func (m *ModuleCall) DecodeVersion(ctx *hcl.EvalContext) (string, hcl.Diagnostic
 }
 
 // Decode the multiple module calls to the module
-func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallList, hcl.Diagnostics) {
-	var dR decode.DecodedModuleCallList
+func (r ModuleCallList) Decode(ctx *hcl.EvalContext) (decode.DecodedModuleCallMap, hcl.Diagnostics) {
+	var dR decode.DecodedModuleCallMap = make(decode.DecodedModuleCallMap)
 	var diags hcl.Diagnostics
 	for _, call := range r {
 		dV, varDiags := call.decode(ctx)
 		diags = append(diags, varDiags...)
-		dR = append(dR, dV)
+		if _,ok := dR[dV.Name]; ok {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary: "Resource exists more than once",
+				Detail: fmt.Sprintf("Resource was already declared %s",dV.Name),
+				Subject: &dV.DeclRange,
+			})
+		}
+		dR[dV.Name] = dV
 	}
 
 	return dR, diags

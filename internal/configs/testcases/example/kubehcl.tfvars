@@ -1,3 +1,3 @@
 foo = [{
-  containerPort = 80
+  containerPort = "80"
 }]

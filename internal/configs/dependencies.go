@@ -55,17 +55,19 @@ func addRootNodeToGraph(g *Graph) {
 	}
 }
 
-func getResourceNames(m *decode.DecodedModule) decode.DecodedResourceList {
-	return getResourceName(m, decode.DecodedResourceList{}, "")
+func getResourceNames(m *decode.DecodedModule) (decode.DecodedResourceMap,hcl.Diagnostics) {
+	return getResourceName(m, decode.DecodedResourceMap{}, "")
 }
 
 // Get the resources out of all the modules reassign their name accordingly within the module.
 // For example a resource named foo inside module called bar will be called module.bar.resource.foo
-func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, currentName string) decode.DecodedResourceList {
+func getResourceName(m *decode.DecodedModule, rMap decode.DecodedResourceMap, currentName string) (decode.DecodedResourceMap,hcl.Diagnostics) {
+	var diags hcl.Diagnostics
 	for _, r := range m.Resources {
 		r.Name = currentName + r.Addr().String()
 		r.Depth = m.Depth
-		rList = append(rList, r)
+		diags = append(diags,rMap.Add(r)...)
+
 		var dependencies []decode.DependsOn
 		var moduleDependencies []decode.DependsOn
 		if m.DependsOn != nil {
@@ -99,9 +101,13 @@ func getResourceName(m *decode.DecodedModule, rList decode.DecodedResourceList, 
 	// }
 
 	for _, mod := range m.Modules {
-		rList = append(rList, getResourceName(mod, decode.DecodedResourceList{}, currentName+ModuleType+"."+mod.Name+".")...)
+		rReceived,rDiags := getResourceName(mod, decode.DecodedResourceMap{}, currentName+ModuleType+"."+mod.Name+".")
+		diags = append(diags, rDiags...)
+		for _,value := range rReceived {
+			diags = append(diags,rMap.Add(value)...)
+		}
 	}
-	return rList
+	return rMap,diags
 }
 
 func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decode.DecodedResource) hcl.Diagnostics {
@@ -159,13 +165,12 @@ func addEdges(g *Graph, r *decode.DecodedResource, resourceMap map[string]*decod
 
 // Creates a DAG based on dependencies for later purposes such as walking over the graph and activating a function on each resource.
 func (g *Graph) Init() hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	rList := getResourceNames(g.DecodedModule)
+	rMap,diags := getResourceNames(g.DecodedModule)
 	// for _,r := range rList {
 	// 	// fmt.Printf("%s\n",r.Name)
 	// }
 	resourceMap := make(map[string]*decode.DecodedResource)
-	for _, r := range rList {
+	for _, r := range rMap {
 		if g.HasVertex(r) {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -182,7 +187,7 @@ func (g *Graph) Init() hcl.Diagnostics {
 	}
 
 	// TODO: fix this diags to a much better suited solution
-	for _, r := range rList {
+	for _, r := range rMap {
 		if len(r.Dependencies) > 0 {
 			rDiags := addEdges(g, r, resourceMap)
 			added := true

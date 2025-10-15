@@ -18,22 +18,22 @@ import (
 
 func Test_getMapValuesVariable(t *testing.T) {
 	tests := []struct {
-		d          DecodedVariableList
+		d          DecodedVariableMap
 		want       map[string]cty.Value
 	}{
 		{
-			d: DecodedVariableList{
-				&DecodedVariable{
+			d: DecodedVariableMap{
+				"test":&DecodedVariable{
 					Name: "test",
 					Default: cty.StringVal("test"),
 					Type: cty.String,
 				},
-				&DecodedVariable{
+				"bla": &DecodedVariable{
 					Name: "foo",
 					Default: cty.StringVal("bar"),
 					Type: cty.String,
 				},
-				&DecodedVariable{
+				"ra":&DecodedVariable{
 					Name: "bar",
 					Default: cty.MustParseNumberVal("5"),
 					Type: cty.Number,
@@ -60,20 +60,20 @@ func Test_getMapValuesVariable(t *testing.T) {
 
 func Test_getMapValuesLocal(t *testing.T) {
 	tests := []struct {
-		d          DecodedLocals
+		d          DecodedLocalsMap
 		want       map[string]cty.Value
 	}{
 		{
-			d: DecodedLocals{
-				&DecodedLocal{
+			d: DecodedLocalsMap{
+				"test":&DecodedLocal{
 					Name: "test",
 					Value: cty.StringVal("test"),
 				},
-				&DecodedLocal{
+				"foo":&DecodedLocal{
 					Name: "foo",
 					Value: cty.StringVal("bar"),
 				},
-				&DecodedLocal{
+				"bar":&DecodedLocal{
 					Name: "bar",
 					Value: cty.MustParseNumberVal("5"),
 				},

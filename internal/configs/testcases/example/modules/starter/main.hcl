@@ -2,13 +2,13 @@ locals {
   service_ports = {
     for i in range(length(var.foo)) : "${i}" => {
       name       = var.foo[i]
-      targetPort = 80
+      targetPort = "80"
     }
   }
 
   other_option = {
     for name in var.foo : name => {
-      targetPort = 80
+      targetPort = "80"
     }
   }
 }
@@ -24,7 +24,7 @@ kube_resource "service" {
     selector = {
       "app.kubernetes.io/name" = each.value["name"]
     }
-    ports = [merge(each.value, { port = 9367 })]
+    ports = [merge(each.value, { port = "9367" })]
   }
   depends_on = [kube_resource.foo]
 }

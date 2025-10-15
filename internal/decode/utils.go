@@ -24,7 +24,7 @@ const (
 )
 
 // Creates hcl context with the variables and locals to decode all values within the blocks
-func CreateContext(variables DecodedVariableList, locals DecodedLocals) (*hcl.EvalContext, hcl.Diagnostics) {
+func CreateContext(variables DecodedVariableMap, locals DecodedLocalsMap) (*hcl.EvalContext, hcl.Diagnostics) {
 	variableMap, diags := variables.getMapValues()
 	localMap := locals.getMapValues()
 	maps.Copy(variableMap, localMap)
