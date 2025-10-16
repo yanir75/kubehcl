@@ -140,6 +140,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 		return
 	}
 	repo.Client, diags = configs.NewAuthClient(decodedRepo, repo.Reference.Registry)
+	repo.PlainHTTP = decodedRepo.PlainHttp
 
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)

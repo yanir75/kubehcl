@@ -248,7 +248,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Couldn't authenticate",
+			Summary:  "Couldn't fetch tags",
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)

@@ -232,6 +232,7 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs, hcl.Diagno
 		return nil, diags
 	}
 	repository.Client = authClient
+	repository.PlainHTTP = r.PlainHttp
 
 	_, fetchedManifestContent, err := oras.FetchBytes(context.Background(), repository, tag, oras.DefaultFetchBytesOptions)
 	if err != nil {
@@ -268,6 +269,7 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs, hcl.Diagno
 		})
 		return nil, diags
 	}
+	os.WriteFile("test.tar.gz",layerContent,0644)
 
 	return untarFile(layerContent, save, tag)
 }
