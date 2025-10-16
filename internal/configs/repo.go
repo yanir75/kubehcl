@@ -261,7 +261,6 @@ func DecodeRepos(fileName string) (decode.DecodedRepoMap, hcl.Diagnostics) {
 			},
 		}
 	}
-
 	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
 	diags = append(diags, diagsParse...)
 	if diags.HasErrors() {

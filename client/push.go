@@ -104,22 +104,22 @@ func CreateTar(sourceDir string) ([]byte, error) {
     return buf.Bytes(), nil
 }
 
-func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
+func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics{
 	folder, repoName, tag, diags := parsePushArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	annotations, diags := configs.DecodeIndexFile(fmt.Sprintf("%s%s%s", folder, string(filepath.Separator), configs.INDEXVARSFILE))
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	repos, diags := configs.DecodeRepos(defs.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	decodedRepo, ok := repos[repoName]
@@ -130,7 +130,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("%s doesn't exist please add or use other repo name.\n In order to see the repositories please use kubehcl repo list", repoName),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	buff, err := CreateTar(folder)
@@ -141,7 +141,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to tar folder, error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	ctx := context.Background()
@@ -153,13 +153,13 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to init repository, error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	repo.Client, diags = configs.NewAuthClient(decodedRepo, repo.Reference.Registry)
-
+	repo.PlainHTTP = decodedRepo.PlainHttp
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	layerDescriptor, err := oras.PushBytes(ctx, repo, KUBEHCLTYPE, buff)
@@ -170,7 +170,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to push data , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	packOpts := oras.PackManifestOptions{
@@ -186,7 +186,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to pack the manifest , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	err = repo.Tag(ctx, desc, tag)
@@ -197,6 +197,8 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to tag the module , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
+	return diags
+
 }
