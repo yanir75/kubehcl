@@ -3,6 +3,7 @@ package client
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -37,55 +38,70 @@ func parsePushArgs(args []string) (string, string, string, hcl.Diagnostics) {
 
 }
 
-func CreateTar(folder string) ([]byte, error) {
-	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	defer func() { _ = tw.Close() }()
+func CreateTar(sourceDir string) ([]byte, error) {
+    buf := new(bytes.Buffer)
 
-	err := filepath.Walk(folder, func(file string, fi os.FileInfo, err error) error {
+    gzipWriter := gzip.NewWriter(buf)
+    tarWriter := tar.NewWriter(gzipWriter)
+
+    sourceDir = filepath.Clean(sourceDir)
+
+    err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+
+		baseDir := filepath.Base(sourceDir)
+		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
 			return err
 		}
+		relPath = filepath.Join(baseDir, relPath)
 
-		// Get the relative path to the source directory
-		relPath, err := filepath.Rel(folder, file)
-		if err != nil {
-			return err
-		}
 
-		// Create a tar header
-		header, err := tar.FileInfoHeader(fi, relPath)
-		if err != nil {
-			return err
-		}
+        if relPath == "" {
+            return nil // skip root dir
+        }
 
-		// Ensure the name in the header is the relative path
-		header.Name = relPath
+        header, err := tar.FileInfoHeader(info, info.Name())
+        if err != nil {
+            return err
+        }
 
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
+        header.Name = relPath // Preserve relative path
 
-		// If it's a regular file, copy its content
-		if !fi.IsDir() {
-			f, err := os.Open(file)
-			if err != nil {
-				return err
-			}
-			defer func() { _ = f.Close() }()
+        if err := tarWriter.WriteHeader(header); err != nil {
+            return err
+        }
 
-			if _, err := io.Copy(tw, f); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+        if info.Mode().IsRegular() {
+            file, err := os.Open(path)
+            if err != nil {
+                return err
+            }
+            defer file.Close()
 
-	if err != nil {
-		return nil, err
-	}
+            if _, err := io.Copy(tarWriter, file); err != nil {
+                return err
+            }
+        }
 
-	return buf.Bytes(), nil
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    // Close writers in correct order
+    if err := tarWriter.Close(); err != nil {
+        return nil, err
+    }
+    if err := gzipWriter.Close(); err != nil {
+        return nil, err
+    }
+
+    return buf.Bytes(), nil
 }
 
 func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
@@ -140,7 +156,6 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 		return
 	}
 	repo.Client, diags = configs.NewAuthClient(decodedRepo, repo.Reference.Registry)
-	repo.PlainHTTP = decodedRepo.PlainHttp
 
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
