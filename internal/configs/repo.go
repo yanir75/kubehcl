@@ -145,9 +145,20 @@ func decodeRepoBlock(block *hcl.Block) (*Repo, hcl.Diagnostics) {
 	}
 
 	content, diags := block.Body.Content(inputRepoBlockSchema)
+	if diags.HasErrors() {
+		return &Repo{}, diags
+	}
 	if attr, exists := content.Attributes["Url"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &repo.Url)
 		diags = append(diags, valDiags...)
+	} else {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "URL must be included in repo block",
+			Detail:   fmt.Sprintf("URL is not included in repo block %s", block.Labels[0]),
+			Subject:  &block.DefRange,
+		})
+
 	}
 	if attr, exists := content.Attributes["Username"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &repo.Username)
@@ -250,7 +261,6 @@ func DecodeRepos(fileName string) (decode.DecodedRepoMap, hcl.Diagnostics) {
 			},
 		}
 	}
-
 	srcHCL, diagsParse := parser.ParseHCL(src, fileName)
 	diags = append(diags, diagsParse...)
 	if diags.HasErrors() {

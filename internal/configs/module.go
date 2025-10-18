@@ -273,8 +273,8 @@ func parseSource(source string, r *hcl.Range) (string, string, hcl.Diagnostics) 
 		}
 	}
 	newName := strs[3]
-	for i:=4; i<len(strs); i++ {
-		newName = newName+"/"+strs[i]
+	for i := 4; i < len(strs); i++ {
+		newName = newName + "/" + strs[i]
 	}
 	return strs[2], newName, hcl.Diagnostics{}
 }
@@ -375,6 +375,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 		Depth:     depth,
 		Name:      m.Name,
 		DependsOn: m.DependsOn,
+		Modules:   make(decode.DecodedModuleMap),
 	}
 
 	if depth != 0 {
@@ -460,7 +461,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	diags = append(diags, decodeVarDiags...)
 	decodedModule.Inputs = decodedVariables
 
-	ctx, ctxDiags := decode.CreateContext(decodedVariables, decode.DecodedLocals{})
+	ctx, ctxDiags := decode.CreateContext(decodedVariables, decode.DecodedLocalsMap{})
 	diags = append(diags, ctxDiags...)
 
 	DecodedLocals, decodeLocalsDiags := m.Locals.Decode(ctx)
@@ -473,14 +474,14 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	DecodedAnnotations, decodeAnnotationsDiags := m.Annotations.Decode(ctx)
 	diags = append(diags, decodeAnnotationsDiags...)
 	if releaseName != "" {
-		DecodedAnnotations = append(DecodedAnnotations, &decode.DecodedAnnotation{
+		DecodedAnnotations["kubehcl.sh/managed"] = &decode.DecodedAnnotation{
 			Name:  "kubehcl.sh/managed",
 			Value: cty.StringVal("This resource is managed by kubehcl"),
-		})
-		DecodedAnnotations = append(DecodedAnnotations, &decode.DecodedAnnotation{
+		}
+		DecodedAnnotations["kubehcl.sh/release"] = &decode.DecodedAnnotation{
 			Name:  "kubehcl.sh/release",
 			Value: cty.StringVal(releaseName),
-		})
+		}
 	}
 	decodedModule.Annotations = DecodedAnnotations
 
@@ -495,7 +496,7 @@ func (m *Module) decode(releaseName string, depth int, folderName string, varsF 
 	for _, module := range modules {
 		dm, dmDiags := module.decode(releaseName, depth+1, module.Source, "", make([]string, 0), ctx, appFs)
 		diags = append(diags, dmDiags...)
-		decodedModule.Modules = append(decodedModule.Modules, dm)
+		decodedModule.Modules[dm.Name] = dm
 	}
 	/*
 		Adding annotations to each decoded resource only if it has metadata defined beforehand

@@ -119,7 +119,7 @@ func untarFile(buff []byte, save bool, folderName string) (afero.Fs, hcl.Diagnos
 
 		switch header.Typeflag {
 		case tar.TypeDir: // = directory
-			d := replaceFirstSegment(filepath.Dir(name), folderName)
+			d := replaceFirstSegment(name, folderName)
 			err := appFs.Mkdir(d, 0755)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
@@ -232,6 +232,7 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs, hcl.Diagno
 		return nil, diags
 	}
 	repository.Client = authClient
+	repository.PlainHTTP = r.PlainHttp
 
 	_, fetchedManifestContent, err := oras.FetchBytes(context.Background(), repository, tag, oras.DefaultFetchBytesOptions)
 	if err != nil {
@@ -329,6 +330,19 @@ func Pull(version string, repoConfigFile string, repoName string, tag string, sa
 
 }
 
+type BasicAuthTransport struct {
+	Transport *http.Transport
+	Username  string
+	Passowrd  string
+}
+
+func (b *BasicAuthTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if b.Username != "" && b.Passowrd != "" {
+		r.SetBasicAuth(b.Username, b.Passowrd)
+	}
+	return b.Transport.RoundTrip(r)
+}
+
 func NewHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	cfg := &tls.Config{
@@ -362,8 +376,12 @@ func NewHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
 	}
 
 	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: cfg,
+		Transport: &BasicAuthTransport{
+			Transport: &http.Transport{
+				TLSClientConfig: cfg,
+			},
+			Username: opts.Username,
+			Passowrd: opts.Password,
 		},
 	}
 

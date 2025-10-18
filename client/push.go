@@ -3,6 +3,7 @@ package client
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -37,47 +38,53 @@ func parsePushArgs(args []string) (string, string, string, hcl.Diagnostics) {
 
 }
 
-func CreateTar(folder string) ([]byte, error) {
-	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	defer func() { _ = tw.Close() }()
+func CreateTar(sourceDir string) ([]byte, error) {
+	buf := new(bytes.Buffer)
 
-	err := filepath.Walk(folder, func(file string, fi os.FileInfo, err error) error {
+	gzipWriter := gzip.NewWriter(buf)
+	tarWriter := tar.NewWriter(gzipWriter)
+
+	sourceDir = filepath.Clean(sourceDir)
+
+	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Get the relative path to the source directory
-		relPath, err := filepath.Rel(folder, file)
+		baseDir := filepath.Base(sourceDir)
+		relPath, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return err
+		}
+		relPath = filepath.Join(baseDir, relPath)
+
+		if relPath == "" {
+			return nil // skip root dir
+		}
+
+		header, err := tar.FileInfoHeader(info, info.Name())
 		if err != nil {
 			return err
 		}
 
-		// Create a tar header
-		header, err := tar.FileInfoHeader(fi, relPath)
-		if err != nil {
+		header.Name = relPath // Preserve relative path
+
+		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
 
-		// Ensure the name in the header is the relative path
-		header.Name = relPath
-
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-
-		// If it's a regular file, copy its content
-		if !fi.IsDir() {
-			f, err := os.Open(file)
+		if info.Mode().IsRegular() {
+			file, err := os.Open(path)
 			if err != nil {
 				return err
 			}
-			defer func() { _ = f.Close() }()
+			defer func(){_ = file.Close()}()
 
-			if _, err := io.Copy(tw, f); err != nil {
+			if _, err := io.Copy(tarWriter, file); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	})
 
@@ -85,25 +92,33 @@ func CreateTar(folder string) ([]byte, error) {
 		return nil, err
 	}
 
+	// Close writers in correct order
+	if err := tarWriter.Close(); err != nil {
+		return nil, err
+	}
+	if err := gzipWriter.Close(); err != nil {
+		return nil, err
+	}
+
 	return buf.Bytes(), nil
 }
 
-func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
+func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics {
 	folder, repoName, tag, diags := parsePushArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	annotations, diags := configs.DecodeIndexFile(fmt.Sprintf("%s%s%s", folder, string(filepath.Separator), configs.INDEXVARSFILE))
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	repos, diags := configs.DecodeRepos(defs.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	decodedRepo, ok := repos[repoName]
@@ -114,7 +129,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("%s doesn't exist please add or use other repo name.\n In order to see the repositories please use kubehcl repo list", repoName),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	buff, err := CreateTar(folder)
@@ -125,7 +140,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to tar folder, error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	ctx := context.Background()
@@ -137,13 +152,13 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to init repository, error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	repo.Client, diags = configs.NewAuthClient(decodedRepo, repo.Reference.Registry)
-
+	repo.PlainHTTP = decodedRepo.PlainHttp
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	layerDescriptor, err := oras.PushBytes(ctx, repo, KUBEHCLTYPE, buff)
@@ -154,7 +169,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to push data , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	packOpts := oras.PackManifestOptions{
@@ -170,7 +185,7 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to pack the manifest , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	err = repo.Tag(ctx, desc, tag)
@@ -181,6 +196,8 @@ func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
 			Detail:   fmt.Sprintf("Failed to tag the module , error: %s", err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
+	return diags
+
 }

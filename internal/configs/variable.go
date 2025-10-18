@@ -96,13 +96,21 @@ func (v *Variable) decode(ctx *hcl.EvalContext) (*decode.DecodedVariable, hcl.Di
 }
 
 // Decode variable map
-func (v VariableMap) Decode(ctx *hcl.EvalContext) (decode.DecodedVariableList, hcl.Diagnostics) {
-	var dVars decode.DecodedVariableList
+func (v VariableMap) Decode(ctx *hcl.EvalContext) (decode.DecodedVariableMap, hcl.Diagnostics) {
+	dVars := make(decode.DecodedVariableMap)
 	var diags hcl.Diagnostics
-	for _, variable := range v {
+	for key, variable := range v {
 		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
-		dVars = append(dVars, dV)
+		if _, ok := dVars[key]; ok {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Resource exists more than once",
+				Detail:   fmt.Sprintf("Resource was already declared %s", key),
+				Subject:  &dV.DeclRange,
+			})
+		}
+		dVars[key] = dV
 	}
 
 	return dVars, diags

@@ -12,10 +12,10 @@ import (
 func Test_Dependencies(t *testing.T) {
 	mod := &decode.DecodedModule{
 		Name: rootNodeName,
-		Modules: []*decode.DecodedModule{
-			{
-				Modules: []*decode.DecodedModule{
-					{
+		Modules: decode.DecodedModuleMap{
+			rootNodeName: {
+				Modules: decode.DecodedModuleMap{
+					"foo": {
 						Name:  "foo",
 						Depth: 2,
 						DependsOn: []hcl.Traversal{
@@ -28,8 +28,8 @@ func Test_Dependencies(t *testing.T) {
 								},
 							},
 						},
-						Resources: decode.DecodedResourceList{
-							&decode.DecodedResource{
+						Resources: decode.DecodedResourceMap{
+							"number_3": &decode.DecodedResource{
 								Depth: 2,
 								DecodedDeployable: decode.DecodedDeployable{
 									Type: "r",
@@ -51,8 +51,8 @@ func Test_Dependencies(t *testing.T) {
 						},
 					},
 				},
-				Resources: decode.DecodedResourceList{
-					&decode.DecodedResource{
+				Resources: decode.DecodedResourceMap{
+					"number_2": &decode.DecodedResource{
 						Depth: 1,
 						DecodedDeployable: decode.DecodedDeployable{
 							Type: "r",
@@ -62,8 +62,8 @@ func Test_Dependencies(t *testing.T) {
 				},
 			},
 		},
-		Resources: decode.DecodedResourceList{
-			&decode.DecodedResource{
+		Resources: decode.DecodedResourceMap{
+			"number_4": &decode.DecodedResource{
 				DecodedDeployable: decode.DecodedDeployable{
 					Name: "number_4",
 					Type: "r",
@@ -89,7 +89,7 @@ func Test_Dependencies(t *testing.T) {
 				},
 				Depth: 0,
 			},
-			&decode.DecodedResource{
+			"number_1": &decode.DecodedResource{
 				DecodedDeployable: decode.DecodedDeployable{
 					Type: "r",
 
@@ -126,10 +126,10 @@ func Test_Dependencies(t *testing.T) {
 
 	cirMod := &decode.DecodedModule{
 		Name: rootNodeName,
-		Modules: []*decode.DecodedModule{
-			{
-				Modules: []*decode.DecodedModule{
-					{
+		Modules: decode.DecodedModuleMap{
+			rootNodeName: {
+				Modules: decode.DecodedModuleMap{
+					"foo": {
 						Name:  "foo",
 						Depth: 2,
 						DependsOn: []hcl.Traversal{
@@ -142,8 +142,8 @@ func Test_Dependencies(t *testing.T) {
 								},
 							},
 						},
-						Resources: decode.DecodedResourceList{
-							&decode.DecodedResource{
+						Resources: decode.DecodedResourceMap{
+							"number_3": &decode.DecodedResource{
 								Depth: 2,
 								DecodedDeployable: decode.DecodedDeployable{
 									Type: "r",
@@ -165,8 +165,8 @@ func Test_Dependencies(t *testing.T) {
 						},
 					},
 				},
-				Resources: decode.DecodedResourceList{
-					&decode.DecodedResource{
+				Resources: decode.DecodedResourceMap{
+					"number_2": &decode.DecodedResource{
 						Depth: 1,
 						DecodedDeployable: decode.DecodedDeployable{
 							Type: "r",
@@ -186,8 +186,8 @@ func Test_Dependencies(t *testing.T) {
 				},
 			},
 		},
-		Resources: decode.DecodedResourceList{
-			&decode.DecodedResource{
+		Resources: decode.DecodedResourceMap{
+			"number_4": &decode.DecodedResource{
 				DecodedDeployable: decode.DecodedDeployable{
 					Name: "number_4",
 					Type: "r",
@@ -213,7 +213,7 @@ func Test_Dependencies(t *testing.T) {
 				},
 				Depth: 0,
 			},
-			&decode.DecodedResource{
+			"number_1": &decode.DecodedResource{
 				DecodedDeployable: decode.DecodedDeployable{
 					Type: "r",
 

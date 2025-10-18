@@ -11,6 +11,8 @@ package decode
 import (
 	// "maps"
 
+	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"kubehcl.sh/kubehcl/internal/addrs"
@@ -42,7 +44,23 @@ type DecodedResource struct {
 	DependenciesAppended []DependsOn
 }
 
-type DecodedResourceList []*DecodedResource
+type DecodedResourceMap map[string]*DecodedResource
+
+func (rMap DecodedResourceMap) Add(r *DecodedResource) hcl.Diagnostics {
+	_, ok := rMap[r.Name]
+	if ok {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "resource already exists",
+				Detail:   fmt.Sprintf("Resource is declared twice %s", r.Name),
+				Subject:  &r.DeclRange,
+			},
+		}
+	}
+	rMap[r.Name] = r
+	return hcl.Diagnostics{}
+}
 
 type DecodedBackendStorage struct {
 	Kind      string
@@ -55,7 +73,7 @@ type DecodedLocal struct {
 	DeclRange hcl.Range
 }
 
-type DecodedLocals []*DecodedLocal
+type DecodedLocalsMap map[string]*DecodedLocal
 
 type DecodedAnnotation struct {
 	Name      string
@@ -63,7 +81,7 @@ type DecodedAnnotation struct {
 	DeclRange hcl.Range
 }
 
-type DecodedAnnotations []*DecodedAnnotation
+type DecodedAnnotationsMap map[string]*DecodedAnnotation
 
 type DecodedVariable struct {
 	Name        string
@@ -73,7 +91,7 @@ type DecodedVariable struct {
 	DeclRange   hcl.Range
 }
 
-type DecodedVariableList []*DecodedVariable
+type DecodedVariableMap map[string]*DecodedVariable
 
 type DecodedModuleCall struct {
 	DecodedDeployable
@@ -101,24 +119,24 @@ type DecodedRepoMap map[string]*DecodedRepo
 
 type DecodedModule struct {
 	Name           string
-	Inputs         DecodedVariableList
-	Locals         DecodedLocals
-	Annotations    DecodedAnnotations
-	Resources      DecodedResourceList
-	ModuleCalls    DecodedModuleCallList
-	Modules        DecodedModuleList
+	Inputs         DecodedVariableMap
+	Locals         DecodedLocalsMap
+	Annotations    DecodedAnnotationsMap
+	Resources      DecodedResourceMap
+	ModuleCalls    DecodedModuleCallMap
+	Modules        DecodedModuleMap
 	BackendStorage *DecodedBackendStorage
 	Depth          int
 	DependsOn      []hcl.Traversal
 	Dependencies   []DependsOn
 }
 
-type DecodedModuleList []*DecodedModule
+type DecodedModuleMap map[string]*DecodedModule
 
-type DecodedModuleCallList []*DecodedModuleCall
+type DecodedModuleCallMap map[string]*DecodedModuleCall
 
 // Get variables as map[string]cty.value
-func (varList DecodedVariableList) getMapValues() (map[string]cty.Value, hcl.Diagnostics) {
+func (varList DecodedVariableMap) getMapValues() (map[string]cty.Value, hcl.Diagnostics) {
 	vals := make(map[string]cty.Value)
 	vars := make(map[string]cty.Value)
 	var diags hcl.Diagnostics
@@ -131,7 +149,7 @@ func (varList DecodedVariableList) getMapValues() (map[string]cty.Value, hcl.Dia
 
 // Get locals as map[string]cty.value
 
-func (locals DecodedLocals) getMapValues() map[string]cty.Value {
+func (locals DecodedLocalsMap) getMapValues() map[string]cty.Value {
 	vals := make(map[string]cty.Value)
 	vars := make(map[string]cty.Value)
 	for _, local := range locals {

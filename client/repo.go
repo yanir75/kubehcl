@@ -88,11 +88,11 @@ func generateBlockFromValue(value *decode.DecodedRepo) *hclwrite.Block {
 	return block
 }
 
-func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string) {
+func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics {
 	name, u, diags := parseRepoAddArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	parsedUrl, err := url.Parse(u)
@@ -103,7 +103,7 @@ func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, v
 			Detail:   fmt.Sprintf("Url %s can't be parsed, err: %s", u, err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	if strings.Contains(u, "://") {
 		opts.Url = parsedUrl.Host + parsedUrl.Path
@@ -118,23 +118,23 @@ func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, v
 			Detail:   fmt.Sprintf("Url %s doesn't contain protocol, please add protocol like https:// or oci://", u),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	opts.Protocol = parsedUrl.Scheme
 
 	if parsedUrl.Scheme == "oci" {
-		AddRepoOci(opts, envSettings, viewDef)
+		return AddRepoOci(opts, envSettings, viewDef)
 	} else {
-		AddRepoHttp(opts, envSettings, viewDef)
+		return AddRepoHttp(opts, envSettings, viewDef)
 	}
 
 }
 
-func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) {
+func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	if val, ok := repos[opts.Name]; ok {
@@ -145,7 +145,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 			Subject:  &val.DeclRange,
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	opts.RepoCache = envSettings.RepositoryCache
@@ -154,12 +154,12 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 	httpClient, diags := configs.NewHttpClient(OptsToRepo(opts))
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 	_, diags = configs.DoRequest(OptsToRepo(opts), INDEXFILE, httpClient, "")
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	f := hclwrite.NewEmptyFile()
@@ -174,7 +174,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	_, err = f.WriteTo(repoCacheFile)
@@ -185,7 +185,7 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	_, err = repoCacheFile.WriteString("\n")
@@ -197,15 +197,18 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
+
+	return diags
+
 }
 
-func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) {
+func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	if val, ok := repos[opts.Name]; ok {
@@ -216,7 +219,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 			Subject:  &val.DeclRange,
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	opts.RepoCache = envSettings.RepositoryCache
@@ -229,30 +232,41 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	repo.Client, diags = configs.NewAuthClient(OptsToRepo(opts), repo.Reference.Registry)
 
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	repo.PlainHTTP = opts.PlainHttp
 	repo.TagListPageSize = 1
-	err = repo.Tags(context.Background(), "", func(tags []string) error {
-		// fmt.Printf("%s",tags)
-		return nil
-	})
+	reg, err := remote.NewRegistry(repo.Reference.Registry)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Couldn't authenticate",
+			Summary:  "Failed to check registry",
+			Detail:   fmt.Sprint(err.Error()),
+		})
+	}
+	reg.Client = repo.Client
+	reg.PlainHTTP = repo.PlainHTTP
+	err = reg.Ping(context.Background())
+	// err = repo.Tags(context.Background(), "", func(tags []string) error {
+	// 	// fmt.Printf("%s",tags)
+	// 	return nil
+	// })
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Couldn't ping to registry",
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	f := hclwrite.NewEmptyFile()
@@ -267,7 +281,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	_, err = f.WriteTo(repoCacheFile)
@@ -278,7 +292,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
 
 	_, err = repoCacheFile.WriteString("\n")
@@ -290,8 +304,10 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 			Detail:   fmt.Sprint(err.Error()),
 		})
 		v.DiagPrinter(diags, viewDef)
-		return
+		return diags
 	}
+	return diags
+
 }
 
 func parseRepoRemoveArgs(args []string) (string, hcl.Diagnostics) {

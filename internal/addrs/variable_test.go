@@ -13,11 +13,12 @@ import (
 	"testing"
 )
 
-func Test_Local(t *testing.T) {
-	Test := []Local{
+func Test_Variable(t *testing.T) {
+	Test := []Variable{
 		{
 			Name: "kubehcl",
 		},
+
 		{
 			Name: "version",
 		},
@@ -34,7 +35,7 @@ func Test_Local(t *testing.T) {
 
 	for i := 1; i < len(Test); i++ {
 
-		if !strings.HasPrefix(Test[i].String(), "local.") {
+		if !strings.HasPrefix(Test[i].String(), "var.") {
 			t.Errorf("Annotation addr must start with tag this starts with: %s", Test[i].String())
 		}
 	}
