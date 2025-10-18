@@ -59,17 +59,17 @@ func (l *Annotation) decode(ctx *hcl.EvalContext) (*decode.DecodedAnnotation, hc
 
 // Decode multiple annotations
 func (v Annotations) Decode(ctx *hcl.EvalContext) (decode.DecodedAnnotationsMap, hcl.Diagnostics) {
-	var dVars decode.DecodedAnnotationsMap = make(decode.DecodedAnnotationsMap)
+	dVars := make(decode.DecodedAnnotationsMap)
 	var diags hcl.Diagnostics
 	for _, variable := range v {
 		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
-		if _,ok := dVars[dV.Name]; ok {
+		if _, ok := dVars[dV.Name]; ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Resource exists more than once",
-				Detail: fmt.Sprintf("Resource was already declared %s",dV.Name),
-				Subject: &dV.DeclRange,
+				Summary:  "Resource exists more than once",
+				Detail:   fmt.Sprintf("Resource was already declared %s", dV.Name),
+				Subject:  &dV.DeclRange,
 			})
 		}
 		dVars[dV.Name] = dV

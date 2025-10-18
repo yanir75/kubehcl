@@ -38,7 +38,7 @@ func Test_Deployable(t *testing.T) {
 
 	for i := 1; i < len(Test); i++ {
 
-		if !strings.HasPrefix(Test[i].String(), "module.") &&  !strings.HasPrefix(Test[i].String(), "kube_resource."){
+		if !strings.HasPrefix(Test[i].String(), "module.") && !strings.HasPrefix(Test[i].String(), "kube_resource.") {
 			t.Errorf("Deployable addr must start with resource/module this starts with: %s", Test[i].String())
 		}
 	}

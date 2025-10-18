@@ -47,14 +47,14 @@ type DecodedResource struct {
 type DecodedResourceMap map[string]*DecodedResource
 
 func (rMap DecodedResourceMap) Add(r *DecodedResource) hcl.Diagnostics {
-	_,ok := rMap[r.Name]
+	_, ok := rMap[r.Name]
 	if ok {
 		return hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "resource already exists",
-				Detail: fmt.Sprintf("Resource is declared twice %s",r.Name),
-				Subject: &r.DeclRange,
+				Summary:  "resource already exists",
+				Detail:   fmt.Sprintf("Resource is declared twice %s", r.Name),
+				Subject:  &r.DeclRange,
 			},
 		}
 	}

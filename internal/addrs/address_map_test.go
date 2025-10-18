@@ -14,11 +14,11 @@ import (
 
 func Test_AddressMap(t *testing.T) {
 	Test := AddressMap{}
-	b := Test.Add("item","test")
+	b := Test.Add("item", "test")
 	if b {
 		t.Errorf("Address map says item exists even though it does not.")
 	}
-	b = Test.Add("item","test")
+	b = Test.Add("item", "test")
 	if !b {
 		t.Errorf("Address map says item does not exist even though it does.")
 	}

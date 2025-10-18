@@ -22,14 +22,14 @@ func parsePullArgs(args []string) (string, string, hcl.Diagnostics) {
 
 }
 
-func Pull(version string, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string, save bool)(afero.Fs,hcl.Diagnostics) {
+func Pull(version string, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string, save bool) (afero.Fs, hcl.Diagnostics) {
 	repoName, tag, diags := parsePullArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
-		return nil,diags
+		return nil, diags
 	}
 
 	appFs, diags := configs.Pull(version, envSettings.RepositoryConfig, repoName, tag, save)
 	v.DiagPrinter(diags, viewDef)
-	return appFs,diags
+	return appFs, diags
 }

@@ -33,7 +33,7 @@ func Test_utils(t *testing.T) {
 				},
 			},
 			locals: DecodedLocalsMap{
-				"test":&DecodedLocal{
+				"test": &DecodedLocal{
 					Name:  "test",
 					Value: cty.NumberIntVal(1),
 				},
@@ -46,11 +46,11 @@ func Test_utils(t *testing.T) {
 		},
 		{
 			variables: DecodedVariableMap{
-				"foo":&DecodedVariable{
+				"foo": &DecodedVariable{
 					Name:    "foo",
 					Default: cty.SetVal([]cty.Value{cty.StringVal("bar")}),
 				},
-				"bar":&DecodedVariable{
+				"bar": &DecodedVariable{
 					Name:    "bar",
 					Default: cty.ObjectVal(map[string]cty.Value{"key": cty.NumberIntVal(5)}),
 				},
@@ -64,7 +64,7 @@ func Test_utils(t *testing.T) {
 		},
 		{
 			variables: DecodedVariableMap{
-				"test":&DecodedVariable{
+				"test": &DecodedVariable{
 					Name: "test",
 					Default: cty.ObjectVal(map[string]cty.Value{
 						"key": cty.StringVal("value"),
@@ -77,11 +77,11 @@ func Test_utils(t *testing.T) {
 				},
 			},
 			locals: DecodedLocalsMap{
-				"test":&DecodedLocal{
+				"test": &DecodedLocal{
 					Name:  "test",
 					Value: cty.NumberIntVal(1),
 				},
-				"bla":&DecodedLocal{
+				"bla": &DecodedLocal{
 					Name:  "tester",
 					Value: cty.NumberIntVal(1),
 				},
@@ -98,7 +98,7 @@ func Test_utils(t *testing.T) {
 
 		{
 			variables: DecodedVariableMap{
-				"bla":&DecodedVariable{
+				"bla": &DecodedVariable{
 					Name: "test",
 					Default: cty.ObjectVal(map[string]cty.Value{
 						"key": cty.StringVal("value"),
@@ -111,11 +111,11 @@ func Test_utils(t *testing.T) {
 				},
 			},
 			locals: DecodedLocalsMap{
-				"test":&DecodedLocal{
+				"test": &DecodedLocal{
 					Name:  "test",
 					Value: cty.NumberIntVal(1),
 				},
-				"foo":&DecodedLocal{
+				"foo": &DecodedLocal{
 					Name:  "tester",
 					Value: cty.NumberIntVal(1),
 				},

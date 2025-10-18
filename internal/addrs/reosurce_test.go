@@ -16,15 +16,15 @@ import (
 func Test_Resource(t *testing.T) {
 	Test := []Resource{
 		{
-			Name: "kubehcl",
+			Name:         "kubehcl",
 			ResourceMode: RMode,
 		},
 		{
-			Name: "version",
+			Name:         "version",
 			ResourceMode: InModule,
 		},
 		{
-			Name: "application",
+			Name:         "application",
 			ResourceMode: InModule,
 		},
 	}
@@ -38,7 +38,7 @@ func Test_Resource(t *testing.T) {
 
 	for i := 1; i < len(Test); i++ {
 
-		if !strings.HasPrefix(Test[i].String(), "module.") && !strings.HasPrefix(Test[i].String(), "kube_resource."){
+		if !strings.HasPrefix(Test[i].String(), "module.") && !strings.HasPrefix(Test[i].String(), "kube_resource.") {
 			t.Errorf("Deployable addr must start with resource/module this starts with: %s", Test[i].String())
 		}
 	}

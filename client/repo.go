@@ -88,7 +88,7 @@ func generateBlockFromValue(value *decode.DecodedRepo) *hclwrite.Block {
 	return block
 }
 
-func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics{
+func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics {
 	name, u, diags := parseRepoAddArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
@@ -130,7 +130,7 @@ func AddRepo(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, v
 
 }
 
-func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics{
+func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
@@ -199,12 +199,12 @@ func AddRepoHttp(opts *settings.RepoAddOptions, envSettings *settings.EnvSetting
 		v.DiagPrinter(diags, viewDef)
 		return diags
 	}
-	
+
 	return diags
 
 }
 
-func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics{
+func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings, viewDef *view.ViewArgs) hcl.Diagnostics {
 	repos, diags := configs.DecodeRepos(envSettings.RepositoryConfig)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)
@@ -244,7 +244,7 @@ func AddRepoOci(opts *settings.RepoAddOptions, envSettings *settings.EnvSettings
 
 	repo.PlainHTTP = opts.PlainHttp
 	repo.TagListPageSize = 1
-	reg,err := remote.NewRegistry(repo.Reference.Registry)
+	reg, err := remote.NewRegistry(repo.Reference.Registry)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

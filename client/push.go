@@ -39,17 +39,17 @@ func parsePushArgs(args []string) (string, string, string, hcl.Diagnostics) {
 }
 
 func CreateTar(sourceDir string) ([]byte, error) {
-    buf := new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 
-    gzipWriter := gzip.NewWriter(buf)
-    tarWriter := tar.NewWriter(gzipWriter)
+	gzipWriter := gzip.NewWriter(buf)
+	tarWriter := tar.NewWriter(gzipWriter)
 
-    sourceDir = filepath.Clean(sourceDir)
+	sourceDir = filepath.Clean(sourceDir)
 
-    err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-        if err != nil {
-            return err
-        }
+	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
 		baseDir := filepath.Base(sourceDir)
 		relPath, err := filepath.Rel(sourceDir, path)
@@ -58,53 +58,52 @@ func CreateTar(sourceDir string) ([]byte, error) {
 		}
 		relPath = filepath.Join(baseDir, relPath)
 
+		if relPath == "" {
+			return nil // skip root dir
+		}
 
-        if relPath == "" {
-            return nil // skip root dir
-        }
+		header, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
 
-        header, err := tar.FileInfoHeader(info, info.Name())
-        if err != nil {
-            return err
-        }
+		header.Name = relPath // Preserve relative path
 
-        header.Name = relPath // Preserve relative path
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
 
-        if err := tarWriter.WriteHeader(header); err != nil {
-            return err
-        }
+		if info.Mode().IsRegular() {
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer func(){_ = file.Close()}()
 
-        if info.Mode().IsRegular() {
-            file, err := os.Open(path)
-            if err != nil {
-                return err
-            }
-            defer file.Close()
+			if _, err := io.Copy(tarWriter, file); err != nil {
+				return err
+			}
+		}
 
-            if _, err := io.Copy(tarWriter, file); err != nil {
-                return err
-            }
-        }
+		return nil
+	})
 
-        return nil
-    })
+	if err != nil {
+		return nil, err
+	}
 
-    if err != nil {
-        return nil, err
-    }
+	// Close writers in correct order
+	if err := tarWriter.Close(); err != nil {
+		return nil, err
+	}
+	if err := gzipWriter.Close(); err != nil {
+		return nil, err
+	}
 
-    // Close writers in correct order
-    if err := tarWriter.Close(); err != nil {
-        return nil, err
-    }
-    if err := gzipWriter.Close(); err != nil {
-        return nil, err
-    }
-
-    return buf.Bytes(), nil
+	return buf.Bytes(), nil
 }
 
-func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics{
+func Push(defs *settings.EnvSettings, viewDef *view.ViewArgs, args []string) hcl.Diagnostics {
 	folder, repoName, tag, diags := parsePushArgs(args)
 	if diags.HasErrors() {
 		v.DiagPrinter(diags, viewDef)

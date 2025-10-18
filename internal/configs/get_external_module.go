@@ -270,7 +270,6 @@ func pullOci(r *decode.DecodedRepo, tag string, save bool) (afero.Fs, hcl.Diagno
 		return nil, diags
 	}
 
-
 	return untarFile(layerContent, save, tag)
 }
 
@@ -333,13 +332,13 @@ func Pull(version string, repoConfigFile string, repoName string, tag string, sa
 
 type BasicAuthTransport struct {
 	Transport *http.Transport
-	Username string
-	Passowrd string
+	Username  string
+	Passowrd  string
 }
 
-func (b *BasicAuthTransport)	RoundTrip(r *http.Request) (*http.Response, error){
-	if b.Username != "" && b.Passowrd != ""{
-		r.SetBasicAuth(b.Username,b.Passowrd)
+func (b *BasicAuthTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if b.Username != "" && b.Passowrd != "" {
+		r.SetBasicAuth(b.Username, b.Passowrd)
 	}
 	return b.Transport.RoundTrip(r)
 }
@@ -378,7 +377,7 @@ func NewHttpClient(opts *decode.DecodedRepo) (*http.Client, hcl.Diagnostics) {
 
 	httpClient := &http.Client{
 		Transport: &BasicAuthTransport{
-			Transport : &http.Transport{
+			Transport: &http.Transport{
 				TLSClientConfig: cfg,
 			},
 			Username: opts.Username,

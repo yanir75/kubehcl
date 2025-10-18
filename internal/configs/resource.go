@@ -41,17 +41,17 @@ type ResourceList []*Resource
 
 // Decode multiple resources into decoded resource list
 func (r ResourceList) Decode(ctx *hcl.EvalContext) (decode.DecodedResourceMap, hcl.Diagnostics) {
-	var dR decode.DecodedResourceMap = make(decode.DecodedResourceMap)
+	dR := make(decode.DecodedResourceMap)
 	var diags hcl.Diagnostics
 	for _, variable := range r {
 		dV, varDiags := variable.decode(ctx)
 		diags = append(diags, varDiags...)
-		if _,ok := dR[dV.Name]; ok {
+		if _, ok := dR[dV.Name]; ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary: "Resource exists more than once",
-				Detail: fmt.Sprintf("Resource was already declared %s",dV.Name),
-				Subject: &dV.DeclRange,
+				Summary:  "Resource exists more than once",
+				Detail:   fmt.Sprintf("Resource was already declared %s", dV.Name),
+				Subject:  &dV.DeclRange,
 			})
 		}
 		dR[dV.Name] = dV

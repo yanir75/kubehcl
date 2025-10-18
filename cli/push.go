@@ -18,7 +18,7 @@ func pushCmd() *cobra.Command {
 			viewSettings := cmd.Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
 			logging.SetLogger(conf.Debug)
-			client.Push(conf, viewSettings, args)
+			_ = client.Push(conf, viewSettings, args)
 		},
 	}
 

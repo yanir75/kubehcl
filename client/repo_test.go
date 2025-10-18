@@ -1,9 +1,12 @@
 package client
 
 import (
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -13,12 +16,39 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-func serve(t *testing.T){
-    	handler := registry.New()
-		if err := http.ListenAndServe(":8080", handler); err != nil {
-    		t.Errorf("Failed to server %s", err)
-    	}
+var PORT = 0
+var REPOURL = "localhost:{port}/my-repo"
 
+const (
+	CONFIGFILENAME     = "reg.hcl.config.filename"
+	COPYCONFIGFILENAME = "reg.hcl.config.filename2"
+	REPONAME           = "repo"
+	TAG                = "v1"
+	TESTFOLDER         = "files"
+	CHARTURL           = "charts.helm.sh/stable"
+	VARSFILE           = "index.hclvars"
+)
+
+func serve(t *testing.T, listener net.Listener) {
+	handler := registry.New()
+	if err := http.Serve(listener, handler); err != nil {
+		t.Errorf("Failed to server %s", err)
+	}
+}
+
+func createListener(t *testing.T) net.Listener {
+
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("Couldn't find a fitting port")
+	}
+	addr, ok := listener.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("Couldn't convert addr to *netTCPAddr")
+	}
+	PORT = addr.Port
+	REPOURL = strings.ReplaceAll(REPOURL, "{port}", fmt.Sprint(PORT))
+	return listener
 }
 
 // copyFile copies a file from src to dst.
@@ -28,14 +58,14 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close() // Ensure the source file is closed
+	defer func(){_ = source.Close()}() // Ensure the source file is closed
 
 	// Create the destination file for writing
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destination.Close() // Ensure the destination file is closed
+	defer func(){_ = destination.Close()}() // Ensure the destination file is closed
 
 	// Copy the contents from source to destination
 	_, err = io.Copy(destination, source)
@@ -55,80 +85,98 @@ func copyFile(src, dst string) error {
 
 	return nil
 }
-func Test_AddRepoOci(t *testing.T)  {
-	logging.SetLogger(false)
 
-	go serve(t)
+func Test_Repos(t *testing.T) {
+	logging.SetLogger(false)
+	l := createListener(t)
+	// defer func(){_ = l.Close()}()
+	go serve(t, l)
+
+	AddRepoOciT(t)
+	PushRepoOciT(t)
+	PullRepoOciT(t)
+	_ = os.Remove(CONFIGFILENAME)
+	_ = os.Remove(COPYCONFIGFILENAME)
+
+}
+
+func AddRepoOciT(t *testing.T) {
+
 	opts := &settings.RepoAddOptions{
-			Name: "test",
-			Url: "localhost:8080/my-repo",
-			Protocol: "oci",
-			PlainHttp: true,
-			
-		}
+		Name:      TAG,
+		Url:       REPOURL,
+		Protocol:  "oci",
+		PlainHttp: true,
+	}
+
 	envs := &settings.EnvSettings{
-			RepositoryConfig: "reg.hcl",
-			RepositoryCache: "reg.cache",
-		}
-	
+		RepositoryConfig: CONFIGFILENAME,
+		RepositoryCache:  CONFIGFILENAME + ".cache",
+	}
+
 	diags := AddRepo(
 		opts,
 		envs,
 		&view.ViewArgs{},
-		[]string{"test","oci://localhost:8080/my-repo"},
+		[]string{REPONAME, "oci://" + REPOURL},
 	)
 	if diags.HasErrors() {
 		t.Errorf("Failed to add repository")
 	}
 
-	envs = &settings.EnvSettings{
-			RepositoryConfig: "reg2.hcl",
-			RepositoryCache: "reg.cache",
-		}
-	
-	err := copyFile("reg.hcl","reg2.hcl")
-	if err != nil {
-		t.Errorf("Failed to copy %s",err)
+}
+
+func PushRepoOciT(t *testing.T) {
+	envs := &settings.EnvSettings{
+		RepositoryConfig: COPYCONFIGFILENAME,
+		RepositoryCache:  "reg.cache",
 	}
-	diags = Push(envs,&view.ViewArgs{},[]string{"files","test","v1"})
+
+	err := copyFile(CONFIGFILENAME, COPYCONFIGFILENAME)
+	if err != nil {
+		t.Errorf("Failed to copy %s", err)
+	}
+	diags := Push(envs, &view.ViewArgs{}, []string{TESTFOLDER, REPONAME, TAG})
 
 	if diags.HasErrors() {
 		t.Errorf("Failed to push")
 	}
+}
 
-	appFs,diags := Pull("",envs,&view.ViewArgs{},[]string{"test","v1"},false)
-	if diags.HasErrors(){
+func PullRepoOciT(t *testing.T) {
+	envs := &settings.EnvSettings{
+		RepositoryConfig: COPYCONFIGFILENAME,
+		RepositoryCache:  "reg.cache",
+	}
+	appFs, diags := Pull("", envs, &view.ViewArgs{}, []string{REPONAME, TAG}, false)
+	if diags.HasErrors() {
 		t.Errorf("Failed to pull")
 	}
 
-	_,err = afero.ReadFile(appFs,"v1/index.hclvars")
+	_, err := afero.ReadFile(appFs, TAG+afero.FilePathSeparator+VARSFILE)
 
 	if err != nil {
-		t.Errorf("Failed to read index.hclvars %s",err)
+		t.Errorf("Failed to read index.hclvars %s", err)
 
 	}
-	os.Remove("reg.hcl")
-	os.Remove("reg2.hcl")
-
-
 }
 
 func Test_AddRepoHttp(t *testing.T) {
 	diags := AddRepo(
 		&settings.RepoAddOptions{
-			Name: "test",
-			Url: "charts.helm.sh/stable",
-			Protocol: "https",			
+			Name:     REPONAME,
+			Url:      CHARTURL,
+			Protocol: "https",
 		},
 		&settings.EnvSettings{
-			RepositoryConfig: "reg.config",
-			RepositoryCache: "reg.cache",
+			RepositoryConfig: CONFIGFILENAME,
+			RepositoryCache:  "reg.cache",
 		},
 		&view.ViewArgs{},
-		[]string{"test","https://charts.helm.sh/stable"},
+		[]string{REPONAME, "https://" + CHARTURL},
 	)
 	if diags.HasErrors() {
 		t.Errorf("Failed to add repository")
 	}
-	os.Remove("reg.config")
+	_ = os.Remove(CONFIGFILENAME)
 }

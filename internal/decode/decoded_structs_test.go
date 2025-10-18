@@ -12,77 +12,75 @@ import (
 	"reflect"
 	"testing"
 
-
 	"github.com/zclconf/go-cty/cty"
 )
 
 func Test_getMapValuesVariable(t *testing.T) {
 	tests := []struct {
-		d          DecodedVariableMap
-		want       map[string]cty.Value
+		d    DecodedVariableMap
+		want map[string]cty.Value
 	}{
 		{
 			d: DecodedVariableMap{
-				"test":&DecodedVariable{
-					Name: "test",
+				"test": &DecodedVariable{
+					Name:    "test",
 					Default: cty.StringVal("test"),
-					Type: cty.String,
+					Type:    cty.String,
 				},
 				"bla": &DecodedVariable{
-					Name: "foo",
+					Name:    "foo",
 					Default: cty.StringVal("bar"),
-					Type: cty.String,
+					Type:    cty.String,
 				},
-				"ra":&DecodedVariable{
-					Name: "bar",
+				"ra": &DecodedVariable{
+					Name:    "bar",
 					Default: cty.MustParseNumberVal("5"),
-					Type: cty.Number,
+					Type:    cty.Number,
 				},
 			},
 			want: map[string]cty.Value{
-				"var":cty.ObjectVal(map[string]cty.Value{
+				"var": cty.ObjectVal(map[string]cty.Value{
 					"test": cty.StringVal("test"),
-					"foo": cty.StringVal("bar"),
-					"bar": cty.MustParseNumberVal("5"),
+					"foo":  cty.StringVal("bar"),
+					"bar":  cty.MustParseNumberVal("5"),
 				}),
 			},
 		},
 	}
 
 	for _, test := range tests {
-		v,_ := test.d.getMapValues()
-		if !reflect.DeepEqual(v,test.want){
+		v, _ := test.d.getMapValues()
+		if !reflect.DeepEqual(v, test.want) {
 			t.Errorf("Maps are not equal")
 		}
 	}
 }
 
-
 func Test_getMapValuesLocal(t *testing.T) {
 	tests := []struct {
-		d          DecodedLocalsMap
-		want       map[string]cty.Value
+		d    DecodedLocalsMap
+		want map[string]cty.Value
 	}{
 		{
 			d: DecodedLocalsMap{
-				"test":&DecodedLocal{
-					Name: "test",
+				"test": &DecodedLocal{
+					Name:  "test",
 					Value: cty.StringVal("test"),
 				},
-				"foo":&DecodedLocal{
-					Name: "foo",
+				"foo": &DecodedLocal{
+					Name:  "foo",
 					Value: cty.StringVal("bar"),
 				},
-				"bar":&DecodedLocal{
-					Name: "bar",
+				"bar": &DecodedLocal{
+					Name:  "bar",
 					Value: cty.MustParseNumberVal("5"),
 				},
 			},
 			want: map[string]cty.Value{
-				"local":cty.ObjectVal(map[string]cty.Value{
+				"local": cty.ObjectVal(map[string]cty.Value{
 					"test": cty.StringVal("test"),
-					"foo": cty.StringVal("bar"),
-					"bar": cty.MustParseNumberVal("5"),
+					"foo":  cty.StringVal("bar"),
+					"bar":  cty.MustParseNumberVal("5"),
 				}),
 			},
 		},
@@ -90,7 +88,7 @@ func Test_getMapValuesLocal(t *testing.T) {
 
 	for _, test := range tests {
 		v := test.d.getMapValues()
-		if !reflect.DeepEqual(v,test.want){
+		if !reflect.DeepEqual(v, test.want) {
 			t.Errorf("Maps are not equal")
 		}
 	}
