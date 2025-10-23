@@ -25,7 +25,7 @@ func fmtCmd() *cobra.Command {
 
 	fmtCmd := &cobra.Command{
 		Use:   "fmt [folder]",
-		Short: "format all files in the folder",
+		Short: "format all .hcl files in the folder",
 		Long:  fmtdesc,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := cmd.Parent().Context().Value(settingsKey).(*settings.EnvSettings)
@@ -35,7 +35,7 @@ func fmtCmd() *cobra.Command {
 			client.Fmt(args, viewSettings, f.recursive)
 		},
 	}
-	fmtCmd.Flags().BoolVar(&f.recursive, "recursive", false, "prints the template in yaml or json format")
+	fmtCmd.Flags().BoolVar(&f.recursive, "recursive", false, "formats all folders and subfolders")
 	addView(fmtCmd)
 
 	return fmtCmd

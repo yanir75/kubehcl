@@ -8,7 +8,7 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-var listDesc string = `list will return all releases applied through kubehcl`
+var listDesc string = `list will return all releases applied through kubehcl in a specific namespace`
 
 // List will list all deployments in a given namespace
 func listCmd() *cobra.Command {

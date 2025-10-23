@@ -9,7 +9,7 @@ import (
 // Template prints the template which will be applied in yaml form after being rendered
 func createCmd() *cobra.Command {
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create [folder]",
 		Short: "Create will create an example folder for you to build your inital release",
 		Long:  "Create command will create multiple files to show you how to create an example configuration, this will allow a better start than writing from zero",
 		Run: func(cmd *cobra.Command, args []string) {
