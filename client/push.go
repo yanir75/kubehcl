@@ -78,7 +78,7 @@ func CreateTar(sourceDir string) ([]byte, error) {
 			if err != nil {
 				return err
 			}
-			defer func(){_ = file.Close()}()
+			defer func() { _ = file.Close() }()
 
 			if _, err := io.Copy(tarWriter, file); err != nil {
 				return err

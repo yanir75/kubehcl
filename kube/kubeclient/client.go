@@ -48,7 +48,12 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 
 	err := cfg.Client.SetWaiter(kube.StatusWatcherStrategy)
 	if err != nil {
-		panic("Shouldn't get here")
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Waiter couldn't be created",
+			Detail:   fmt.Sprintf("Failed to create waiter, error: %s", err),
+		})
+		return nil,diags
 	}
 
 	cfg.Name = name
@@ -61,12 +66,23 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 	if !diags.HasErrors() {
 		client, err := cfg.Client.Factory.KubernetesClientSet()
 		if err != nil {
-			panic("Couldn't get client")
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Couldn't create kubernetes client",
+				Detail:   fmt.Sprintf("Client couldn't be created, error: %s", err),
+			})
+			return nil,diags
 		}
 		version, err := client.ServerVersion()
 		if err != nil {
-			panic("Couldn't get version")
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Version could not be obtained",
+				Detail:   fmt.Sprintf("Failed to retreive kubernetes version, error: %s", err),
+			})
+			return nil,diags
 		}
+
 		cfg.Version = version.Major + "." + version.Minor
 
 	} else {
