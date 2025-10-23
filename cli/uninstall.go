@@ -12,7 +12,7 @@ import (
 // Uninstall will destroy the corresponding components of the given apply name
 func uninstallCmd() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "uninstall",
+		Use:   "uninstall [name] [folder]",
 		Short: "Uninstall all resources managed by kubehcl",
 		Long:  "Uninstall will destroy existing resources managed by kubehcl",
 		Run: func(cmd *cobra.Command, args []string) {

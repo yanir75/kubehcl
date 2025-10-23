@@ -8,7 +8,7 @@ import (
 	"kubehcl.sh/kubehcl/settings"
 )
 
-var plandesc string = `plan will show the difference betwee nexisting resources managed by kubehcl and wanted configuration
+var plandesc string = `plan will show the difference between existing resources managed by kubehcl and wanted configuration
 automatically searches for files with ending of .hcl`
 
 func planCmd() *cobra.Command {

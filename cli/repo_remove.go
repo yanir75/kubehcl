@@ -13,8 +13,8 @@ func repoRemoveCmd() *cobra.Command {
 
 	repoRemoveCommand := &cobra.Command{
 		Use:   "remove [NAME]",
-		Short: "add a repository of modules",
-		Long:  "add provides you the option to add a repository which contains modules modules",
+		Short: "remove a repository of modules",
+		Long:  "remove provides you the option to remove a repository which contains modules modules",
 		Run: func(cmd *cobra.Command, args []string) {
 			viewSettings := cmd.Parent().Parent().Context().Value(viewKey).(*view.ViewArgs)
 			conf := cmd.Parent().Parent().Context().Value(settingsKey).(*settings.EnvSettings)

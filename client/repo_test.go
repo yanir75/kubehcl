@@ -58,14 +58,14 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer func(){_ = source.Close()}() // Ensure the source file is closed
+	defer func() { _ = source.Close() }() // Ensure the source file is closed
 
 	// Create the destination file for writing
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer func(){_ = destination.Close()}() // Ensure the destination file is closed
+	defer func() { _ = destination.Close() }() // Ensure the destination file is closed
 
 	// Copy the contents from source to destination
 	_, err = io.Copy(destination, source)
