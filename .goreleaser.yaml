@@ -35,7 +35,7 @@ builds:
 
 homebrew_casks:  
   - name: kubehcl  
-    binary: kubehcl
+    binaries: [kubehcl]
     repository:
       owner: yanir75
       name: homebrew-apps

@@ -69,7 +69,7 @@ func Template(args []string, kind string, viewArguments *view.ViewArgs, cmdSetti
 					})
 				} else {
 					fmt.Printf("# Resource: %s\n\n", key)
-					fmt.Printf("%s______________________________________________\n", string(resourceOutput))
+					fmt.Printf("%s---\n", string(resourceOutput))
 				}
 			}
 		}
