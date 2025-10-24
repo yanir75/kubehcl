@@ -13,6 +13,8 @@ Both licenses were copied from the reflective projects with copyrights within th
 
 **This project is not affiliated or endorsed by any of the projects/companies stated above or any other project/company at all.**
 
+## Site
+https://kubehcl.sh
 ## Tool usage
 kubehcl renders HCL files and deploys them to kubernetes. 
 This tool is used as a template engine. As a result, the user is responsible for the definitions of the resources, there is no concrete schema for the resouce.  
