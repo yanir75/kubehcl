@@ -184,11 +184,21 @@ func decodeVarsFile(folderName, fileName string) (VariableMap, hcl.Diagnostics) 
 
 func (call *ModuleCall) decodeCallWithFolder(source, folderName string, appFs afero.Fs) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
+	r := call.Source.Range()
+	if len(source) < 2 {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Source is invalid",
+			Detail:   fmt.Sprintf("Source of module is invalid: %s", source),
+			Subject:  &r,
+		})
+		return &Module{},diags
+	}
 
 	if string(folderName[len(folderName)-1]) != "/" {
 		folderName = folderName + "/"
 	}
-
+	
 	if string(source[:2]) == "./" {
 		source = source[2:]
 	}
