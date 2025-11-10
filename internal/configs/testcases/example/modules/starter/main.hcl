@@ -64,7 +64,7 @@ kube_resource "foo" {
 }
 
 module "secret" {
-  source = "./modules/secret"
+  source     = "./modules/secret"
   depends_on = [kube_resource.bar]
 }
 

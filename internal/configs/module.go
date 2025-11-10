@@ -192,13 +192,13 @@ func (call *ModuleCall) decodeCallWithFolder(source, folderName string, appFs af
 			Detail:   fmt.Sprintf("Source of module is invalid: %s", source),
 			Subject:  &r,
 		})
-		return &Module{},diags
+		return &Module{}, diags
 	}
 
 	if string(folderName[len(folderName)-1]) != "/" {
 		folderName = folderName + "/"
 	}
-	
+
 	if string(source[:2]) == "./" {
 		source = source[2:]
 	}

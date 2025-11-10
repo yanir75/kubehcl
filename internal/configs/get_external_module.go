@@ -197,7 +197,6 @@ func pullHttp(r *decode.DecodedRepo, name string, version string, save bool) (af
 		return nil, diags
 	}
 
-
 	if u, err := entries.contains(name, version); err == nil {
 		res, diags = DoRequest(r, "", httpClient, u)
 		if diags.HasErrors() {
@@ -411,11 +410,11 @@ func DoRequest(opts *decode.DecodedRepo, path string, httpClient *http.Client, f
 	var diags hcl.Diagnostics
 	var err error
 	var req *http.Request
-	
+
 	if fullUrl == "" {
 		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/%s", opts.Protocol, opts.Url, path), nil)
-	} else if !strings.Contains(fullUrl,opts.Url){
-		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/%s",opts.Protocol, opts.Url,fullUrl), nil)
+	} else if !strings.Contains(fullUrl, opts.Url) {
+		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/%s", opts.Protocol, opts.Url, fullUrl), nil)
 	} else {
 		req, err = http.NewRequest(http.MethodGet, fullUrl, nil)
 	}

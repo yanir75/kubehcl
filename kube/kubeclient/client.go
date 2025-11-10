@@ -53,7 +53,7 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 			Summary:  "Waiter couldn't be created",
 			Detail:   fmt.Sprintf("Failed to create waiter, error: %s", err),
 		})
-		return nil,diags
+		return nil, diags
 	}
 
 	cfg.Name = name
@@ -71,7 +71,7 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 				Summary:  "Couldn't create kubernetes client",
 				Detail:   fmt.Sprintf("Client couldn't be created, error: %s", err),
 			})
-			return nil,diags
+			return nil, diags
 		}
 		version, err := client.ServerVersion()
 		if err != nil {
@@ -80,7 +80,7 @@ func New(name string, conf *settings.EnvSettings, storageKind string) (*Config, 
 				Summary:  "Version could not be obtained",
 				Detail:   fmt.Sprintf("Failed to retreive kubernetes version, error: %s", err),
 			})
-			return nil,diags
+			return nil, diags
 		}
 
 		cfg.Version = version.Major + "." + version.Minor
