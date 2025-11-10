@@ -434,12 +434,12 @@ func Test_Module(t *testing.T) {
 										Start: hcl.Pos{
 											Line:   71,
 											Column: 1,
-											Byte:   1321,
+											Byte:   1325,
 										},
 										End: hcl.Pos{
 											Line:   71,
 											Column: 20,
-											Byte:   1340,
+											Byte:   1344,
 										},
 									},
 								},
@@ -554,12 +554,12 @@ func Test_Module(t *testing.T) {
 													Start: hcl.Pos{
 														Line:   68,
 														Column: 17,
-														Byte:   1299,
+														Byte:   1303,
 													},
 													End: hcl.Pos{
 														Line:   68,
 														Column: 30,
-														Byte:   1312,
+														Byte:   1316,
 													},
 												},
 											},
@@ -570,12 +570,12 @@ func Test_Module(t *testing.T) {
 													Start: hcl.Pos{
 														Line:   68,
 														Column: 30,
-														Byte:   1312,
+														Byte:   1316,
 													},
 													End: hcl.Pos{
 														Line:   68,
 														Column: 34,
-														Byte:   1316,
+														Byte:   1320,
 													},
 												},
 											},
@@ -680,12 +680,12 @@ func Test_Module(t *testing.T) {
 												Start: hcl.Pos{
 													Line:   68,
 													Column: 17,
-													Byte:   1299,
+													Byte:   1303,
 												},
 												End: hcl.Pos{
 													Line:   68,
 													Column: 30,
-													Byte:   1312,
+													Byte:  1316,
 												},
 											},
 										},
@@ -696,12 +696,12 @@ func Test_Module(t *testing.T) {
 												Start: hcl.Pos{
 													Line:   68,
 													Column: 30,
-													Byte:   1312,
+													Byte:   1316,
 												},
 												End: hcl.Pos{
 													Line:   68,
 													Column: 34,
-													Byte:   1316,
+													Byte:   1320,
 												},
 											},
 										},
